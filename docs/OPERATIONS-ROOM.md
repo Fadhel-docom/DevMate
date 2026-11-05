@@ -444,3 +444,15 @@ The owner explicitly approved version 1.1 as the current governing constitution,
 - **Changes in this checkpoint:** branch creation and documentation-only handoff updates. No application code, dependency manifest, lockfile, or CI workflow has been changed. No tests/build were run.
 - **Next exact action:** obtain an npm-capable environment with registry access for this branch (e.g. a GitHub Actions job or a local/Termux checkout), generate the lockfile using npm, then add the minimal `npm ci` workflow change and run the complete checks. Keep the PR draft until those results are verified.
 - **Not performed:** no merge, no PR #3 modification, no PR #1 modification, no `main` change, no deployment, no RateNest or other-project access.
+
+
+## 21. Reproducible-install implementation resumed — 2026-11-05 — ChatGPT
+
+- **Starting checkpoint:** PR #4 open/draft; branch `feature/reproducible-install`; local owner-reported push of commit `6b5e22a` completed and local branch was confirmed synchronized.
+- **Inspected:** PR #4 metadata and changed-file list; approved constitution 1.1; current STATUS and operations room; `package.json`, `package-lock.json`, and `.github/workflows/ci.yml`; GitHub Actions run #51 and its job steps/log output.
+- **Verified lockfile:** PR #4 adds `package-lock.json` (3,951 additions). It is lockfileVersion 3 and its root package dependency/devDependency declarations match the unchanged `package.json` on this branch. No dependency range or Node version change was made.
+- **Prior CI evidence:** run #51 (`42117300265`) on commit `6b5e22a88d10df02849ab8837f75a49d2923b9df` passed `npm install`, audit reporting, tests, and production build. This run did **not** test `npm ci`. Its audit report showed 6 findings (3 moderate, 1 high, 2 critical), consistent with the Vitest 2 manifest on this branch.
+- **Change made:** updated `.github/workflows/ci.yml` to use `npm ci` and enable setup-node npm caching keyed by `package-lock.json`. Commit: `3bff1b91f612ad58711cef06ba4b2f95360fa66d`.
+- **Scope preserved:** no dependency manifest/range changes, no Node version change, no audit-policy change, no edits to PR #3 or PR #1, no merge, no deployment, and no RateNest/other-repository changes.
+- **Verification still pending:** inspect the workflow run triggered by `3bff1b9`. The successful #51 run is not evidence that `npm ci` passes.
+- **Next exact action:** fetch the latest workflow run for `feature/reproducible-install`; inspect job steps/logs for `npm ci`, `npm test`, `npm run build`, and audit summary. Fix only demonstrated failures, then update PR #4 description and request independent review.
