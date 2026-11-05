@@ -56,14 +56,22 @@ Inspect the new CI run after the dependency-audit reporting step. Identify direc
 Read `docs/OPERATIONS-ROOM.md` for the full mission, operating constitution, roadmap, collaboration protocol, verified fixes, and session handoff template.
 
 
-## Constitution — 2026-11-05
-- [x] Added and owner-approved the separate governing constitution: [CHARTER-AND-QUALITY-RULES.md](./CHARTER-AND-QUALITY-RULES.md).
-- Version: 1.0.
-- The constitution is distinct from the living operations room.
-- All contributors must read the operations room, constitution, and status before each session, then verify the current GitHub state.
-- Claude is invited to review and propose amendments only; no silent changes to the approved constitution.
-- Documentation commits:
-  - Constitution: `b74d843d152d608cc5587cbf28d6b3268b178623`
-  - Operations room: `65754dc4947efd7034c0c584bd1c97ea5eefd65e`
-- No code, tests, merge, deployment, or RateNest changes were made in this documentation task.
-- Next: Claude reviews the constitution and returns any suggested amendments with reasons. The owner decides whether to adopt them.
+## Constitution record — 2026-11-05
+- The initial v1.0 approval entry is historical and is superseded by the owner-approved v1.1 record below.
+- Version 1.1 is the current governing constitution; version 1.0 remains preserved as a historical file.
+
+## Constitution amendment proposal — superseded
+
+- The former 1.1 proposal was approved by the owner on 2026-11-05 and promoted to the current canonical constitution.
+- See the approved-version record below. Version 1.0 remains preserved as a historical file.
+
+
+## Constitution 1.1 approved — 2026-11-05
+- Owner explicitly approved version 1.1 as the current governing constitution.
+- Version 1.0 is preserved unchanged at `docs/CHARTER-AND-QUALITY-RULES-v1.0.md`.
+- Current canonical file: `docs/CHARTER-AND-QUALITY-RULES.md` (version 1.1).
+- Restored explicit rules: choose tools by demonstrated capability and task suitability; do not duplicate work without a clear reason; record no-change reviews and why no change was needed; a meaningful session is incomplete until its evidence-based handoff is recorded.
+- Added the permanent final clause: proposals are welcome, but only the owner's explicit approval makes an amendment effective; this clause must remain the final substantive point in every future version.
+- Approval does not merge PR #1, publish the app, authorize out-of-scope code changes, or change the MIT license.
+- Branch: `docs/constitution-v1.1-approved`.
+- PR #2: https://github.com/Fadhel-docom/DevMate/pull/2 — independent review completed with no blocking defect in the governing text; open, targets `feature/phase-1-foundation`, pending merge; not merged.

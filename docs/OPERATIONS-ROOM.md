@@ -357,3 +357,46 @@ The owner will ask Claude to review the constitution independently and suggest g
 - **Verification:** GitHub API confirmed creation of the constitution file on the feature branch. No code tests were run because this change is documentation-only.
 - **Not done:** no code changes, merge, deployment, or RateNest changes.
 - **Next exact action:** update STATUS with the constitution link, then Claude independently reviews the constitution and returns proposed amendments only. Owner decides whether any amendment is adopted.
+
+
+## 16. Constitution 1.1 draft prepared — 2026-11-05
+
+- **Owner instruction:** approved preparing proposed amendments while keeping approved version 1.0 unchanged pending final review.
+- **Draft file:** `docs/CHARTER-AND-QUALITY-RULES-v1.1-DRAFT.md`.
+- **Immutable draft-file commit:** `6fa5bd170ff5dfd883038e8004e06ddd5301a9c6`.
+- **Branch:** `docs/constitution-v1.1-draft`, created from `feature/phase-1-foundation`.
+- **Version 1.0:** `docs/CHARTER-AND-QUALITY-RULES.md` was not modified.
+- **Scope:** documentation only. No source code, CI workflow, license file, PR #1, `main`, deployment, or RateNest repository was changed.
+- **Draft content:** resolves the P0 governance topics in the review: PR #1 explicit merge exception; routine merge limits and independent review; document authority hierarchy; DevMate/RateNest/other-repository boundaries; no OmniRoute for v1; Android-friendly workflow; first-withdrawal definition; licensing decision gate; task roles; evidence labels; and source links/commit SHA handoffs.
+- **Deferred:** P1/P2 implementation items are recorded as a backlog in the draft, not represented as completed. These include SESSION-START, DECISIONS, CI security baseline, archive implementation, access limitations, tool registry, and success baselines.
+- **Verification:** GitHub API confirmed the draft file was created on the proposal branch. No application tests or CI were run because this change is documentation-only.
+- **Not done:** no approval of version 1.1 is implied; no PR was opened; no merge or code work was performed.
+- **Next exact action:** owner reviews the draft and either requests changes or explicitly approves version 1.1. Until then, version 1.0 remains governing.
+
+
+## 17. Constitution 1.1 approved — 2026-11-05
+
+The owner explicitly approved version 1.1 as the current governing constitution, while requiring version 1.0 to remain available.
+
+- Current canonical file: `docs/CHARTER-AND-QUALITY-RULES.md` — version 1.1.
+- Preserved historical file: `docs/CHARTER-AND-QUALITY-RULES-v1.0.md` — unchanged copy of previously approved version 1.0.
+- The former draft path `docs/CHARTER-AND-QUALITY-RULES-v1.1-DRAFT.md` is retained as a short superseded-draft notice linking to the approved canonical file.
+- Explicitly restored from v1.0: choose tools by demonstrated capability and suitability; avoid duplicate work without a clear reason; record reviews that produce no change and explain why; a meaningful session is not complete until its handoff is recorded.
+- Added the mandatory final clause: improvements may be proposed at any time, but only the owner's explicit approval makes them effective. This clause must remain the final substantive point of every future constitution version.
+- No application code, CI, license, PR #1, main, deployment, or RateNest changes are included in this governance update.
+- PR #2 is open: https://github.com/Fadhel-docom/DevMate/pull/2, from `docs/constitution-v1.1-approved` into `feature/phase-1-foundation`. It is not merged and awaits independent review because it changes governing rules.
+- Final GitHub fetch verification passed for all five affected paths. Verified blob SHAs:
+  - Current constitution 1.1: `50126a159961b71faf88025a8695cb7e734d63b7`
+  - Preserved constitution 1.0: `467f045fa96c4de28d7f55100a8348a45637581e`
+  - Superseded draft notice: `fa47a4721acd28383c9c53bba3d2d775338311df`
+  - STATUS: `69d0a46ec19c4b08ff76e85ff402b0f46bfe0858` (before this final stale-status cleanup)
+  - OPERATIONS-ROOM: `627ddd55f879b89eac2ee5b824f249f0f6839419` (before this final verification note)
+- Final checks confirmed: version 1.1 is approved and canonical; v1.0 remains unchanged; missing operating rules are present; the owner-controlled improvement clause is the final substantive point; STATUS identifies 1.1 as current.
+
+### Session handoff — ChatGPT — 2026-11-05
+- **Starting checkpoint:** owner-approved v1.1 draft on `docs/constitution-v1.1-draft`; v1.0 canonical file unchanged.
+- **Task:** promote latest constitution to approved current version, preserve v1.0, and make owner-controlled improvement proposals the permanent final clause.
+- **Changes:** versioned v1.0 archive, v1.1 canonical promotion, restored operating rules, permanent final clause, STATUS and operations-room updates, and superseded-draft notice.
+- **Verification:** final GitHub fetch checks passed for the canonical constitution, preserved v1.0, superseded-draft notice, STATUS, and operations room. The five-path verification confirmed version/status, preservation, restored rules, and final-clause placement.
+- **Not done:** no code, CI, PR #1, merge, deployment, license, or RateNest changes.
+- **Next exact action:** obtain an independent review of PR #2, address any justified findings, then merge under the constitution's review rules. In parallel, Phase 1 dependency-audit work may continue on its own branch/task without waiting for the constitution PR.
