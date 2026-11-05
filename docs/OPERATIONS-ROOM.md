@@ -609,3 +609,29 @@ No PR was merged and no code files were changed in this review handoff.
 - Run: https://github.com/Fadhel-docom/DevMate/actions/runs/42122112066.
 
 - To carry this post-merge correction into the base branch without writing directly to it, documentation-only PR #5 was opened: https://github.com/Fadhel-docom/DevMate/pull/5. It records the merge and post-merge CI result. PR #5 remains open and unmerged pending separate owner approval; the approval for PR #4 does not authorize merging PR #5.
+
+
+## 30. PR #5 merged; current-state correction and Phase 1 resume point — 2026-11-05 — ChatGPT
+
+### Starting checkpoint and inspection
+- Started from `feature/phase-1-foundation` at the merge result of PR #5: `4dfa423b70302539760d4f4389f9d7168f354d7c`.
+- Re-fetched PR #5 from GitHub: state `closed`, `merged=true`; merge commit `4dfa423b70302539760d4f4389f9d7168f354d7c`.
+- Re-read `docs/STATUS.md`, the latest `docs/OPERATIONS-ROOM.md` entries, and the approved `docs/CHARTER-AND-QUALITY-RULES.md` version 1.1.
+- Confirmed PR #1 is still open/draft, targets `main`, and remains unmerged. No attempt was made to merge or modify it.
+- Inspected open PRs: PR #1 is the only open PR returned. No other active PR was found in this check.
+
+### Post-merge verification
+- CI run #82, ID `42122872016`, ran on the exact PR #5 merge commit `4dfa423b70302539760d4f4389f9d7168f354d7c` and completed successfully.
+- Job `verify` passed all observed steps: checkout, setup-node, `npm ci`, dependency-audit report, `npm test`, and `npm run build`.
+- Run: https://github.com/Fadhel-docom/DevMate/actions/runs/42122872016.
+
+### Documentation correction prepared
+- PR #5's own merged text correctly recorded the PR #4 history at the time, but its final lines still said PR #5 was open/unmerged. This is now superseded by this checkpoint; historical entries are retained, not erased.
+- Prepared a documentation-only update to `docs/STATUS.md` and `docs/OPERATIONS-ROOM.md` on branch `docs/record-pr5-merge-and-phase1-handoff`.
+- The update records PR #5's merge SHA and CI #82 result, clarifies the current state of PR #1, and defines the next Phase 1 task from the constitution's deferred pre-completion backlog.
+- No source code, dependencies, workflows, license, constitution, `main`, deployment, PR #1, or unrelated repository was changed.
+
+### Next exact action / handoff
+- Independently review the documentation diff because it updates shared operating handoff instructions. If no blocking issue is found, obtain/observe the required merge authorization under the constitution, then merge this documentation PR.
+- After it is merged, perform a read-only inventory for the pre-Phase-1 governance backlog. Check for existing `docs/SESSION-START.md` and `docs/DECISIONS.md` before creating anything; then prepare a focused documentation PR for missing navigation/checklist and decision-log structure. Also record the remaining archive-policy, CI security-baseline, and contributor-access/verification items without silently expanding scope.
+- PR #1 remains explicitly owner-controlled and unmerged. No deployment, `main` change, paid service, or new phase is authorized.
