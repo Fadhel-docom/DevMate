@@ -607,3 +607,5 @@ No PR was merged and no code files were changed in this review handoff.
 - CI run #77 (`42122112066`) completed successfully on the exact squash merge commit `5788e41761d278b7c9302a0b21553e04a7a9f703`.
 - All verify steps passed: `npm ci`, dependency audit report, `npm test`, and `npm run build` (TypeScript + Vite production build).
 - Run: https://github.com/Fadhel-docom/DevMate/actions/runs/42122112066.
+
+- To carry this post-merge correction into the base branch without writing directly to it, documentation-only PR #5 was opened: https://github.com/Fadhel-docom/DevMate/pull/5. It records the merge and post-merge CI result. PR #5 remains open and unmerged pending separate owner approval; the approval for PR #4 does not authorize merging PR #5.
