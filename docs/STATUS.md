@@ -82,4 +82,5 @@ Read `docs/OPERATIONS-ROOM.md` for the full mission, operating constitution, roa
 - Restored explicit rules: choose tools by demonstrated capability and task suitability; do not duplicate work without a clear reason; record no-change reviews and why no change was needed; a meaningful session is incomplete until its evidence-based handoff is recorded.
 - Added the permanent final clause: proposals are welcome, but only the owner's explicit approval makes an amendment effective; this clause must remain the final substantive point in every future version.
 - Approval does not merge PR #1, publish the app, authorize out-of-scope code changes, or change the MIT license.
-- Branch: `docs/constitution-v1.1-approved`. No PR or merge has been performed.
+- Branch: `docs/constitution-v1.1-approved`.
+- PR #2: https://github.com/Fadhel-docom/DevMate/pull/2 — open, targets `feature/phase-1-foundation`, awaiting independent review; not merged.
