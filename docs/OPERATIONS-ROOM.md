@@ -372,3 +372,24 @@ The owner will ask Claude to review the constitution independently and suggest g
 - **Verification:** GitHub API confirmed the draft file was created on the proposal branch. No application tests or CI were run because this change is documentation-only.
 - **Not done:** no approval of version 1.1 is implied; no PR was opened; no merge or code work was performed.
 - **Next exact action:** owner reviews the draft and either requests changes or explicitly approves version 1.1. Until then, version 1.0 remains governing.
+
+
+## 17. Constitution 1.1 approved — 2026-11-05
+
+The owner explicitly approved version 1.1 as the current governing constitution, while requiring version 1.0 to remain available.
+
+- Current canonical file: `docs/CHARTER-AND-QUALITY-RULES.md` — version 1.1.
+- Preserved historical file: `docs/CHARTER-AND-QUALITY-RULES-v1.0.md` — unchanged copy of previously approved version 1.0.
+- The former draft path `docs/CHARTER-AND-QUALITY-RULES-v1.1-DRAFT.md` is retained as a short superseded-draft notice linking to the approved canonical file.
+- Explicitly restored from v1.0: choose tools by demonstrated capability and suitability; avoid duplicate work without a clear reason; record reviews that produce no change and explain why; a meaningful session is not complete until its handoff is recorded.
+- Added the mandatory final clause: improvements may be proposed at any time, but only the owner's explicit approval makes them effective. This clause must remain the final substantive point of every future constitution version.
+- No application code, CI, license, PR #1, main, deployment, or RateNest changes are included in this governance update.
+- No PR or merge has been performed; this is on `docs/constitution-v1.1-approved` pending verification.
+
+### Session handoff — ChatGPT — 2026-11-05
+- **Starting checkpoint:** owner-approved v1.1 draft on `docs/constitution-v1.1-draft`; v1.0 canonical file unchanged.
+- **Task:** promote latest constitution to approved current version, preserve v1.0, and make owner-controlled improvement proposals the permanent final clause.
+- **Changes:** versioned v1.0 archive, v1.1 canonical promotion, restored operating rules, permanent final clause, STATUS and operations-room updates, and superseded-draft notice.
+- **Verification:** pending final fetch and SHA checks.
+- **Not done:** no code, CI, PR #1, merge, deployment, license, or RateNest changes.
+- **Next exact action:** verify every changed document and record exact commit SHAs.
