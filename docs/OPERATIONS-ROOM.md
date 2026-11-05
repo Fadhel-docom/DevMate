@@ -328,3 +328,32 @@ Each assistant must append its own concise dated handoff entry in this same oper
 - Status documentation update: `aca46009e6d5456c159f24b26fe42156c103aae6`.
 - The audit reporting step has not yet been verified in a completed workflow run. The previous successful CI run #12 predates this added audit step.
 - Next: inspect the first run containing the audit report, then ask Claude to independently review exact advisories and safe upgrade options. Do not force-upgrade dependencies.
+
+
+## 15. Constitution established — 2026-11-05
+
+The project owner approved the DevMate constitution as the governing baseline. It is stored separately from this living operations log:
+
+- `docs/CHARTER-AND-QUALITY-RULES.md`
+- Version: 1.0
+- Status: approved governing baseline; contributors may propose amendments but must not silently change it.
+
+Mandatory start-of-session reading order:
+1. `docs/OPERATIONS-ROOM.md` — current checkpoint and work history.
+2. `docs/CHARTER-AND-QUALITY-RULES.md` — binding mission, rules, authority, and quality gates.
+3. `docs/STATUS.md` — concise current milestone and blockers.
+4. Verify current GitHub branch, latest commit, PR state, and CI before editing.
+
+The constitution formalizes quality before quantity and publishing; coordinated AI task ownership; zero new costs before first withdrawal; security and project boundaries; branch/PR workflow; evidence-based quality gates; competitor research; SEO and the owner's requested CAO/answer-engine visibility; truthful status reporting; and mandatory handoffs.
+
+The owner will ask Claude to review the constitution independently and suggest gaps or conflicts. Claude may propose amendments, but must not change the constitution without the owner's explicit approval. Until an amendment is approved, version 1.0 governs.
+
+### Session handoff — ChatGPT — 2026-11-05
+
+- **Starting checkpoint:** existing `feature/phase-1-foundation`; reviewed current operations room and status.
+- **Task:** establish a separate, durable constitution before transferring work to Claude.
+- **Changes made:** created `docs/CHARTER-AND-QUALITY-RULES.md`; added this handoff and mandatory reading order.
+- **Commit:** constitution file commit `b74d843d152d608cc5587cbf28d6b3268b178623`; operations-room update follows in a separate commit.
+- **Verification:** GitHub API confirmed creation of the constitution file on the feature branch. No code tests were run because this change is documentation-only.
+- **Not done:** no code changes, merge, deployment, or RateNest changes.
+- **Next exact action:** update STATUS with the constitution link, then Claude independently reviews the constitution and returns proposed amendments only. Owner decides whether any amendment is adopted.
