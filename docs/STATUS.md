@@ -210,9 +210,9 @@ Read `docs/OPERATIONS-ROOM.md` for the full mission, operating constitution, roa
 ## Latest current-state checkpoint — 2026-11-05 — PR #5 merged
 
 - Governing constitution: `docs/CHARTER-AND-QUALITY-RULES.md` version 1.1, owner-approved; version 1.0 remains historical.
-- Current integration branch: `feature/phase-1-foundation`; latest verified base commit after PR #5: `4dfa423b70302539760d4f4389f9d7168f354d7c`.
+- Current integration branch: `feature/phase-1-foundation`; base SHA recorded as of PR #6 creation: `4dfa423b70302539760d4f4389f9d7168f354d7c` (historical snapshot, not a claim about a later branch head).
 - PR #4 is merged (Squash commit `5788e41761d278b7c9302a0b21553e04a7a9f703`). PR #5 is also merged (Squash commit `4dfa423b70302539760d4f4389f9d7168f354d7c`): https://github.com/Fadhel-docom/DevMate/pull/5.
-- Post-merge CI for PR #5's exact merge commit passed: run #82, ID `42122872016`; `npm ci`, dependency-audit report, `npm test`, and `npm run build` all succeeded. Run: https://github.com/Fadhel-docom/DevMate/actions/runs/42122872016.
+- CI run #81 (push) and run #82 (pull_request) both completed successfully on the exact PR #5 merge/base commit `4dfa423b70302539760d4f4389f9d7168f354d7c`. The observed verification steps included `npm ci`, dependency-audit report, `npm test`, and `npm run build`. Neither run was triggered for PR #6's head. #81: https://github.com/Fadhel-docom/DevMate/actions/runs/42122860531. #82: https://github.com/Fadhel-docom/DevMate/actions/runs/42122872016.
 - The old statements in earlier STATUS/operations entries that PR #4 or PR #5 remain open/unmerged are historical snapshots and are superseded by this current-state checkpoint. Do not delete historical records.
 - PR #1 remains open/draft and unmerged; it targets `main` and remains explicitly owner-controlled. Do not merge it. No deployment is authorized or recorded.
 - No other PR or repository was modified in this checkpoint.
@@ -221,4 +221,5 @@ Read `docs/OPERATIONS-ROOM.md` for the full mission, operating constitution, roa
 After this documentation checkpoint is reviewed and merged, perform a read-only inventory of the repository against the constitution's deferred pre-Phase-1 backlog. First check whether `docs/SESSION-START.md` and `docs/DECISIONS.md` already exist and inspect current navigation/status/decision records; do not create duplicates. Then prepare one focused documentation PR that adds the missing session-start navigation/checklist and decision-log structure, preserving the constitution's source-of-truth hierarchy. In that same inventory, record (but do not silently implement) the remaining pre-completion items: archive-policy implementation, CI security baseline, and contributor access/verification limits. No new phase, deployment, `main` merge, paid service, or scope expansion is authorized.
 
 ### Current blocker / handoff
-- This PR is documentation-only and awaits independent review of the shared handoff update. Do not merge it until the applicable review gate is satisfied; PR #1 remains separately owner-controlled.
+- PR #6 is open and documentation-only. Claude's independent review found no Blocking issue in the pre-correction diff; ChatGPT applied the four non-blocking corrections in PR #6. The corrected head requires Claude's fresh independent review before merge.
+- The owner has explicitly delegated Squash merge of PR #6 only if the corrected diff passes independent review and all applicable constitution 1.1 gates. PR #1 remains separately owner-controlled and must not be merged.
