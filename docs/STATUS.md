@@ -12,6 +12,9 @@ Phase 1 — foundation and local demo.
 - [x] Added project/task state and local mock chat.
 - [x] Added product and architecture documentation.
 
+## Current blocker
+- GitHub Actions failed on both push and pull_request runs before tests/build: setup-node could not find an npm lockfile while npm caching was enabled. See `docs/OPERATIONS-ROOM.md` for the exact diagnosis and Claude review task.
+
 ## Not yet verified
 - [x] Added Vitest coverage for local project persistence.
 - [x] Added GitHub Actions CI for pull requests and feature branches.
@@ -24,4 +27,7 @@ Phase 1 — foundation and local demo.
 `feature/phase-1-foundation`
 
 ## Next action
-Run CI build and tests, fix any failures, then open a pull request to `main`. Do not merge until reviewed and accepted.
+Ask Claude to independently review the CI lockfile failure and Phase 1 code; agree on the smallest fix, then verify tests and build. PR #1 remains a draft and must not be merged yet.
+
+## Shared handoff
+See `docs/OPERATIONS-ROOM.md` for the mission, constraints, roadmap, collaboration protocol, and complete checkpoint. Do not merge until reviewed and accepted.
