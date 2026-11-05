@@ -384,12 +384,19 @@ The owner explicitly approved version 1.1 as the current governing constitution,
 - Explicitly restored from v1.0: choose tools by demonstrated capability and suitability; avoid duplicate work without a clear reason; record reviews that produce no change and explain why; a meaningful session is not complete until its handoff is recorded.
 - Added the mandatory final clause: improvements may be proposed at any time, but only the owner's explicit approval makes them effective. This clause must remain the final substantive point of every future constitution version.
 - No application code, CI, license, PR #1, main, deployment, or RateNest changes are included in this governance update.
-- No PR or merge has been performed; this is on `docs/constitution-v1.1-approved` pending verification.
+- No PR or merge has been performed; this is on `docs/constitution-v1.1-approved`.
+- Final GitHub fetch verification passed for all five affected paths. Verified blob SHAs:
+  - Current constitution 1.1: `50126a159961b71faf88025a8695cb7e734d63b7`
+  - Preserved constitution 1.0: `467f045fa96c4de28d7f55100a8348a45637581e`
+  - Superseded draft notice: `fa47a4721acd28383c9c53bba3d2d775338311df`
+  - STATUS: `69d0a46ec19c4b08ff76e85ff402b0f46bfe0858` (before this final stale-status cleanup)
+  - OPERATIONS-ROOM: `627ddd55f879b89eac2ee5b824f249f0f6839419` (before this final verification note)
+- Final checks confirmed: version 1.1 is approved and canonical; v1.0 remains unchanged; missing operating rules are present; the owner-controlled improvement clause is the final substantive point; STATUS identifies 1.1 as current.
 
 ### Session handoff — ChatGPT — 2026-11-05
 - **Starting checkpoint:** owner-approved v1.1 draft on `docs/constitution-v1.1-draft`; v1.0 canonical file unchanged.
 - **Task:** promote latest constitution to approved current version, preserve v1.0, and make owner-controlled improvement proposals the permanent final clause.
 - **Changes:** versioned v1.0 archive, v1.1 canonical promotion, restored operating rules, permanent final clause, STATUS and operations-room updates, and superseded-draft notice.
-- **Verification:** pending final fetch and SHA checks.
+- **Verification:** final GitHub fetch checks passed for the canonical constitution, preserved v1.0, superseded-draft notice, STATUS, and operations room. The five-path verification confirmed version/status, preservation, restored rules, and final-clause placement.
 - **Not done:** no code, CI, PR #1, merge, deployment, license, or RateNest changes.
-- **Next exact action:** verify every changed document and record exact commit SHAs.
+- **Next exact action:** resume the recorded Phase 1 dependency-audit investigation; no further constitution work is blocking implementation.
