@@ -101,3 +101,16 @@ Read `docs/OPERATIONS-ROOM.md` for the full mission, operating constitution, roa
 - Remaining non-blocking notes: audit-report parser can fail if npm audit produces invalid/empty JSON despite || true (pre-existing behavior, out of scope); Actions runtime/ubuntu-latest notices are external platform maintenance, out of scope. Lockfile creator npm version is not encoded in package-lock.json; do not guess it.
 - Audit findings remain 6 (3 moderate, 1 high, 2 critical) on the unchanged Vitest 2 tree. Dependency remediation remains separate in PR #3; do not modify versions in PR #4.
 - Next exact action: record the independent review outcome in PR discussion and request the owner’s explicit decision on whether to mark PR #4 ready for review. Keep draft until that decision. Do not merge PR #4, PR #3, or PR #1 without their separate approvals.
+
+
+## 24. PR #4 ready-for-review checkpoint — 2026-11-05
+
+- Owner authorized continuing necessary work provided the quality checks pass.
+- Latest PR #4 head: `5b272a12a2cf1da7cf2e39450a4cc53216c7d158`.
+- GitHub Actions run #58 (`42119082649`) completed with conclusion **success** on that exact head; the `verify` job completed successfully.
+- Verified workflow: `npm ci`, audit report, tests, TypeScript check, and Vite production build. The audit remains report-only and reports six findings on the Vitest 2 dependency tree (3 moderate, 1 high, 2 critical).
+- Claude's earlier independent PR #4 review reported no Blocking findings; the manifest-comparison gap was closed with identical base/head `package.json` blob SHA evidence.
+- PR #4 was changed from Draft to **Ready for review**. It remains open and unmerged.
+- **Merge sequencing constraint:** PR #3 upgrades Vitest and targets the base branch used by PR #4. PR #4's lockfile was generated against the pre-PR #3 manifest. Do not merge PR #4 before PR #3 is resolved; after any PR #3 merge, regenerate/validate the lockfile against the updated manifest and rerun `npm ci`, tests, TypeScript, build, and audit.
+- Next: Claude reads the current operations room and approved constitution 1.1, then independently reviews PR #3 and the merge/lockfile sequencing. Claude must report evidence and proposed fixes; no parallel edits to PR #3 or PR #4 without coordinator assignment.
+- No merge, deployment, PR #1 changes, main-branch changes, or other-repository changes were made.
