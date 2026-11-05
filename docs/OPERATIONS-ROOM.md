@@ -400,3 +400,18 @@ The owner explicitly approved version 1.1 as the current governing constitution,
 - **Verification:** final GitHub fetch checks passed for the canonical constitution, preserved v1.0, superseded-draft notice, STATUS, and operations room. The five-path verification confirmed version/status, preservation, restored rules, and final-clause placement.
 - **Not done:** no code, CI, PR #1, merge, deployment, license, or RateNest changes.
 - **Next exact action:** obtain an independent review of PR #2, address any justified findings, then merge under the constitution's review rules. In parallel, Phase 1 dependency-audit work may continue on its own branch/task without waiting for the constitution PR.
+
+ 
+## 18. Session handoff — ChatGPT — 2026-11-05 (PR #2 merge and Phase 1 restart)
+
+- **Starting checkpoint:** PR #2 open at head `91fed28d765db707db54c876e96b188f7e7b7738`; independent Claude review completed with no blocking defect in the governing text; STATUS stale v1.0 block identified.
+- **Task:** reconcile STATUS, merge PR #2 into `feature/phase-1-foundation`, and resume Phase 1 dependency audit.
+- **STATUS correction:** removed the stale statement that v1.0 was current and that Claude's constitution review was still pending; replaced it with a historical note and updated the independent-review state. Commit: `ff5bae21154e31529d7836980695fb457b097ee0`.
+- **PR #2 merge:** successfully merged using Merge commit into `feature/phase-1-foundation`. Merge commit: `af872cf23441e781d64d8d983dad29852690fa8f`. PR #2: https://github.com/Fadhel-docom/DevMate/pull/2.
+- **PR #1:** remains open and unmerged; no approval to merge it was given.
+- **Phase 1 audit evidence:** inspected CI run #36 (`42089938866`), which passed install, tests (3/3), and production build. Its audit step reported 6 vulnerabilities: 3 moderate, 1 high, 2 critical. The affected package entries were `@vitest/mocker`, `esbuild`, `tinypool`, `vite`, `vite-node`, and `vitest`. npm identified Vitest `4.1.12` as the available remediation target.
+- **Implementation started:** created branch `feature/dependency-audit-vitest`, changed only the direct Vitest devDependency from `^2.1.8` to `^4.1.12`, commit `03109f839b1849174cf801e7a22b6f313c16009d`, and opened PR #3 targeting `feature/phase-1-foundation`: https://github.com/Fadhel-docom/DevMate/pull/3.
+- **Verification state:** CI run #39 (`42090223768`) was in progress at handoff; no post-upgrade audit/test/build result is claimed. Existing baseline test/build results are not proof that the upgrade passes.
+- **Risk / authority:** dependency changes are Sensitive under constitution sections 2 and 7. PR #3 must receive independent review and explicit owner approval before merge. No `npm audit fix --force` was run. No lockfile is committed; generating and verifying one remains open.
+- **Not performed:** no PR #1 merge, no deployment, no changes to `main`, no RateNest changes, and no changes to the other three projects.
+- **Next exact action:** inspect CI run #39; confirm Vitest compatibility and whether all six audit findings are resolved; ask for independent review of PR #3; await owner approval before merging it. Then continue UI/persistence tests and Android browser verification.
