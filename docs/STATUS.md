@@ -184,3 +184,24 @@ Read `docs/OPERATIONS-ROOM.md` for the full mission, operating constitution, roa
 - Audit: info 0, low 0, moderate 0, high 0, critical 0, total 0; npm reports 0 vulnerabilities.
 - Run: https://github.com/Fadhel-docom/DevMate/actions/runs/42121823869.
 - PR #4 remains open, Ready for review, and unmerged. A separate explicit owner decision is still required before Squash merge.
+
+
+## 29. PR #4 merged — 2026-11-05
+
+- Owner explicitly approved merging PR #4 only, using Squash.
+- PR #4 was successfully merged and is now closed/merged: https://github.com/Fadhel-docom/DevMate/pull/4.
+- Squash merge commit on `feature/phase-1-foundation`: `5788e41761d278b7c9302a0b21553e04a7a9f703`.
+- The merged change delivers the committed npm lockfile and CI clean install via `npm ci`. PR #3's approved Vitest upgrade is retained.
+- Latest PR-head verification before merge: CI run #76 (`42121823869`) passed on `4ca0b07cdc18513ad57a4e9f2c2ba96e0c31df78`; npm ci, audit, tests, TypeScript and Vite build all passed; audit total 0 vulnerabilities. https://github.com/Fadhel-docom/DevMate/actions/runs/42121823869.
+- Post-merge base CI run #77 (`42122112066`) started on exact squash merge commit `5788e41761d278b7c9302a0b21553e04a7a9f703`; its final result must be checked before treating the base validation as complete.
+- This checkpoint supersedes earlier statements in this file that PR #4 remained open/unmerged or awaited owner approval.
+- PR #1 remains untouched and unmerged. No deployment was performed or authorized.
+- Next: confirm post-merge CI #77, then continue only with the next documented project task; do not merge unrelated PRs.
+
+
+### Post-merge CI result confirmed
+- CI run #77 (`42122112066`) completed successfully on the exact squash merge commit `5788e41761d278b7c9302a0b21553e04a7a9f703`.
+- All verify steps passed: `npm ci`, dependency audit report, `npm test`, and `npm run build` (TypeScript + Vite production build).
+- Run: https://github.com/Fadhel-docom/DevMate/actions/runs/42122112066.
+
+- Documentation correction PR #5 is open (https://github.com/Fadhel-docom/DevMate/pull/5), containing the post-merge history correction in STATUS and OPERATIONS-ROOM. It is documentation-only and intentionally unmerged; owner approval is required before merging PR #5.
