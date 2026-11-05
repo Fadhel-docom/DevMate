@@ -70,10 +70,21 @@ Read `docs/OPERATIONS-ROOM.md` for the full mission, operating constitution, roa
 
 
 ## Constitution amendment proposal — pending owner review
-- Approved governing version remains **1.0**: [CHARTER-AND-QUALITY-RULES.md](./CHARTER-AND-QUALITY-RULES.md).
-- Prepared a separate, unapproved proposal: [CHARTER-AND-QUALITY-RULES-v1.1-DRAFT.md](./CHARTER-AND-QUALITY-RULES-v1.1-DRAFT.md).
+- Current approved governing version is **1.1**: [CHARTER-AND-QUALITY-RULES.md](./CHARTER-AND-QUALITY-RULES.md).
+- Historical version **1.0** is preserved at [CHARTER-AND-QUALITY-RULES-v1.0.md](./CHARTER-AND-QUALITY-RULES-v1.0.md).
+- The former 1.1 draft has been owner-approved and promoted to the current constitution.
 - Draft-file commit: `6fa5bd170ff5dfd883038e8004e06ddd5301a9c6`.
 - Proposal branch: `docs/constitution-v1.1-draft`, based on `feature/phase-1-foundation`.
 - No changes to code, CI, license file, PR #1, `main`, deployment, or RateNest.
 - No PR opened and no merge performed.
 - Next: owner reviews the proposed 1.1 text. Do not treat it as binding or replace version 1.0 unless explicitly approved.
+
+
+## Constitution 1.1 approved — 2026-11-05
+- Owner explicitly approved version 1.1 as the current governing constitution.
+- Version 1.0 is preserved unchanged at `docs/CHARTER-AND-QUALITY-RULES-v1.0.md`.
+- Current canonical file: `docs/CHARTER-AND-QUALITY-RULES.md` (version 1.1).
+- Restored explicit rules: choose tools by demonstrated capability and task suitability; do not duplicate work without a clear reason; record no-change reviews and why no change was needed; a meaningful session is incomplete until its evidence-based handoff is recorded.
+- Added the permanent final clause: proposals are welcome, but only the owner's explicit approval makes an amendment effective; this clause must remain the final substantive point in every future version.
+- Approval does not merge PR #1, publish the app, authorize out-of-scope code changes, or change the MIT license.
+- Branch: `docs/constitution-v1.1-approved`. No PR or merge has been performed.
