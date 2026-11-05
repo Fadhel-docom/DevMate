@@ -13,7 +13,9 @@ Phase 1 — foundation and local demo.
 - [x] Added product and architecture documentation.
 
 ## Not yet verified
-- [ ] Install dependencies and run tests/build.
+- [x] Added Vitest coverage for local project persistence.
+- [x] Added GitHub Actions CI for pull requests and feature branches.
+- [ ] Confirm CI test/build results after the workflow completes.
 - [ ] Verify mobile layout in a real Android browser.
 - [ ] Verify persistence after reload.
 - [ ] Deploy to a free static host after acceptance checks.
