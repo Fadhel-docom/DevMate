@@ -69,15 +69,10 @@ Read `docs/OPERATIONS-ROOM.md` for the full mission, operating constitution, roa
 - Next: Claude reviews the constitution and returns any suggested amendments with reasons. The owner decides whether to adopt them.
 
 
-## Constitution amendment proposal — pending owner review
-- Current approved governing version is **1.1**: [CHARTER-AND-QUALITY-RULES.md](./CHARTER-AND-QUALITY-RULES.md).
-- Historical version **1.0** is preserved at [CHARTER-AND-QUALITY-RULES-v1.0.md](./CHARTER-AND-QUALITY-RULES-v1.0.md).
-- The former 1.1 draft has been owner-approved and promoted to the current constitution.
-- Draft-file commit: `6fa5bd170ff5dfd883038e8004e06ddd5301a9c6`.
-- Proposal branch: `docs/constitution-v1.1-draft`, based on `feature/phase-1-foundation`.
-- No changes to code, CI, license file, PR #1, `main`, deployment, or RateNest.
-- No PR opened and no merge performed.
-- Next: owner reviews the proposed 1.1 text. Do not treat it as binding or replace version 1.0 unless explicitly approved.
+## Constitution amendment proposal — superseded
+
+- The former 1.1 proposal was approved by the owner on 2026-11-05 and promoted to the current canonical constitution.
+- See the approved-version record below. Version 1.0 remains preserved as a historical file.
 
 
 ## Constitution 1.1 approved — 2026-11-05
