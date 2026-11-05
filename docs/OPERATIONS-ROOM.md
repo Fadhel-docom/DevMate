@@ -357,3 +357,18 @@ The owner will ask Claude to review the constitution independently and suggest g
 - **Verification:** GitHub API confirmed creation of the constitution file on the feature branch. No code tests were run because this change is documentation-only.
 - **Not done:** no code changes, merge, deployment, or RateNest changes.
 - **Next exact action:** update STATUS with the constitution link, then Claude independently reviews the constitution and returns proposed amendments only. Owner decides whether any amendment is adopted.
+
+
+## 16. Constitution 1.1 draft prepared — 2026-11-05
+
+- **Owner instruction:** approved preparing proposed amendments while keeping approved version 1.0 unchanged pending final review.
+- **Draft file:** `docs/CHARTER-AND-QUALITY-RULES-v1.1-DRAFT.md`.
+- **Immutable draft-file commit:** `6fa5bd170ff5dfd883038e8004e06ddd5301a9c6`.
+- **Branch:** `docs/constitution-v1.1-draft`, created from `feature/phase-1-foundation`.
+- **Version 1.0:** `docs/CHARTER-AND-QUALITY-RULES.md` was not modified.
+- **Scope:** documentation only. No source code, CI workflow, license file, PR #1, `main`, deployment, or RateNest repository was changed.
+- **Draft content:** resolves the P0 governance topics in the review: PR #1 explicit merge exception; routine merge limits and independent review; document authority hierarchy; DevMate/RateNest/other-repository boundaries; no OmniRoute for v1; Android-friendly workflow; first-withdrawal definition; licensing decision gate; task roles; evidence labels; and source links/commit SHA handoffs.
+- **Deferred:** P1/P2 implementation items are recorded as a backlog in the draft, not represented as completed. These include SESSION-START, DECISIONS, CI security baseline, archive implementation, access limitations, tool registry, and success baselines.
+- **Verification:** GitHub API confirmed the draft file was created on the proposal branch. No application tests or CI were run because this change is documentation-only.
+- **Not done:** no approval of version 1.1 is implied; no PR was opened; no merge or code work was performed.
+- **Next exact action:** owner reviews the draft and either requests changes or explicitly approves version 1.1. Until then, version 1.0 remains governing.
