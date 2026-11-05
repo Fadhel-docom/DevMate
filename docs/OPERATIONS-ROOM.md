@@ -45,7 +45,7 @@ Before making code changes:
 - Review the relevant files and explain the cause of the issue.
 - Prefer the smallest reversible change.
 - Keep changes on the existing feature branch for this Phase 1 PR unless a separate branch is agreed.
-- Do not merge or close the PR without the user's approval.
+- Under the user's standing delegation, the team may merge a PR without another routine confirmation once all documented quality gates pass, peer review is complete, and the merge is safe. Approval is still required for cost, secrets, new permissions, destructive changes, production publishing, and changes to other project repositories.
 
 After making changes:
 - Record changed paths and commit SHA(s).
@@ -312,3 +312,10 @@ The install log reported 6 dependency vulnerabilities: 3 moderate, 1 high, and 2
 - ChatGPT has updated `docs/STATUS.md` with the passing CI result and open security issue.
 - Latest documentation checkpoint: `62ceb40f155177e88307535e873892677a942d47`.
 - Next contributor: Claude should independently review the current implementation, inspect the npm audit report, and propose safe dependency remediation. ChatGPT should cross-check before implementation. Do not deploy or merge yet.
+
+
+## 13. Standing delegation clarification — 2026-11-05
+
+The user's latest instruction supersedes the earlier default requirement for routine merge approval: the team is authorized to make routine reversible changes and merge when the documented quality rules are fully satisfied. Do not ask for repeated confirmation for ordinary implementation work. The quality gate is mandatory, not optional. The user retains approval authority over cost, credentials, permissions, destructive operations, production/public publishing, and any changes to other project repositories.
+
+Each assistant must append its own concise dated handoff entry in this same operations room after meaningful work, identifying its own changes, evidence, unresolved issues, and exact next action. The shared room remains the single source of truth.
