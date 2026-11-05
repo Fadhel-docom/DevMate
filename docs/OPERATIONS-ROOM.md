@@ -431,3 +431,151 @@ The owner explicitly approved version 1.1 as the current governing constitution,
 - **Limitations:** no `package-lock.json` is committed; CI currently uses `npm install`. Zero findings is verified for the dependency tree installed in this CI run, not a guarantee about future unpinned installs.
 - **Not performed:** no PR #1 merge, no deployment, no changes to `main`, RateNest, or the other three projects.
 - **Next exact action:** Claude independently reviews PR #3 and the Vitest 4 migration; owner reviews the evidence and explicitly approves or declines the dependency merge. After an approved merge, generate a lockfile in a real npm environment and switch CI to `npm ci` only after verification.
+
+
+## 20. Reproducible-install task opened — 2026-11-05 — ChatGPT
+
+- **Owner authorization:** the owner explicitly authorized creating a separate branch and PR for task B (reproducible npm installs). This authorization does not include merging dependency changes or merging PR #3.
+- **Starting checkpoint inspected:** latest `feature/phase-1-foundation` head `d7af1fc0949a82abed3853860aa9ac6d6addb320`; PR #1 remains open/draft/unmerged; PR #2 is merged; PR #3 remains open/unmerged and targets `feature/phase-1-foundation`.
+- **Relevant source state verified:** `package.json` on the base branch still declares Vitest `^2.1.8`; CI uses Node 20, `npm install`, and no cache; no `package-lock.json` exists. PR #3's Vitest 4 upgrade remains isolated and untouched.
+- **Branch created:** `feature/reproducible-install`, from the latest `feature/phase-1-foundation` head.
+- **Intended bounded implementation:** create a genuine npm lockfile from the exact base-branch manifest; switch CI to `npm ci`; re-enable npm caching only when supported by the committed lockfile; run clean-install, tests, TypeScript/build, and audit-report checks. Do not change dependency ranges, Node, or audit enforcement.
+- **Execution limitation:** this environment reports Node v22.16.0/npm 10.9.2, but outbound DNS/network access is unavailable (`git ls-remote https://github.com/Fadhel-docom/DevMate.git` failed with “Could not resolve host: github.com”). GitHub API access is available through the connector, but it cannot run npm. Generating a trustworthy lockfile by guessing or manually fabricating resolved package data would violate the quality rules.
+- **Changes in this checkpoint:** branch creation and documentation-only handoff updates. No application code, dependency manifest, lockfile, or CI workflow has been changed. No tests/build were run.
+- **Next exact action:** obtain an npm-capable environment with registry access for this branch (e.g. a GitHub Actions job or a local/Termux checkout), generate the lockfile using npm, then add the minimal `npm ci` workflow change and run the complete checks. Keep the PR draft until those results are verified.
+- **Not performed:** no merge, no PR #3 modification, no PR #1 modification, no `main` change, no deployment, no RateNest or other-project access.
+
+
+## 21. Reproducible-install implementation resumed — 2026-11-05 — ChatGPT
+
+- **Starting checkpoint:** PR #4 open/draft; branch `feature/reproducible-install`; local owner-reported push of commit `6b5e22a` completed and local branch was confirmed synchronized.
+- **Inspected:** PR #4 metadata and changed-file list; approved constitution 1.1; current STATUS and operations room; `package.json`, `package-lock.json`, and `.github/workflows/ci.yml`; GitHub Actions run #51 and its job steps/log output.
+- **Verified lockfile:** PR #4 adds `package-lock.json` (3,951 additions). It is lockfileVersion 3 and its root package dependency/devDependency declarations match the unchanged `package.json` on this branch. No dependency range or Node version change was made.
+- **Prior CI evidence:** run #51 (`42117300265`) on commit `6b5e22a88d10df02849ab8837f75a49d2923b9df` passed `npm install`, audit reporting, tests, and production build. This run did **not** test `npm ci`. Its audit report showed 6 findings (3 moderate, 1 high, 2 critical), consistent with the Vitest 2 manifest on this branch.
+- **Change made:** updated `.github/workflows/ci.yml` to use `npm ci` and enable setup-node npm caching keyed by `package-lock.json`. Commit: `3bff1b91f612ad58711cef06ba4b2f95360fa66d`.
+- **Scope preserved:** no dependency manifest/range changes, no Node version change, no audit-policy change, no edits to PR #3 or PR #1, no merge, no deployment, and no RateNest/other-repository changes.
+- **Verification still pending:** inspect the workflow run triggered by `3bff1b9`. The successful #51 run is not evidence that `npm ci` passes.
+- **Next exact action:** fetch the latest workflow run for `feature/reproducible-install`; inspect job steps/logs for `npm ci`, `npm test`, `npm run build`, and audit summary. Fix only demonstrated failures, then update PR #4 description and request independent review.
+
+
+## 22. CI verification — reproducible install — 2026-11-05 — ChatGPT
+
+- **Verified latest workflow:** GitHub Actions run #54, ID `42118429469`, on head `3a18cd74acc5327923f546bddbc21a2d1dd9519f`; conclusion: **success**. Run URL: https://github.com/Fadhel-docom/DevMate/actions/runs/42118429469.
+- **Clean install:** `npm ci` passed and installed 164 packages (165 audited).
+- **Tests:** `npm test` passed — 1 test file, 3 tests.
+- **Build:** `npm run build` passed — `tsc --noEmit` and Vite production build completed.
+- **Audit:** reporting step completed; 6 vulnerabilities remain (3 moderate, 1 high, 2 critical). This is the unchanged Vitest 2 dependency tree. The audit step remains report-only by existing policy; do not broaden this PR into dependency remediation. PR #3 remains separate.
+- **Lockfile/cache:** lockfileVersion 3 is present; CI now uses `npm ci` and setup-node npm caching keyed by `package-lock.json`.
+- **Review state:** PR #4 remains open and draft. No independent review has yet been recorded. No merge, deployment, PR #1/PR #3 modification, or RateNest/other-repository work was performed.
+- **Next exact action:** ask Claude to independently review PR #4's lockfile and CI diff against the approved scope; address only substantiated findings, then reassess readiness. Keep PR #4 draft until independent review and all gates pass.
+
+## 23. Independent review and latest-head verification — 2026-11-05 — ChatGPT
+
+- Claude review received: no Blocking findings; review otherwise complete except lockfile/manifest comparison, EOF newline explanation, npm version provenance, and external runner notices.
+- Manifest comparison closed with direct GitHub evidence: fetched package.json at PR head feature/reproducible-install and base feature/phase-1-foundation; both have identical Git blob SHA d67483bb65f2d555291465cf5dec79eb321d6206. The PR has four changed files and does not include package.json. This is stronger than asking the owner to run a local diff.
+- EOF newline observation: PR diff confirms the old CI file had no final newline and the updated file has one. The only behavioral CI changes are npm install → npm ci and npm cache configuration.
+- Latest head verified: PR head 716cab9cd9d33a169fe936958c76642adb91d2f5; Actions run #56 (42118534046) completed successfully. All steps passed, including npm ci, audit-report, tests, TypeScript check, and production build. URL: https://github.com/Fadhel-docom/DevMate/actions/runs/42118534046.
+- Still out of scope: audit parser hardening (pre-existing), Actions runner/Ubuntu notices (external maintenance), and dependency vulnerability remediation (separate PR #3). Six audit findings remain on the unchanged Vitest 2 tree.
+- npm provenance: package-lock does not record the npm CLI version that generated it. Do not infer or claim a generator version without evidence.
+- No merge or readiness change: PR #4 remains open/draft. No changes to PR #1/#3, no deployment, no main or other repository work.
+- Next exact action: present Claude’s no-blocking verdict and the direct manifest/CI evidence to the owner; ask for explicit permission before marking the draft PR ready. Then obtain any required additional reviewer approval under the constitution.
+
+
+## Session handoff — 2026-11-05 — PR #4 CI and Claude onboarding
+
+- **Starting checkpoint:** PR #4 head `5b272a12a2cf1da7cf2e39450a4cc53216c7d158`; PR #4 was open/draft.
+- **Verification:** GitHub Actions run #58 (`42119082649`) completed successfully on the exact head. The `verify` job passed. Run URL: https://github.com/Fadhel-docom/DevMate/actions/runs/42119082649.
+- **Action:** following the owner's instruction to proceed when checks pass, PR #4 was marked Ready for review. It remains open and unmerged.
+- **Important sequencing:** PR #3 upgrades Vitest on PR #4's target base branch. The current PR #4 lockfile is based on the pre-upgrade manifest. Resolve PR #3 first; if merged, regenerate/validate package-lock.json against the new manifest and rerun clean install, tests, typecheck, build, and audit before merging PR #4. Do not merge a stale lockfile.
+- **Claude onboarding required:** Claude has not yet confirmed reading the governing rules. Before taking another task, Claude must read this operations room, `docs/CHARTER-AND-QUALITY-RULES.md` (approved v1.1), and `docs/STATUS.md`; then inspect current PR/branch/CI state. Its first assigned task is an independent review of PR #3's Vitest upgrade and risk/compatibility, including the sequencing impact on PR #4. Return findings, evidence, and proposed minimal fixes; do not edit either PR until explicitly assigned.
+- **No changes:** no merge, deployment, PR #1 change, main-branch change, RateNest change, or other repository change.
+- **Next exact action:** obtain Claude's law-aware independent PR #3 review; coordinator reconciles findings, then owner decides the Sensitive dependency change. Once PR #3 is resolved, refresh PR #4's lockfile if required and rerun all gates.
+
+
+## Claude handoff received — PR #3 independent review — 2026-11-05
+
+Claude confirmed it read this operations room, constitution v1.1, and STATUS. Its independent recommendation is to accept PR #3 after explicit owner approval; it reports no technical Blocking issue.
+
+### Evidence recorded
+- PR #3 changes only `package.json`, one line: Vitest `^2.1.8` to `^4.1.12`.
+- Head `03109f839b1849174cf801e7a22b6f313c16009d`; CI run #39 completed successfully on that exact SHA.
+- Inspected GitHub job steps independently: npm install, audit-report, tests, and build all completed successfully. The job summary does not expose audit JSON or test counts; those details remain reported by the PR description/Claude, not independently verified from the job summary.
+- Claude did not inspect `vite.config.ts` or `src/storage.test.ts`; these remain explicitly unverified. Three tests in one file are limited compatibility coverage.
+
+### Risk assessment
+- Sensitive dependency-major upgrade; Vitest is a development dependency, so production runtime dependency surface is not directly changed.
+- Main residual risk is test-runner/configuration compatibility and limited test coverage, not application runtime behavior.
+- Node 20 lifecycle is a separate platform maintenance issue; do not expand this PR to change Node.
+- Rollback: after merge, revert the single PR #3 merge commit with `git revert <merge-commit-sha>` and rerun CI. Do not force-push shared history. Before merge, do not rewrite branch history.
+
+### Merge and sequencing gates
+1. Explicit owner approval for PR #3 is still required; this record is not approval.
+2. If approved and merged, regenerate PR #4's package lock against the updated base.
+3. Rerun clean install, tests, typecheck, build, and audit on the updated PR #4 head.
+4. Do not merge PR #4 until the refreshed lockfile and all gates pass.
+
+No PR was merged and no code files were changed in this review handoff.
+
+
+## 2026-11-05 — PR #3 merge and PR #4 lockfile refresh
+
+- Owner explicitly approved merging PR #3 only, contingent on passing checks.
+- PR #3 was squash-merged: `fa1465253ec2afe7ceed008abb14b29b3e7acdbf`. No other PR was merged.
+- PR #4 branch was updated to include the merged base and Vitest 4 manifest. A merge commit preserved the PR #4 changes while incorporating the new base.
+- The lockfile was regenerated on GitHub Actions (Node 20) with `npm install --package-lock-only --ignore-scripts`; root manifest now records Vitest `^4.1.12`, and the resolved package entry is Vitest `4.1.12`.
+- Because the model runtime had no npm registry network access, generation was delegated to the repository's own GitHub Actions runner. A temporary workflow committed the generated lockfile and was then deleted. It is not intended to remain in the repository.
+- An intermediate CI run failed because it ran before the refreshed lockfile commit; this was the expected stale-lockfile failure. The authoritative gate is CI on the final post-refresh head.
+- Final branch head after cleanup: `95118e6c6af22131f5b6f56a4e2a48752fc16944`.
+- Next: verify final CI (npm ci, audit, tests, TypeScript, build). If successful, keep PR #4 Ready for review. PR #4 merge still requires a separate explicit owner decision.
+
+
+### Final validation checkpoint
+- Latest PR #4 head: `1b8e64d4a4d3696cda26344da92c27493cd54b63`.
+- CI #64 (`42120747210`) passed on that exact head: `npm ci`, audit report, tests, TypeScript, and Vite build.
+- PR #4 description now reflects the merged Vitest 4 upgrade and regenerated lockfile.
+- PR #4 remains open/Ready for review. No merge was performed; wait for a separate explicit owner decision.
+
+
+## 24. Claude final review reconciled with direct GitHub verification — 2026-11-05
+
+### Claude's conclusion
+- Claude independently reviewed PR #4 and found no Blocking issue in the material it could inspect.
+- Claude's recommendation was conditional: verify the lockfile/manifest, ensure the temporary workflow is gone, inspect resolved package metadata, confirm audit output, then obtain explicit owner approval.
+- Claude made no edits and performed no merge.
+
+### Coordinator verification (current GitHub state)
+- PR #4 remains open, Ready for review, unmerged, and mergeable. Base: `feature/phase-1-foundation` at `fa1465253ec2afe7ceed008abb14b29b3e7acdbf`. Head: `feature/reproducible-install` at `71b3d9f912604b474a3cc875bb213d0ce7bcb943` at the time of verification.
+- `package.json` base/head Git blob SHA matches exactly: `51b368f0b4cc81c5fb147380c391897c6180277c`.
+- `package-lock.json` is lockfileVersion 3. Its root dependencies and devDependencies match `package.json` semantically (JSON property ordering differs). Locked versions: Vitest `4.1.12`; Vite `6.4.5`.
+- Inspected all 205 lockfile package entries with resolved URLs: 0 point outside `https://registry.npmjs.org/`; 0 are missing integrity metadata.
+- `.github/workflows/` contains only `ci.yml`; the PR diff lists exactly four files: `.github/workflows/ci.yml`, `package-lock.json`, `docs/STATUS.md`, and `docs/OPERATIONS-ROOM.md`. The temporary generation workflow is absent.
+- CI run #72 (`42120862819`) passed on the exact PR head `71b3d9f912604b474a3cc875bb213d0ce7bcb943`: `npm ci`, audit-report, `npm test`, and `npm run build` (TypeScript + Vite). Run: https://github.com/Fadhel-docom/DevMate/actions/runs/42120862819.
+- Audit log reports `info=0, low=0, moderate=0, high=0, critical=0, total=0`; npm reports 0 vulnerabilities.
+- The standalone `npm ls vite vitest` command was not run. Do not state otherwise. The exact locked package versions are directly confirmed from the lockfile and `npm ci` passed.
+- External runner/Node deprecation notice is non-blocking and outside PR scope.
+
+### Decision and next step
+- Available technical gates are satisfied; Claude's conditional recommendation is now supported by direct GitHub evidence.
+- PR #4 is **not merged**. The owner must explicitly authorize merging PR #4 as a separate Sensitive decision. If approved, use Squash merge and verify the resulting base CI. No automatic merge is authorized by this review.
+- Until that decision, do not modify PR #4 code/workflow, merge it, deploy, change `main`, or touch PR #1 or unrelated repositories.
+- Current resume point: wait for the owner's explicit PR #4 merge decision. Documentation updates for this review are committed on `feature/reproducible-install`; STATUS checkpoint 27 records the same evidence.
+
+
+## 25. Latest-head CI after review reconciliation — 2026-11-05
+
+- PR #4 description was refreshed to remove stale run #64 references and record Claude's final conditional recommendation plus direct coordinator verification.
+- CI run #74 (`42121709490`) completed successfully on exact PR head `7d8450a60d067adfc0b12e2159d6ffacf3c73642` after the PR description update.
+- The verify job passed `npm ci`, dependency audit report, `npm test`, and `npm run build` (TypeScript + Vite production build).
+- Audit output is explicitly zero across all severities: info 0, low 0, moderate 0, high 0, critical 0, total 0. npm reports 0 vulnerabilities after installing 155 packages and auditing 156.
+- Run: https://github.com/Fadhel-docom/DevMate/actions/runs/42121709490.
+- PR #4 is still open, Ready for review, mergeable, and unmerged. No PR #4 merge is authorized until the owner explicitly approves it. Preferred method remains Squash.
+- No code or workflow change, no deployment, no main-branch change, and no other PR/repository work was performed.
+
+
+## Final CI after review documentation — 2026-11-05
+
+- CI run #76 (`42121823869`) passed on exact branch head `4ca0b07cdc18513ad57a4e9f2c2ba96e0c31df78`, including the final review-reconciliation entries in STATUS and OPERATIONS-ROOM.
+- `npm ci`, audit report, `npm test`, and `npm run build` all passed. Test output: 1 test file passed. TypeScript and Vite production build passed.
+- Audit: info 0, low 0, moderate 0, high 0, critical 0, total 0; npm reports 0 vulnerabilities.
+- Run: https://github.com/Fadhel-docom/DevMate/actions/runs/42121823869.
+- PR #4 remains open, Ready for review, and unmerged. A separate explicit owner decision is still required before Squash merge.
