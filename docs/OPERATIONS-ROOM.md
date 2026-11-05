@@ -468,3 +468,14 @@ The owner explicitly approved version 1.1 as the current governing constitution,
 - **Lockfile/cache:** lockfileVersion 3 is present; CI now uses `npm ci` and setup-node npm caching keyed by `package-lock.json`.
 - **Review state:** PR #4 remains open and draft. No independent review has yet been recorded. No merge, deployment, PR #1/PR #3 modification, or RateNest/other-repository work was performed.
 - **Next exact action:** ask Claude to independently review PR #4's lockfile and CI diff against the approved scope; address only substantiated findings, then reassess readiness. Keep PR #4 draft until independent review and all gates pass.
+
+## 23. Independent review and latest-head verification — 2026-11-05 — ChatGPT
+
+- Claude review received: no Blocking findings; review otherwise complete except lockfile/manifest comparison, EOF newline explanation, npm version provenance, and external runner notices.
+- Manifest comparison closed with direct GitHub evidence: fetched package.json at PR head feature/reproducible-install and base feature/phase-1-foundation; both have identical Git blob SHA d67483bb65f2d555291465cf5dec79eb321d6206. The PR has four changed files and does not include package.json. This is stronger than asking the owner to run a local diff.
+- EOF newline observation: PR diff confirms the old CI file had no final newline and the updated file has one. The only behavioral CI changes are npm install → npm ci and npm cache configuration.
+- Latest head verified: PR head 716cab9cd9d33a169fe936958c76642adb91d2f5; Actions run #56 (42118534046) completed successfully. All steps passed, including npm ci, audit-report, tests, TypeScript check, and production build. URL: https://github.com/Fadhel-docom/DevMate/actions/runs/42118534046.
+- Still out of scope: audit parser hardening (pre-existing), Actions runner/Ubuntu notices (external maintenance), and dependency vulnerability remediation (separate PR #3). Six audit findings remain on the unchanged Vitest 2 tree.
+- npm provenance: package-lock does not record the npm CLI version that generated it. Do not infer or claim a generator version without evidence.
+- No merge or readiness change: PR #4 remains open/draft. No changes to PR #1/#3, no deployment, no main or other repository work.
+- Next exact action: present Claude’s no-blocking verdict and the direct manifest/CI evidence to the owner; ask for explicit permission before marking the draft PR ready. Then obtain any required additional reviewer approval under the constitution.
