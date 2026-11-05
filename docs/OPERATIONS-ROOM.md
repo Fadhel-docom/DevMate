@@ -643,10 +643,10 @@ No PR was merged and no code files were changed in this review handoff.
 ### Documentation correction prepared
 - PR #5's own merged text correctly recorded the PR #4 history at the time, but its final lines still said PR #5 was open/unmerged. This is now superseded by this checkpoint; historical entries are retained, not erased.
 - Prepared a documentation-only update to `docs/STATUS.md` and `docs/OPERATIONS-ROOM.md` on branch `docs/record-pr5-merge-and-phase1-handoff`.
-- The update records PR #5's merge SHA and CI #82 result, clarifies the current state of PR #1, and defines the next Phase 1 task from the constitution's deferred pre-completion backlog.
+- The update records PR #5's merge SHA, CI runs #81 and #82, clarifies the current state of PR #1, and defines the next Phase 1 task from the constitution's deferred pre-completion backlog.
 - No source code, dependencies, workflows, license, constitution, `main`, deployment, PR #1, or unrelated repository was changed.
 
 ### Next exact action / handoff
-- Independently review the documentation diff because it updates shared operating handoff instructions. If no blocking issue is found, obtain/observe the required merge authorization under the constitution, then merge this documentation PR.
+- Obtain Claude's independent re-review of the corrected PR #6 head. If no Blocking issue is found and all applicable constitution 1.1 gates pass, use the owner's explicit delegation to Squash-merge PR #6 only; then verify the merge result and any triggered post-merge CI.
 - After it is merged, perform a read-only inventory for the pre-Phase-1 governance backlog. Check for existing `docs/SESSION-START.md` and `docs/DECISIONS.md` before creating anything; then prepare a focused documentation PR for missing navigation/checklist and decision-log structure. Also record the remaining archive-policy, CI security-baseline, and contributor-access/verification items without silently expanding scope.
 - PR #1 remains explicitly owner-controlled and unmerged. No deployment, `main` change, paid service, or new phase is authorized.
