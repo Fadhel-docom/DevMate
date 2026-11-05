@@ -431,3 +431,16 @@ The owner explicitly approved version 1.1 as the current governing constitution,
 - **Limitations:** no `package-lock.json` is committed; CI currently uses `npm install`. Zero findings is verified for the dependency tree installed in this CI run, not a guarantee about future unpinned installs.
 - **Not performed:** no PR #1 merge, no deployment, no changes to `main`, RateNest, or the other three projects.
 - **Next exact action:** Claude independently reviews PR #3 and the Vitest 4 migration; owner reviews the evidence and explicitly approves or declines the dependency merge. After an approved merge, generate a lockfile in a real npm environment and switch CI to `npm ci` only after verification.
+
+
+## 20. Reproducible-install task opened — 2026-11-05 — ChatGPT
+
+- **Owner authorization:** the owner explicitly authorized creating a separate branch and PR for task B (reproducible npm installs). This authorization does not include merging dependency changes or merging PR #3.
+- **Starting checkpoint inspected:** latest `feature/phase-1-foundation` head `d7af1fc0949a82abed3853860aa9ac6d6addb320`; PR #1 remains open/draft/unmerged; PR #2 is merged; PR #3 remains open/unmerged and targets `feature/phase-1-foundation`.
+- **Relevant source state verified:** `package.json` on the base branch still declares Vitest `^2.1.8`; CI uses Node 20, `npm install`, and no cache; no `package-lock.json` exists. PR #3's Vitest 4 upgrade remains isolated and untouched.
+- **Branch created:** `feature/reproducible-install`, from the latest `feature/phase-1-foundation` head.
+- **Intended bounded implementation:** create a genuine npm lockfile from the exact base-branch manifest; switch CI to `npm ci`; re-enable npm caching only when supported by the committed lockfile; run clean-install, tests, TypeScript/build, and audit-report checks. Do not change dependency ranges, Node, or audit enforcement.
+- **Execution limitation:** this environment reports Node v22.16.0/npm 10.9.2, but outbound DNS/network access is unavailable (`git ls-remote https://github.com/Fadhel-docom/DevMate.git` failed with “Could not resolve host: github.com”). GitHub API access is available through the connector, but it cannot run npm. Generating a trustworthy lockfile by guessing or manually fabricating resolved package data would violate the quality rules.
+- **Changes in this checkpoint:** branch creation and documentation-only handoff updates. No application code, dependency manifest, lockfile, or CI workflow has been changed. No tests/build were run.
+- **Next exact action:** obtain an npm-capable environment with registry access for this branch (e.g. a GitHub Actions job or a local/Termux checkout), generate the lockfile using npm, then add the minimal `npm ci` workflow change and run the complete checks. Keep the PR draft until those results are verified.
+- **Not performed:** no merge, no PR #3 modification, no PR #1 modification, no `main` change, no deployment, no RateNest or other-project access.
