@@ -425,6 +425,7 @@ The owner explicitly approved version 1.1 as the current governing constitution,
 - **Tests:** `npm test` passed — 1 test file, 3 tests.
 - **Build:** `npm run build` passed — TypeScript check and Vite production build.
 - **Changed code:** only `package.json` Vitest declaration `^2.1.8` → `^4.1.12`; commit `03109f839b1849174cf801e7a22b6f313c16009d`.
+- **Temporary branch note:** an initial scratch branch `fix/upgrade-vitest-security` and duplicate manifest-only commit `fb5f97a531dc5715403c3624457982ce73b41bd8` were created before choosing the `feature/` branch name needed to trigger the configured CI workflow. The scratch branch has no PR and is not part of the active review path; it was left untouched rather than deleting a branch without a separate cleanup decision.
 - **PR:** #3 https://github.com/Fadhel-docom/DevMate/pull/3 — open, targets `feature/phase-1-foundation`, not merged.
 - **Authority:** dependency changes are Sensitive. Independent review and explicit owner approval are required before PR #3 can be merged.
 - **Limitations:** no `package-lock.json` is committed; CI currently uses `npm install`. Zero findings is verified for the dependency tree installed in this CI run, not a guarantee about future unpinned installs.
