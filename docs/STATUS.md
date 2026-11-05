@@ -141,3 +141,11 @@ Read `docs/OPERATIONS-ROOM.md` for the full mission, operating constitution, roa
 - A CI run on the intermediate commit before the regenerated lockfile was committed failed at the expected stale-lockfile gate; do not treat that as a final validation. The final CI must run on the post-refresh branch head.
 - Latest lockfile commit was created by the temporary GitHub Actions refresh task; branch head after removing the temporary workflow: `95118e6c6af22131f5b6f56a4e2a48752fc16944`.
 - Next gate: verify CI on this exact final head. Required: `npm ci`, audit report, tests, TypeScript check, and Vite build. If all pass, update PR #4 description and leave it Ready for review; do not merge PR #4 without separate owner approval.
+
+
+### Final verification after lockfile regeneration
+- Final PR #4 head: `1b8e64d4a4d3696cda26344da92c27493cd54b63`.
+- CI run #64 (`42120747210`) completed successfully on that exact head.
+- Verified steps: `npm ci`, report-only audit step, `npm test`, `npm run build` (includes TypeScript check and Vite build).
+- PR #4 description updated to reflect the Vitest 4 lockfile refresh and latest CI result.
+- PR #4 remains Ready for review and unmerged. A separate owner approval is required before merging PR #4.
