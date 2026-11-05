@@ -479,3 +479,14 @@ The owner explicitly approved version 1.1 as the current governing constitution,
 - npm provenance: package-lock does not record the npm CLI version that generated it. Do not infer or claim a generator version without evidence.
 - No merge or readiness change: PR #4 remains open/draft. No changes to PR #1/#3, no deployment, no main or other repository work.
 - Next exact action: present Claude’s no-blocking verdict and the direct manifest/CI evidence to the owner; ask for explicit permission before marking the draft PR ready. Then obtain any required additional reviewer approval under the constitution.
+
+
+## Session handoff — 2026-11-05 — PR #4 CI and Claude onboarding
+
+- **Starting checkpoint:** PR #4 head `5b272a12a2cf1da7cf2e39450a4cc53216c7d158`; PR #4 was open/draft.
+- **Verification:** GitHub Actions run #58 (`42119082649`) completed successfully on the exact head. The `verify` job passed. Run URL: https://github.com/Fadhel-docom/DevMate/actions/runs/42119082649.
+- **Action:** following the owner's instruction to proceed when checks pass, PR #4 was marked Ready for review. It remains open and unmerged.
+- **Important sequencing:** PR #3 upgrades Vitest on PR #4's target base branch. The current PR #4 lockfile is based on the pre-upgrade manifest. Resolve PR #3 first; if merged, regenerate/validate package-lock.json against the new manifest and rerun clean install, tests, typecheck, build, and audit before merging PR #4. Do not merge a stale lockfile.
+- **Claude onboarding required:** Claude has not yet confirmed reading the governing rules. Before taking another task, Claude must read this operations room, `docs/CHARTER-AND-QUALITY-RULES.md` (approved v1.1), and `docs/STATUS.md`; then inspect current PR/branch/CI state. Its first assigned task is an independent review of PR #3's Vitest upgrade and risk/compatibility, including the sequencing impact on PR #4. Return findings, evidence, and proposed minimal fixes; do not edit either PR until explicitly assigned.
+- **No changes:** no merge, deployment, PR #1 change, main-branch change, RateNest change, or other repository change.
+- **Next exact action:** obtain Claude's law-aware independent PR #3 review; coordinator reconciles findings, then owner decides the Sensitive dependency change. Once PR #3 is resolved, refresh PR #4's lockfile if required and rerun all gates.
