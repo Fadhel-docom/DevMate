@@ -12,6 +12,7 @@ Phase 1 — foundation and local demo.
 - [x] Added clearly labelled local mock chat; no model provider calls.
 - [x] Added Vitest persistence tests.
 - [x] Added GitHub Actions CI.
+- [x] Added a non-blocking dependency-audit report step to expose exact advisory names and affected packages; its first run is pending.
 - [x] Removed the CI cache dependency on a missing lockfile.
 - [x] Corrected FormEvent type usage and changed build to `tsc --noEmit && vite build`.
 - [x] Expanded product requirements and architecture for portfolio management, AI coordination, quality governance, competitor research, SEO, and CAO/answer-engine visibility.
@@ -49,7 +50,7 @@ Phase 1 — foundation and local demo.
 - PR remains draft / not merged.
 
 ## Next action
-Retrieve the full npm audit advisory report, identify direct/transitive vulnerable packages and safe compatible upgrades, and have Claude independently review the proposed changes. Then add focused UI/persistence tests and complete Android browser verification. Do not merge or deploy until the quality gate is satisfied.
+Inspect the new CI run after the dependency-audit reporting step. Identify direct/transitive vulnerable packages and safe compatible upgrades, and have Claude independently review the proposed changes. Then add focused UI/persistence tests and complete Android browser verification. Do not merge or deploy until the quality gate is satisfied.
 
 ## Shared handoff
 Read `docs/OPERATIONS-ROOM.md` for the full mission, operating constitution, roadmap, collaboration protocol, verified fixes, and session handoff template.
