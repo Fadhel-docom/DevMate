@@ -319,3 +319,12 @@ The install log reported 6 dependency vulnerabilities: 3 moderate, 1 high, and 2
 The user's latest instruction supersedes the earlier default requirement for routine merge approval: the team is authorized to make routine reversible changes and merge when the documented quality rules are fully satisfied. Do not ask for repeated confirmation for ordinary implementation work. The quality gate is mandatory, not optional. The user retains approval authority over cost, credentials, permissions, destructive operations, production/public publishing, and any changes to other project repositories.
 
 Each assistant must append its own concise dated handoff entry in this same operations room after meaningful work, identifying its own changes, evidence, unresolved issues, and exact next action. The shared room remains the single source of truth.
+
+
+## 14. Dependency audit investigation started — 2026-11-05
+
+- Added a non-blocking CI step that runs `npm audit --json` and prints the advisory title/URL, severity, direct/transitive status, affected range, and suggested fix availability.
+- CI commit: `9d264b73b6a03614239eb6df72aaa33ea3c65f2a`.
+- Status documentation update: `aca46009e6d5456c159f24b26fe42156c103aae6`.
+- The audit reporting step has not yet been verified in a completed workflow run. The previous successful CI run #12 predates this added audit step.
+- Next: inspect the first run containing the audit report, then ask Claude to independently review exact advisories and safe upgrade options. Do not force-upgrade dependencies.
