@@ -1,25 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
+import type { FormEvent } from "react";
+import { loadProjects, saveProjects, type Project, type Task } from "./storage";
 
-type Task = { id: string; title: string; done: boolean; createdAt: number };
-type Project = { id: string; name: string; tasks: Task[] };
 type Message = { id: string; role: "user" | "assistant"; text: string };
 
-const STORAGE_KEY = "devmate-workspace-v1";
-const starter: Project[] = [{ id: "starter", name: "My first project", tasks: [] }];
-
-function readProjects(): Project[] {
-  try {
-    const value = localStorage.getItem(STORAGE_KEY);
-    if (!value) return starter;
-    const parsed = JSON.parse(value) as Project[];
-    return Array.isArray(parsed) && parsed.length ? parsed : starter;
-  } catch {
-    return starter;
-  }
-}
 
 export default function App() {
-  const [projects, setProjects] = useState<Project[]>(readProjects);
+  const [projects, setProjects] = useState<Project[]>(loadProjects);
   const [activeId, setActiveId] = useState("starter");
   const [newProject, setNewProject] = useState("");
   const [newTask, setNewTask] = useState("");
@@ -29,7 +16,7 @@ export default function App() {
   ]);
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(projects));
+    saveProjects(projects);
   }, [projects]);
 
   const activeProject = useMemo(
@@ -37,7 +24,7 @@ export default function App() {
     [projects, activeId]
   );
 
-  function addProject(event: React.FormEvent) {
+  function addProject(event: FormEvent) {
     event.preventDefault();
     const name = newProject.trim();
     if (!name) return;
