@@ -34,7 +34,7 @@ export default function App() {
     setNewProject("");
   }
 
-  function addTask(event: React.FormEvent) {
+  function addTask(event: FormEvent) {
     event.preventDefault();
     const title = newTask.trim();
     if (!title || !activeProject) return;
@@ -52,7 +52,7 @@ export default function App() {
     ));
   }
 
-  function sendMessage(event: React.FormEvent) {
+  function sendMessage(event: FormEvent) {
     event.preventDefault();
     const text = prompt.trim();
     if (!text) return;
