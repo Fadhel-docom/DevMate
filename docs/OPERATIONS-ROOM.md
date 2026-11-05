@@ -515,3 +515,15 @@ Claude confirmed it read this operations room, constitution v1.1, and STATUS. It
 4. Do not merge PR #4 until the refreshed lockfile and all gates pass.
 
 No PR was merged and no code files were changed in this review handoff.
+
+
+## 2026-11-05 — PR #3 merge and PR #4 lockfile refresh
+
+- Owner explicitly approved merging PR #3 only, contingent on passing checks.
+- PR #3 was squash-merged: `fa1465253ec2afe7ceed008abb14b29b3e7acdbf`. No other PR was merged.
+- PR #4 branch was updated to include the merged base and Vitest 4 manifest. A merge commit preserved the PR #4 changes while incorporating the new base.
+- The lockfile was regenerated on GitHub Actions (Node 20) with `npm install --package-lock-only --ignore-scripts`; root manifest now records Vitest `^4.1.12`, and the resolved package entry is Vitest `4.1.12`.
+- Because the model runtime had no npm registry network access, generation was delegated to the repository's own GitHub Actions runner. A temporary workflow committed the generated lockfile and was then deleted. It is not intended to remain in the repository.
+- An intermediate CI run failed because it ran before the refreshed lockfile commit; this was the expected stale-lockfile failure. The authoritative gate is CI on the final post-refresh head.
+- Final branch head after cleanup: `95118e6c6af22131f5b6f56a4e2a48752fc16944`.
+- Next: verify final CI (npm ci, audit, tests, TypeScript, build). If successful, keep PR #4 Ready for review. PR #4 merge still requires a separate explicit owner decision.
