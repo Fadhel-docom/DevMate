@@ -456,3 +456,15 @@ The owner explicitly approved version 1.1 as the current governing constitution,
 - **Scope preserved:** no dependency manifest/range changes, no Node version change, no audit-policy change, no edits to PR #3 or PR #1, no merge, no deployment, and no RateNest/other-repository changes.
 - **Verification still pending:** inspect the workflow run triggered by `3bff1b9`. The successful #51 run is not evidence that `npm ci` passes.
 - **Next exact action:** fetch the latest workflow run for `feature/reproducible-install`; inspect job steps/logs for `npm ci`, `npm test`, `npm run build`, and audit summary. Fix only demonstrated failures, then update PR #4 description and request independent review.
+
+
+## 22. CI verification — reproducible install — 2026-11-05 — ChatGPT
+
+- **Verified latest workflow:** GitHub Actions run #54, ID `42118429469`, on head `3a18cd74acc5327923f546bddbc21a2d1dd9519f`; conclusion: **success**. Run URL: https://github.com/Fadhel-docom/DevMate/actions/runs/42118429469.
+- **Clean install:** `npm ci` passed and installed 164 packages (165 audited).
+- **Tests:** `npm test` passed — 1 test file, 3 tests.
+- **Build:** `npm run build` passed — `tsc --noEmit` and Vite production build completed.
+- **Audit:** reporting step completed; 6 vulnerabilities remain (3 moderate, 1 high, 2 critical). This is the unchanged Vitest 2 dependency tree. The audit step remains report-only by existing policy; do not broaden this PR into dependency remediation. PR #3 remains separate.
+- **Lockfile/cache:** lockfileVersion 3 is present; CI now uses `npm ci` and setup-node npm caching keyed by `package-lock.json`.
+- **Review state:** PR #4 remains open and draft. No independent review has yet been recorded. No merge, deployment, PR #1/PR #3 modification, or RateNest/other-repository work was performed.
+- **Next exact action:** ask Claude to independently review PR #4's lockfile and CI diff against the approved scope; address only substantiated findings, then reassess readiness. Keep PR #4 draft until independent review and all gates pass.
