@@ -54,3 +54,16 @@ Inspect the new CI run after the dependency-audit reporting step. Identify direc
 
 ## Shared handoff
 Read `docs/OPERATIONS-ROOM.md` for the full mission, operating constitution, roadmap, collaboration protocol, verified fixes, and session handoff template.
+
+
+## Constitution — 2026-11-05
+- [x] Added and owner-approved the separate governing constitution: [CHARTER-AND-QUALITY-RULES.md](./CHARTER-AND-QUALITY-RULES.md).
+- Version: 1.0.
+- The constitution is distinct from the living operations room.
+- All contributors must read the operations room, constitution, and status before each session, then verify the current GitHub state.
+- Claude is invited to review and propose amendments only; no silent changes to the approved constitution.
+- Documentation commits:
+  - Constitution: `b74d843d152d608cc5587cbf28d6b3268b178623`
+  - Operations room: `65754dc4947efd7034c0c584bd1c97ea5eefd65e`
+- No code, tests, merge, deployment, or RateNest changes were made in this documentation task.
+- Next: Claude reviews the constitution and returns any suggested amendments with reasons. The owner decides whether to adopt them.
