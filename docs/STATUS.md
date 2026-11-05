@@ -203,3 +203,5 @@ Read `docs/OPERATIONS-ROOM.md` for the full mission, operating constitution, roa
 - CI run #77 (`42122112066`) completed successfully on the exact squash merge commit `5788e41761d278b7c9302a0b21553e04a7a9f703`.
 - All verify steps passed: `npm ci`, dependency audit report, `npm test`, and `npm run build` (TypeScript + Vite production build).
 - Run: https://github.com/Fadhel-docom/DevMate/actions/runs/42122112066.
+
+- Documentation correction PR #5 is open (https://github.com/Fadhel-docom/DevMate/pull/5), containing the post-merge history correction in STATUS and OPERATIONS-ROOM. It is documentation-only and intentionally unmerged; owner approval is required before merging PR #5.
