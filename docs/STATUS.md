@@ -128,3 +128,16 @@ Read `docs/OPERATIONS-ROOM.md` for the full mission, operating constitution, roa
 - Rollback plan: if the Vitest upgrade causes CI/test failures after merge, revert the single PR #3 merge commit using `git revert <merge-commit-sha>`, then rerun CI. Do not force-push or rewrite shared history. If PR #3 has not yet merged, close/revert the PR change without touching unrelated work.
 - PR #4 sequencing: do not merge PR #4's current lockfile as-is after PR #3; regenerate lockfile on updated base and rerun `npm ci`, tests, typecheck, build, and audit.
 - **Decision gate remains OPEN:** owner has not yet given an unambiguous, PR-specific approval to merge Sensitive PR #3. No merge action taken.
+
+
+## 26. PR #3 merged; PR #4 lockfile regenerated — 2026-11-05
+
+- Owner explicitly approved merging PR #3 only after checks. PR #3 was squash-merged successfully.
+- PR #3 merge commit: `fa1465253ec2afe7ceed008abb14b29b3e7acdbf`. PR #3 is merged; no other PR was merged.
+- PR #4 branch was synchronized with the new base by a two-parent merge commit, preserving PR #4 work and incorporating the Vitest 4 manifest update.
+- The resulting `package.json` declares `vitest: ^4.1.12`.
+- Regenerated `package-lock.json` on a GitHub Actions Node 20 runner using `npm install --package-lock-only --ignore-scripts`. The regenerated lockfile root entry matches the manifest and resolves Vitest `4.1.12`.
+- Temporary lockfile-generation workflow was removed immediately after use; it is not part of the intended product changes.
+- A CI run on the intermediate commit before the regenerated lockfile was committed failed at the expected stale-lockfile gate; do not treat that as a final validation. The final CI must run on the post-refresh branch head.
+- Latest lockfile commit was created by the temporary GitHub Actions refresh task; branch head after removing the temporary workflow: `95118e6c6af22131f5b6f56a4e2a48752fc16944`.
+- Next gate: verify CI on this exact final head. Required: `npm ci`, audit report, tests, TypeScript check, and Vite build. If all pass, update PR #4 description and leave it Ready for review; do not merge PR #4 without separate owner approval.
