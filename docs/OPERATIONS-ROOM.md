@@ -384,7 +384,7 @@ The owner explicitly approved version 1.1 as the current governing constitution,
 - Explicitly restored from v1.0: choose tools by demonstrated capability and suitability; avoid duplicate work without a clear reason; record reviews that produce no change and explain why; a meaningful session is not complete until its handoff is recorded.
 - Added the mandatory final clause: improvements may be proposed at any time, but only the owner's explicit approval makes them effective. This clause must remain the final substantive point of every future constitution version.
 - No application code, CI, license, PR #1, main, deployment, or RateNest changes are included in this governance update.
-- No PR or merge has been performed; this is on `docs/constitution-v1.1-approved`.
+- PR #2 is open: https://github.com/Fadhel-docom/DevMate/pull/2, from `docs/constitution-v1.1-approved` into `feature/phase-1-foundation`. It is not merged and awaits independent review because it changes governing rules.
 - Final GitHub fetch verification passed for all five affected paths. Verified blob SHAs:
   - Current constitution 1.1: `50126a159961b71faf88025a8695cb7e734d63b7`
   - Preserved constitution 1.0: `467f045fa96c4de28d7f55100a8348a45637581e`
@@ -399,4 +399,4 @@ The owner explicitly approved version 1.1 as the current governing constitution,
 - **Changes:** versioned v1.0 archive, v1.1 canonical promotion, restored operating rules, permanent final clause, STATUS and operations-room updates, and superseded-draft notice.
 - **Verification:** final GitHub fetch checks passed for the canonical constitution, preserved v1.0, superseded-draft notice, STATUS, and operations room. The five-path verification confirmed version/status, preservation, restored rules, and final-clause placement.
 - **Not done:** no code, CI, PR #1, merge, deployment, license, or RateNest changes.
-- **Next exact action:** resume the recorded Phase 1 dependency-audit investigation; no further constitution work is blocking implementation.
+- **Next exact action:** obtain an independent review of PR #2, address any justified findings, then merge under the constitution's review rules. In parallel, Phase 1 dependency-audit work may continue on its own branch/task without waiting for the constitution PR.
