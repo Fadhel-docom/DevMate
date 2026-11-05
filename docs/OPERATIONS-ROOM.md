@@ -527,3 +527,10 @@ No PR was merged and no code files were changed in this review handoff.
 - An intermediate CI run failed because it ran before the refreshed lockfile commit; this was the expected stale-lockfile failure. The authoritative gate is CI on the final post-refresh head.
 - Final branch head after cleanup: `95118e6c6af22131f5b6f56a4e2a48752fc16944`.
 - Next: verify final CI (npm ci, audit, tests, TypeScript, build). If successful, keep PR #4 Ready for review. PR #4 merge still requires a separate explicit owner decision.
+
+
+### Final validation checkpoint
+- Latest PR #4 head: `1b8e64d4a4d3696cda26344da92c27493cd54b63`.
+- CI #64 (`42120747210`) passed on that exact head: `npm ci`, audit report, tests, TypeScript, and Vite build.
+- PR #4 description now reflects the merged Vitest 4 upgrade and regenerated lockfile.
+- PR #4 remains open/Ready for review. No merge was performed; wait for a separate explicit owner decision.
