@@ -5,8 +5,8 @@ describe("tool registry", () => {
   it("distinguishes available, disconnected, and not-built tools", () => {
     expect(countToolsByStatus()).toEqual({
       available: 1,
-      "not-connected": 2,
-      "not-built": 4
+      "not-connected": 3,
+      "not-built": 3
     });
   });
 
