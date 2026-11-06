@@ -702,3 +702,15 @@ No PR was merged and no code files were changed in this review handoff.
 - Last verified checkpoint: `feature/phase-1-foundation` at `f0b596fd8030f3990ec681e37c99b480dcc18030`; PR #6 merged; CI #84 successful.
 - Next exact action: independently review the new documentation PR against constitution 1.1, especially source hierarchy, mandatory session sequence, append-only decision history, and accurate evidence labels. If the diff remains a Small non-policy documentation change and no blocking issue or owner decision remains, follow constitution §7's routine merge delegation only after the independent review. PR #1 remains separately owner-controlled.
 - Handoff owner: ChatGPT coordinator; Claude is the independent reviewer for the documentation PR when available; the project owner retains all §14 decisions.
+
+
+### PR #8 opened — 2026-11-06
+
+- Opened documentation-only PR #8: https://github.com/Fadhel-docom/DevMate/pull/8.
+- Base: `feature/phase-1-foundation`, starting base SHA `f0b596fd8030f3990ec681e37c99b480dcc18030`.
+- Branch: `docs/session-start-decisions-and-pr6-closeout`; PR head at creation: `85599297fc672c7abe656699aad8b99bfd2a63cf`.
+- GitHub changed-file inventory confirms exactly four files: `docs/DECISIONS.md`, `docs/OPERATIONS-ROOM.md`, `docs/SESSION-START.md`, and `docs/STATUS.md`. The full PR patch was inspected; no application, dependency, workflow, or constitution file is included.
+- PR #8 is open and unmerged. It is awaiting independent review. No merge was performed.
+- The current CI workflow only triggers PR checks when the PR base is `main`, and push checks only for `main` or `feature/**`; this `docs/**` branch targeting the feature branch has no matching configured trigger. No workflow change was made to manufacture CI for this documentation PR. Apply the Small-change gates in constitution §§2, 7, and 8: complete diff review, link/format/reference checks, and independent review because shared operating instructions changed.
+- The PR's mergeability field was returned as `false` immediately after creation; this can be an uncomputed GitHub state and is not treated as a confirmed conflict. Re-fetch PR #8 before any merge decision and inspect its live mergeability.
+- Next: Claude (or another independent reviewer) reviews the exact current PR #8 head and reports any blocking issue. Re-fetch the live head before acting. PR #1 remains owner-controlled and must not be merged.
