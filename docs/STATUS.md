@@ -346,3 +346,15 @@ Run the full Vitest suite, TypeScript/Vite production build, and dependency audi
 - **Verification state: not yet verified.** The new head must pass the full CI workflow and be independently reviewed. No Android browser test, real cross-tab test, merge, or deployment is claimed.
 - Latest implementation commit at this documentation checkpoint: `a07d9ca0b5f978b39b492bfda93cadd96b9228f0`. This docs entry is being appended after that code commit; the final branch head will be recorded after CI preparation.
 - PR #11 remains Draft and stacked on PR #10. Do not merge independently of its base.
+
+
+## Storage conflict and restore safety follow-up — 2026-11-06
+
+- **Scope:** address silent stale-tab overwrites, unsafe editing after an unavailable startup read, failed-restore verification, and edits racing a restore. No dependency, workflow, deployment, base-branch, PR #10, PR #1, or main changes.
+- **Implementation on PR #11 branch:** src/storage.ts now carries the exact raw workspace value read at startup/reload and compares it under the exclusive Web Lock before every App save. A mismatch returns `conflict` without writing; the UI locks editing and offers an explicit reload. This is compare-and-swap protection in addition to mutual exclusion.
+- **Unavailable startup:** editing and autosave remain disabled while the initial read is unavailable. The user must successfully reload before continuing. A failed reload retains the unavailable lockout.
+- **Restore safety:** the app disables workspace editing before restore begins and reloads storage after either restore success or failure. Failed read-back verification attempts to restore and verify the pre-restore workspace; the failure result retains the snapshot key and explains whether rollback was verified.
+- **Regression tests added:** stale baseline save is refused without changing newer data; restore verification failure rolls back to the previous workspace; unavailable startup keeps editing disabled until a successful reload.
+- **Verification status:** implementation committed; exact-head CI and build verification pending. Fake-lock tests do not establish real-browser cross-tab behaviour. Android Chrome/Safari smoke and independent review remain required.
+- **Risk/rollback:** restore continues to create a pre-restore snapshot before replacing existing data. If automatic rollback cannot be verified, the UI must not invite further edits; the retained snapshot key is reported. Keep PR #11 Draft and stacked on PR #10. No merge or deployment.
+- **Next action:** obtain exact-head GitHub Actions evidence, inspect failures, then request independent review of the final diff. No merge without the separate review and owner decision.
