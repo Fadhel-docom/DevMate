@@ -196,7 +196,7 @@ describe("App cross-tab lock behaviour", () => {
     host = document.createElement("div");
     document.body.appendChild(host);
     root = createRoot(host);
-    await act(async () => { root.render(<StrictMode><App /></StrictMode>); await new Promise((r) => setTimeout(r, 0)); });
+    await act(async () => { root!.render(<StrictMode><App /></StrictMode>); await new Promise((r) => setTimeout(r, 0)); });
   }
   afterEach(async () => {
     uninstallLocks();
