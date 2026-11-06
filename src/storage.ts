@@ -307,7 +307,7 @@ export async function restoreBackup(key: string, storage: StorageLike | null = g
     let snapshotKey: string | null = null;
     if (current !== null) {
       const snapshot = backUpRaw(storage, current, "pre-restore");
-      if (!snapshot.ok) return { ok: false, reason: "protect-original", message: "The current workspace could not be snapshotted; restore was cancelled." };
+      if (!snapshot.ok) return { ok: false, reason: "protect-original", message: `The current workspace could not be snapshotted (${snapshot.reason}); restore was cancelled and the workspace was left unchanged.` };
       snapshotKey = snapshot.key;
     }
     try { storage.setItem(STORAGE_KEY, normalized); }
