@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { deleteBackup, listBackups, restoreBackup, type BackupInfo } from "./storage";
 
-type Props = { onRestoreStart?: () => void; onRestored: (safeToResume?: boolean) => void | Promise<void> };
+type Props = { onRestoreStart?: () => void; onRestored: (safeToResume?: boolean) => void | Promise<void>; refreshKey?: number };
 type Pending = { action: "restore" | "delete"; backup: BackupInfo } | null;
 
-export default function BackupManager({ onRestoreStart, onRestored }: Props) {
+export default function BackupManager({ onRestoreStart, onRestored, refreshKey = 0 }: Props) {
   const [backups, setBackups] = useState<BackupInfo[]>([]);
   const [pending, setPending] = useState<Pending>(null);
   const [error, setError] = useState<string | null>(null);
@@ -13,7 +13,7 @@ export default function BackupManager({ onRestoreStart, onRestored }: Props) {
   const refresh = useCallback(() => {
     setBackups(listBackups());
   }, []);
-  useEffect(() => { refresh(); }, [refresh]);
+  useEffect(() => { refresh(); }, [refresh, refreshKey]);
   useEffect(() => {
     const dialog = dialogRef.current;
     if (pending && dialog && !dialog.open) {
@@ -38,7 +38,7 @@ export default function BackupManager({ onRestoreStart, onRestored }: Props) {
       else { setPending(null); refresh(); }
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Restore failed unexpectedly.");
-    } finally { setBusy(false); await onRestored(safeToResume); }
+    } finally { setBusy(false); refresh(); await onRestored(safeToResume); }
   }
   async function confirmDelete() {
     if (!pending || pending.action !== "delete") return;
