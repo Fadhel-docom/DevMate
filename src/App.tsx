@@ -29,6 +29,8 @@ function skippedSummary(result: LoadResult): string {
 
 const STORAGE_NOT_SAFE = "New changes stay on this page only and will not be saved, so browser storage cannot be treated as safe right now.";
 
+const UNAVAILABLE_NOTICE = "Browser storage is unavailable. Your changes will not be saved after you close this page.";
+
 export function loadNotice(result: LoadResult): string | null {
   switch (result.status) {
     case "corrupt":
@@ -43,10 +45,24 @@ export function loadNotice(result: LoadResult): string | null {
         : `${skipped} A backup copy could not be saved, so the original data was left untouched. ${STORAGE_NOT_SAFE}`;
     }
     case "unavailable":
-      return "Browser storage is unavailable. Your changes will not be saved after you close this page.";
+      return UNAVAILABLE_NOTICE;
     default:
       return null;
   }
+}
+
+/**
+ * The startup notice to show after a save has succeeded. A working save shows that storage is usable,
+ * so the "unavailable" warning is removed; every other notice stays as it was. If the save first had
+ * to back up unreadable stored data (backupKey), that is reported as a data-corruption notice with a
+ * saved copy, also when the app had started with "unavailable" (reading failed, so the data was unknown).
+ */
+export function noticeAfterSave(current: string | null, initial: LoadResult, backupKey?: string): string | null {
+  if (backupKey) {
+    const status = initial.status === "unavailable" ? "corrupt" : initial.status;
+    return loadNotice({ ...initial, status, backedUp: true, backupKey });
+  }
+  return current === UNAVAILABLE_NOTICE ? null : current;
 }
 
 export function saveMessage(failure: Extract<SaveResult, { ok: false }>): string {
@@ -81,8 +97,8 @@ export default function App() {
     const result = saveProjects(projects);
     if (result.ok) {
       setSaveFailure(null);
-      // A backup copy now exists (it could not be made at load time): say so, so the notice stays true.
-      if (result.backupKey) setStartupNotice(loadNotice({ ...initial, backedUp: true, backupKey: result.backupKey }));
+      // A save worked: drop a stale "unavailable" warning, and report a backup copy made now so the notice stays true.
+      setStartupNotice((current) => noticeAfterSave(current, initial, result.backupKey));
     } else {
       setSaveFailure(result);
     }
