@@ -2,7 +2,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties, FormEvent } from "react";
 import { readProjectsLocked, saveProjectsLocked, type LoadResult, type Project, type SaveResult } from "./storage";
 import BackupManager from "./BackupManager";
-import ToolRegistryPanel from "./tools/ToolRegistryPanel";
 
 type Message = { id: string; role: "user" | "assistant"; text: string };
 const noticeStyle: CSSProperties = {
@@ -256,7 +255,6 @@ export default function App() {
           <p className="privacy-note">Demo mode · Messages are not sent to an AI provider.</p>
         </section>
         <BackupManager onRestoreStart={() => setLoaded(false)} onRestored={reloadFromStorage} refreshKey={backupRefreshKey} />
-        <ToolRegistryPanel />
       </div>
       <footer><span>DEVMATE</span><span>Built to make focused progress easier.</span></footer>
     </main>
