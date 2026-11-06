@@ -389,3 +389,14 @@ Run the full Vitest suite, TypeScript/Vite production build, and dependency audi
 - **H3:** restore resume safety defaults to false. It becomes true only for a confirmed restore or an explicit `rollbackVerified: true` result. Unexpected thrown errors therefore keep editing locked. Added regression coverage for confirmed restore, verified rollback, unverified rollback, and indeterminate failures.
 - **Not included:** M1–M6 and L1–L3 remain deferred; no scope expansion, dependency changes, workflow changes, merge, or deployment.
 - **Verification:** pending exact-head GitHub Actions; do not infer test/build success from source changes alone. Independent review of this correction set is still required before any merge decision.
+
+
+## PR #11 — focused reliability follow-up — 2026-11-06
+
+- Kept the existing implementation and applied narrow patches; no wholesale file replacement.
+- Confirmed the H1 edit gate rejects both `conflict` and `verify`; H2 treats backup metadata cleanup as best-effort only after verifying the backup key is gone; H3 resumes editing only after a confirmed restore or verified rollback.
+- M1 review: retained the existing cancellable Web Locks wait timeout. The timeout is only for acquiring the lock; the timer is cleared once the callback acquires it and in the finalizer. The `Promise.race` observes the work promise's eventual rejection. This does not claim to cancel an already-running storage callback.
+- M3: disabled project/task mutation controls now follow `canEdit`; navigation and chat remain usable while storage editing is locked.
+- M4: raw-backup export object URLs are revoked after a short delay rather than in the download click handler.
+- M5: successful saves return the exact serialized string that was written and read-back verified; App stores that returned value as its next compare-and-swap baseline. Added a regression test for this contract.
+- CI and browser-level multi-tab verification are still required on the resulting head. No merge, deployment, PR #10/PR #1 changes, or main changes.
