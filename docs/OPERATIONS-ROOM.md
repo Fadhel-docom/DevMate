@@ -1228,3 +1228,14 @@ No merge; no change to Draft status, the PR base, CI or the workflow, `main`, PR
 - This entry and the corresponding STATUS update are documentation-only commits after run #121. The CI run triggered by the resulting latest branch head must be checked before treating the latest commit itself as verified.
 - Next exact action: verify CI on the latest documentation head, then request an independent review of PR #13 at the exact head. Keep it Draft/unmerged until review and the PR #10 dependency path are resolved.
 - Handoff owner: ChatGPT coordinator for exact-head CI and review preparation; owner retains §14 decisions.
+---
+
+## 45. Tool readiness classification correction — 2026-11-06 — ChatGPT coordinator
+
+- During the final diff review, the coordinator identified that the initial registry labelled GitHub, research, and AI-provider capabilities as Not connected even though no corresponding adapter exists in the DevMate app.
+- Corrected the state semantics: Not connected means an adapter exists but has no authorized connection configured; Not built yet means the adapter itself does not exist.
+- GitHub read-only, research/SEO/CAO, and AI-provider entries are now Not built yet. Alongside the test/build runner, code review, and browser testing, this leaves one available capability (existing browser-local workspace storage), zero disconnected-but-built adapters, and six not-built adapters.
+- Updated ToolRegistryPanel copy to make clear that the registry does not yet route tasks or execute external tools. It is a descriptive inventory and deterministic selector foundation only.
+- This correction is important to prevent overstating current capability. No external integration, permission, secret, API call, cost, or provider connection was added.
+- New commits after the prior CI run change registry metadata, tests, panel copy, and documentation. The next CI run on the latest branch head is authoritative for this corrected state; do not rely on earlier run #121 for these later changes.
+- PR #13 remains Draft, stacked on PR #10. Next: verify CI on the exact latest head, then obtain independent review of the corrected diff.
