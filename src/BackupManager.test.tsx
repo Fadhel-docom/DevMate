@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { StrictMode, act } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import BackupManager from "./BackupManager";
+import BackupManager, { isRestoreSafeToResume } from "./BackupManager";
 import { BACKUP_KEY, backupKey, backupMetaKey, listBackups, STORAGE_KEY } from "./storage";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -128,5 +128,17 @@ describe("BackupManager UI", () => {
     await act(async () => { confirmButtons("Delete")[0].click(); await new Promise((r) => setTimeout(r, 0)); });
     expect(host!.textContent).toContain("cross-tab lock");
     expect(storage.values.get(BACKUP_KEY)).toBe("a");
+  });
+});
+
+
+describe("restore resume safety", () => {
+  it("resumes after a confirmed restore", () => {
+    expect(isRestoreSafeToResume({ ok: true, snapshotKey: null })).toBe(true);
+  });
+  it("resumes after a failed restore only when rollback was verified", () => {
+    expect(isRestoreSafeToResume({ ok: false, reason: "verify", message: "failed", rollbackVerified: true })).toBe(true);
+    expect(isRestoreSafeToResume({ ok: false, reason: "verify", message: "failed", rollbackVerified: false })).toBe(false);
+    expect(isRestoreSafeToResume({ ok: false, reason: "write-failed", message: "failed" })).toBe(false);
   });
 });
