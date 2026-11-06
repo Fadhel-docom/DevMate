@@ -1113,3 +1113,14 @@ No merge; no change to Draft status, the PR base, CI or the workflow, `main`, PR
 - **Verification:** exact-head CI pending at this entry. No browser E2E, Android Chrome/Safari smoke, or independent review is claimed.
 - **Boundaries:** no dependency or workflow changes; no PR #10, PR #1, main, base-branch, merge, or deployment changes. PR #11 remains Draft.
 - **Next action:** exact-head CI, then independent review of the updated code and tests. Do not merge without the review gate and explicit owner decision.
+
+
+## 40. Backup identity and recovery visibility safeguards — 2026-11-06 — ChatGPT coordinator
+
+- BackupInfo records the raw contents captured at list time. restoreBackup and deleteBackup accept that expected raw value and compare it under Web Locks before acting. A reused slot is rejected as stale instead of restoring/deleting a different copy.
+- Invalid or corrupt backup copies expose an Export raw control; export preserves the original raw text in a local file.
+- BackupManager refreshes after restore attempts; App passes a refresh revision after startup backups and autosave-created snapshots so the panel does not remain stale.
+- Restore results report rollbackVerified. An unverified rollback sets a persistent in-memory recovery lock: ordinary reload cannot clear it; the user must successfully restore the retained pre-restore snapshot. A successful restore triggers a storage reload and releases the lock.
+- When all backup slots are occupied, the application does not silently prune recovery data. Save/restore failures surface the slots-full reason and leave the existing workspace untouched. Automatic pruning is intentionally deferred pending an explicit retention policy.
+- Verification status: run #100 passed on earlier source head 6624be40de9f22371f853ba0e0f992ef6f51a05b (103 tests, build, audit), but subsequent code changes in this entry require a new exact-head CI run. No latest-head success is claimed yet.
+- Remaining release checks: real-browser two-tab contention, Android Chrome/Safari, native dialog keyboard/focus, and independent review. PR #11 remains Draft and unmerged.
