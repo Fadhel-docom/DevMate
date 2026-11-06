@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { deleteBackup, listBackups, restoreBackup, type BackupInfo } from "./storage";
 
-type Props = { onRestoreStart?: () => void; onRestored: () => void };
+type Props = { onRestoreStart?: () => void; onRestored: (safeToResume?: boolean) => void | Promise<void> };
 type Pending = { action: "restore" | "delete"; backup: BackupInfo } | null;
 
 export default function BackupManager({ onRestoreStart, onRestored }: Props) {
@@ -28,13 +28,17 @@ export default function BackupManager({ onRestoreStart, onRestored }: Props) {
   async function confirmRestore() {
     if (!pending || pending.action !== "restore" || !pending.backup.restorable) return;
     setBusy(true); setError(null); onRestoreStart?.();
+    let safeToResume = true;
     try {
       const result = await restoreBackup(pending.backup.key);
-      if (!result.ok) setError(result.message || `Restore failed: ${result.reason}`);
+      if (!result.ok) {
+        if (result.rollbackVerified === false) safeToResume = false;
+        setError(result.message || `Restore failed: ${result.reason}`);
+      }
       else { setPending(null); refresh(); }
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Restore failed unexpectedly.");
-    } finally { setBusy(false); await onRestored(); }
+    } finally { setBusy(false); await onRestored(safeToResume); }
   }
   async function confirmDelete() {
     if (!pending || pending.action !== "delete") return;
