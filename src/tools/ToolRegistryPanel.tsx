@@ -20,7 +20,7 @@ export default function ToolRegistryPanel() {
           <p className="eyebrow">CAPABILITIES</p>
           <h2 id="tools-heading">Tool registry</h2>
         </div>
-        <span className="count">{counts.available} available now</span>
+        <span className="count">{counts.available} implemented</span>
       </div>
       <p className="tools-intro">
         This internal inventory describes implemented code, not guaranteed runtime success. Workspace operations
