@@ -15,7 +15,7 @@ export type LoadResult = {
 export type SaveFailureReason =
   | "unavailable" | "quota" | "invalid-data" | "serialize" | "verify" | "protect-original"
   | "unknown" | "conflict" | "lock-unavailable" | "lock-timeout" | "lock-error" | "not-found" | "invalid-key";
-export type SaveResult = { ok: true; backupKey?: string } | { ok: false; reason: SaveFailureReason; message: string };
+export type SaveResult = { ok: true; backupKey?: string; raw: string } | { ok: false; reason: SaveFailureReason; message: string };
 export type BackupReason = "corrupt" | "invalid" | "recovered" | "pre-restore";
 export type BackupInfo = {
   key: string; slot: number; createdAt: number | null; reason: BackupReason | null;
@@ -215,7 +215,7 @@ export function saveProjects(projects: Project[], storage?: WritableStorage | nu
     try { if (target.getItem(STORAGE_KEY) !== serialized) return { ok: false, reason: "verify", message: "The saved data could not be read back." }; }
     catch (error) { return { ok: false, reason: "verify", message: describeError(error) }; }
   }
-  return guard.backupKey ? { ok: true, backupKey: guard.backupKey } : { ok: true };
+  return guard.backupKey ? { ok: true, backupKey: guard.backupKey, raw: serialized } : { ok: true, raw: serialized };
 }
 type LockFailure = { ok: false; reason: "lock-unavailable" | "lock-timeout" | "lock-error"; message: string };
 type LockResult<T> = { ok: true; value: T } | LockFailure;
