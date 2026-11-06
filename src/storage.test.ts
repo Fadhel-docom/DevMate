@@ -788,6 +788,36 @@ describe("stale-write protection", () => {
   });
 });
 
+describe("backup slot identity", () => {
+  it("refuses to restore a slot whose raw contents changed after listing", async () => {
+    installFakeLocks();
+    const storage = memoryStorage();
+    const originallyListed = JSON.stringify([{ id: "old", name: "Listed copy", tasks: [] }]);
+    const replacement = JSON.stringify([{ id: "new", name: "Replacement copy", tasks: [] }]);
+    storage.setItem(BACKUP_KEY, originallyListed);
+    const selected = listBackups(storage)[0];
+    storage.setItem(BACKUP_KEY, replacement);
+    const result = await restoreBackup(BACKUP_KEY, storage, selected.fingerprint);
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.reason).toBe("stale-backup");
+    expect(storage.getItem(STORAGE_KEY)).toBeNull();
+    uninstallLocks();
+  });
+
+  it("refuses to delete a replacement backup from a reused slot", async () => {
+    installFakeLocks();
+    const storage = memoryStorage();
+    storage.setItem(BACKUP_KEY, "first copy");
+    const selected = listBackups(storage)[0];
+    storage.setItem(BACKUP_KEY, "replacement copy");
+    const result = await deleteBackup(BACKUP_KEY, storage, selected.fingerprint);
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.reason).toBe("stale-backup");
+    expect(storage.getItem(BACKUP_KEY)).toBe("replacement copy");
+    uninstallLocks();
+  });
+});
+
 describe("backup management", () => {
   it("rejects the non-canonical first-slot alias", () => {
     expect(isBackupKeyName(BACKUP_KEY + ".1")).toBe(false);
