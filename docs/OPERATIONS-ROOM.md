@@ -1001,3 +1001,33 @@ No merge; no change to Draft status, the PR base, CI or the workflow, `main`, PR
 - Last verified checkpoint: code commit `adf867ccb220d390a48ec40fed975f946ddc2c0f` (78/78 tests on Node 20.20.2 and 24.22.1, build and audit on Node 20, locally). The PR head after this entry differs from it only in `docs/STATUS.md` and `docs/OPERATIONS-ROOM.md`.
 - Next exact action: ChatGPT coordinator reviews `cd52574…adf867c…` and decides how to obtain a GitHub Actions run on the new head (for example a `feature/**` probe branch at that SHA). PR #10 stays open, Draft and unmerged.
 - Handoff authorship: authored by Claude (fourth assistant); committed through the GitHub connector under the owner's delegation; GitHub shows the owner's account.
+
+
+---
+
+## 34. Independent review — PR #10 startup-notice fix — 2026-11-06 — ChatGPT coordinator
+
+### Scope and exact evidence
+- Reviewed the code-only change from parent `cd525742869147c2802bede53cb397db488569e8` to `adf867ccb220d390a48ec40fed975f946ddc2c0f`; current PR head at review time: `1d9b53297d2ccb8898936b1d2abfe243445507c1`.
+- PR #10 remains open and Draft; base remains `feature/phase-1-foundation` at `39b9c47f1efcca78bd5913719cbb73ce44e9c827`. GitHub reports mergeable=true at this check.
+- Compared the two-commit documentation-only tail from `cd52574…` to current head: exactly `src/App.tsx`, `src/App.test.tsx`, `docs/OPERATIONS-ROOM.md`, and `docs/STATUS.md` changed. The code commit is `adf867c…`; documentation commit/head is `1d9b532…`.
+- CI status: run #89 passed on `a4c7bbb…` only. No GitHub Actions run was returned for `1d9b532…`; therefore run #89 is not evidence for the new code.
+
+### Independent code review (Verified by source inspection)
+- `noticeAfterSave` removes the stale unavailable notice only after a successful save; failed saves leave it visible. When the save returns a backup key after an unavailable startup, it maps the notice state to corrupt and reports that the unreadable data was backed up. Other existing startup notices are preserved.
+- The save effect calls the helper only on `result.ok`, clears the save failure on success, and does not alter storage writes or backup policy.
+- The new `src/App.test.tsx` adds four pure helper tests and four React/jsdom integration tests, including StrictMode, unavailable→available, continued failure, backup-after-unavailable, and preserving a corruption notice. No dependency was added.
+- No blocking defect found in the reviewed change. The implementation is appropriately narrow and addresses the reported stale-warning defect.
+- One known wording issue remains, accurately disclosed in entry 33: after a backup is made during a later save, the existing corruption notice says the copy was saved “before anything is replaced”, although replacement has already occurred by the time the notice is displayed. This is misleading timing language, but does not misstate whether a backup exists. Recommend a small wording correction before release if the owner wants the user-facing copy precise.
+- Existing storage risks remain unchanged: multi-tab backup-slot races, unknown extra-field stripping, near-full quota behaviour, 20-slot cap and no restore/delete UI. Real-browser notice behaviour remains unverified.
+
+### Review decision
+- **Code review: conditionally accepted; no code blocker found** for `cd52574…adf867c…`.
+- **Not approved for merge yet.** Required verification is GitHub Actions on the new code SHA `adf867ccb220d390a48ec40fed975f946ddc2c0f` (or a later head containing only documentation changes after that run), with tests and build passing. The current workflow does not trigger for `fix/**` with this PR's base; run #89 is not reusable evidence for the new code.
+- No workflow change, branch retarget, new PR, merge, draft-state change, or Termux push was performed. Those are not necessary for the source review and would change the approved execution path.
+- Keep PR #10 open and Draft. Do not declare Phase 1 complete.
+
+### Last verified checkpoint and next exact action
+- Last verified checkpoint: source review accepted conditionally at code SHA `adf867ccb220d390a48ec40fed975f946ddc2c0f`; current PR head `1d9b53297d2ccb8898936b1d2abfe243445507c1`; no CI run on this new code.
+- Next exact action: obtain an official CI run for the new code SHA by pushing that same commit to a temporary `feature/**` branch (no code changes) through an authorized Git push; alternatively, the owner may explicitly authorize a narrowly scoped workflow-trigger change. After CI, recheck that the PR head contains no code changes beyond the reviewed SHA, then decide merge readiness under constitution §7.
+- Authorship: independent review and this handoff authored by ChatGPT coordinator; recorded through the GitHub connector.
