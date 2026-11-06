@@ -408,3 +408,15 @@ Run the full Vitest suite, TypeScript/Vite production build, and dependency audi
 - The run checked out commit `f8e2436d86189c101151932bfe60174aedbc2c98`, which is the current PR #11 head and includes the same source tree as the verification trigger commit.
 - `npm ci`, dependency audit reporting, `npm test` (114 tests across 3 files), and `npm run build` all completed successfully.
 - This establishes CI success for the current PR head. It does not substitute for real-browser multi-tab/Web Locks testing or Android Chrome/Safari dialog and download testing; those remain explicitly outstanding.
+
+
+## PR #11 — serialized autosave follow-up and final CI — 2026-11-06 — ChatGPT coordinator
+
+- **Cause confirmed:** React save effects could start close together. Each call captured `baselineRaw.current` before waiting for the Web Lock, so a later queued save could compare against an obsolete baseline and report a false conflict after the preceding save succeeded.
+- **Fix:** `src/App.tsx` now serializes this tab's save effects through a promise queue. Each save reads the latest verified baseline only when it reaches the front of the queue. A completed save advances the baseline even if its originating React effect was cleaned up by a newer render; stale effects do not overwrite current UI status.
+- **Regression test:** added a controlled lock-delay test that starts two rapid saves, releases the first, and asserts both changes persist without a false conflict. This is a deterministic queue regression test, not a real-browser two-tab test.
+- **Code head tested:** `3929ea7ce9fca787a88e3def16ccb71731bc85b2` (the PR #11 head at verification time).
+- **GitHub Actions run #110:** https://github.com/Fadhel-docom/DevMate/actions/runs/42292489500 — success. Node 20 / npm ci; audit reported 0 vulnerabilities; 3 test files / 115 tests passed; TypeScript and Vite production build passed.
+- **Diff since Claude's independent review head `1446c1de...`:** exactly two files, `src/App.tsx` and `src/App.test.tsx`; no dependency, workflow, storage format, or backup implementation changes. The new two-file follow-up was authored by ChatGPT and verified by CI; Claude's prior independent report remains anchored to the preceding head.
+- **Not verified:** real-browser two-tab Web Locks contention, Android Chrome, native dialog keyboard/focus/accessibility, download behavior, and Safari. These remain release checks before the stacked work reaches `main`; fake-lock tests are not represented as browser E2E.
+- **Merge boundary:** PR #11 remains stacked on PR #10 and may only be merged into its base branch, never independently to `main`. PR #10, PR #1, and `main` are untouched. No deployment.
