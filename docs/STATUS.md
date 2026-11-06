@@ -358,3 +358,13 @@ Run the full Vitest suite, TypeScript/Vite production build, and dependency audi
 - **Verification status:** implementation committed; exact-head CI and build verification pending. Fake-lock tests do not establish real-browser cross-tab behaviour. Android Chrome/Safari smoke and independent review remain required.
 - **Risk/rollback:** restore continues to create a pre-restore snapshot before replacing existing data. If automatic rollback cannot be verified, the UI must not invite further edits; the retained snapshot key is reported. Keep PR #11 Draft and stacked on PR #10. No merge or deployment.
 - **Next action:** obtain exact-head GitHub Actions evidence, inspect failures, then request independent review of the final diff. No merge without the separate review and owner decision.
+
+
+## Backup identity, export, and recovery visibility — 2026-11-06
+
+- Backup list entries now carry the raw-content fingerprint captured when listed. Restore and delete re-check that exact content under the storage lock, refusing stale actions if another tab reused the slot.
+- Invalid/unreadable backup entries now offer an Export raw action so the original bytes can be preserved outside browser storage.
+- Backup list refresh is triggered after startup recovery, autosave-created snapshots, and every restore attempt, including failed attempts.
+- Restore reports whether rollback was verified. If rollback cannot be verified, the app remains locked and directs the user to restore the retained pre-restore snapshot; a normal reload cannot clear that lockout.
+- Slot-full errors now expose the underlying reason and state that restore was cancelled without changing the current workspace. No automatic pruning is used because deleting old recovery copies without user consent could destroy recoverable data.
+- Exact-head CI for the final code after these additions is pending. Earlier run #100 passed on an earlier code head only and is not evidence for the latest changes.
