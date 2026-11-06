@@ -1,311 +1,322 @@
-export type Task = { id: string; title: string; done: boolean; createdAt: number };
-export type Project = { id: string; name: string; tasks: Task[] };
+export type Task = { id: string; title: string; done: boolean; createdAt: number; [key: string]: unknown };
+export type Project = { id: string; name: string; tasks: Task[]; [key: string]: unknown };
 
 export const STORAGE_KEY = "devmate-workspace-v1";
-/** Backup slot 1. This is the key earlier versions of the app already used, so existing backups stay valid. */
 export const BACKUP_KEY = "devmate-workspace-v1.unreadable-backup";
-/** Upper bound on backup slots, so unreadable data can never fill the browser storage without limit. */
 export const MAX_BACKUPS = 20;
+export const STORAGE_LOCK_NAME = "devmate-workspace-v1";
+export const DEFAULT_LOCK_TIMEOUT_MS = 8000;
 
-/** Slot 1 is BACKUP_KEY; slot n (n >= 2) is BACKUP_KEY + "." + n. Deterministic: no clock, no randomness. */
-export function backupKey(slot: number): string {
-  return slot <= 1 ? BACKUP_KEY : `${BACKUP_KEY}.${slot}`;
-}
-
-const starter: Project[] = [{ id: "starter", name: "My first project", tasks: [] }];
-
+export type LoadStatus = "ok" | "empty" | "recovered" | "invalid" | "corrupt" | "unavailable";
+export type LoadResult = {
+  projects: Project[]; status: LoadStatus; droppedProjects: number; droppedTasks: number;
+  repairedProjects: number; backedUp: boolean; backupKey: string | null;
+};
+export type SaveFailureReason =
+  | "unavailable" | "quota" | "invalid-data" | "serialize" | "verify" | "protect-original"
+  | "unknown" | "lock-unavailable" | "lock-timeout" | "lock-error" | "not-found" | "invalid-key";
+export type SaveResult = { ok: true; backupKey?: string } | { ok: false; reason: SaveFailureReason; message: string };
+export type BackupReason = "corrupt" | "invalid" | "recovered" | "pre-restore";
+export type BackupInfo = {
+  key: string; slot: number; createdAt: number | null; reason: BackupReason | null;
+  parseable: boolean; projectCount: number | null; preview: string;
+};
+type Parsed = { projects: Project[]; droppedProjects: number; droppedTasks: number; repairedProjects: number };
+type StorageLike = Pick<Storage, "getItem" | "setItem"> & Partial<Pick<Storage, "removeItem">>;
 type ReadableStorage = Pick<Storage, "getItem"> & Partial<Pick<Storage, "setItem">>;
 type WritableStorage = Pick<Storage, "setItem"> & Partial<Pick<Storage, "getItem">>;
-type BackupStorage = Pick<Storage, "getItem" | "setItem">;
 
-export type LoadStatus =
-  | "ok" // stored data was valid and is returned unchanged
-  | "empty" // nothing (or an empty list) was stored; starter project returned
-  | "recovered" // some entries were invalid; the valid ones are returned
-  | "invalid" // JSON parsed but nothing usable matched the Project/Task shape
-  | "corrupt" // stored text is not valid JSON
-  | "unavailable"; // storage could not be read at all
-
-export type LoadResult = {
-  projects: Project[];
-  status: LoadStatus;
-  droppedProjects: number;
-  droppedTasks: number;
-  repairedProjects: number;
-  /** True only when a verified copy of the unreadable original exists in a backup slot (new or already stored). */
-  backedUp: boolean;
-  /** The slot key that holds the verified copy, or null when no copy exists. */
-  backupKey: string | null;
-};
-
-export type SaveFailureReason =
-  | "unavailable"
-  | "quota"
-  | "invalid-data"
-  | "serialize"
-  | "verify"
-  | "protect-original" // stored data is unreadable (or only partly readable) and could not be copied first
-  | "unknown";
-export type SaveResult =
-  | { ok: true; backupKey?: string } // backupKey is set only when stored unreadable data had to be backed up first
-  | { ok: false; reason: SaveFailureReason; message: string };
-
-type Parsed = { projects: Project[]; droppedProjects: number; droppedTasks: number; repairedProjects: number };
-
+const starter: Project[] = [{ id: "starter", name: "My first project", tasks: [] }];
+const DANGEROUS_KEYS = new Set(["__proto__", "constructor", "prototype"]);
+const BACKUP_REASONS = new Set<BackupReason>(["corrupt", "invalid", "recovered", "pre-restore"]);
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
-
+function sanitizeValue(value: unknown, seen = new WeakSet<object>(), depth = 0): unknown {
+  if (value === null || typeof value === "string" || typeof value === "boolean") return value;
+  if (typeof value === "number") return Number.isFinite(value) ? value : undefined;
+  if (typeof value !== "object" || depth > 40 || seen.has(value as object)) return undefined;
+  seen.add(value as object);
+  if (Array.isArray(value)) {
+    const result = value.map((item) => sanitizeValue(item, seen, depth + 1));
+    seen.delete(value);
+    return result;
+  }
+  if (!isRecord(value)) { seen.delete(value as object); return undefined; }
+  const result: Record<string, unknown> = {};
+  for (const key of Object.keys(value)) {
+    if (DANGEROUS_KEYS.has(key)) continue;
+    const safe = sanitizeValue(value[key], seen, depth + 1);
+    if (safe !== undefined) Object.defineProperty(result, key, { value: safe, enumerable: true, configurable: true, writable: true });
+  }
+  seen.delete(value);
+  return result;
+}
+function collectExtras(source: Record<string, unknown>, known: string[]): Record<string, unknown> {
+  const result: Record<string, unknown> = {}, excluded = new Set(known);
+  for (const key of Object.keys(source)) {
+    if (excluded.has(key) || DANGEROUS_KEYS.has(key)) continue;
+    const safe = sanitizeValue(source[key]);
+    if (safe !== undefined) Object.defineProperty(result, key, { value: safe, enumerable: true, configurable: true, writable: true });
+  }
+  return result;
+}
 function parseTask(value: unknown): Task | null {
   if (!isRecord(value)) return null;
   const { id, title, done, createdAt } = value;
-  if (typeof id !== "string" || id === "") return null;
-  if (typeof title !== "string") return null;
-  if (typeof done !== "boolean") return null;
-  if (typeof createdAt !== "number" || !Number.isFinite(createdAt)) return null;
-  return { id, title, done, createdAt };
+  if (typeof id !== "string" || !id || typeof title !== "string" || typeof done !== "boolean" ||
+      typeof createdAt !== "number" || !Number.isFinite(createdAt)) return null;
+  return { ...collectExtras(value, ["id", "title", "done", "createdAt"]), id, title, done, createdAt };
 }
-
-/**
- * Validates untrusted data against the Project/Task shape. Only known fields are copied
- * into fresh objects. Invalid tasks and projects are dropped and counted, never invented.
- * A project with a valid id and name but a missing or non-array `tasks` keeps its identity
- * with an empty task list and is counted as repaired.
- */
 export function parseProjects(value: unknown): Parsed {
   const result: Parsed = { projects: [], droppedProjects: 0, droppedTasks: 0, repairedProjects: 0 };
   if (!Array.isArray(value)) return result;
   const projectIds = new Set<string>();
-  for (const rawProject of value) {
-    if (!isRecord(rawProject)) { result.droppedProjects += 1; continue; }
-    const { id, name, tasks: rawTasks } = rawProject;
-    if (typeof id !== "string" || id === "" || typeof name !== "string" || projectIds.has(id)) {
-      result.droppedProjects += 1;
-      continue;
-    }
+  for (const raw of value) {
+    if (!isRecord(raw)) { result.droppedProjects++; continue; }
+    const { id, name, tasks: rawTasks } = raw;
+    if (typeof id !== "string" || !id || typeof name !== "string" || projectIds.has(id)) { result.droppedProjects++; continue; }
     projectIds.add(id);
     const tasks: Task[] = [];
     if (Array.isArray(rawTasks)) {
       const taskIds = new Set<string>();
       for (const rawTask of rawTasks) {
         const task = parseTask(rawTask);
-        if (!task || taskIds.has(task.id)) { result.droppedTasks += 1; continue; }
-        taskIds.add(task.id);
-        tasks.push(task);
+        if (!task || taskIds.has(task.id)) { result.droppedTasks++; continue; }
+        taskIds.add(task.id); tasks.push(task);
       }
-    } else {
-      result.repairedProjects += 1;
-    }
-    result.projects.push({ id, name, tasks });
+    } else result.repairedProjects++;
+    result.projects.push({ ...collectExtras(raw, ["id", "name", "tasks"]), id, name, tasks });
   }
   return result;
 }
-
 function describeError(error: unknown): string {
-  if (error instanceof Error && error.message) return error.message;
-  return String(error);
+  return error instanceof Error && error.message ? error.message : String(error);
 }
-
 function isQuotaError(error: unknown): boolean {
-  if (typeof error !== "object" || error === null) return false;
-  const { name, code } = error as { name?: unknown; code?: unknown };
-  return name === "QuotaExceededError" || name === "NS_ERROR_DOM_QUOTA_REACHED" || code === 22 || code === 1014;
+  if (!isRecord(error)) return false;
+  return error.name === "QuotaExceededError" || error.name === "NS_ERROR_DOM_QUOTA_REACHED" || error.code === 22 || error.code === 1014;
 }
-
-/** Returns the browser's localStorage, or null when it is missing or access is blocked. */
 export function getBrowserStorage(host: { localStorage?: Storage } = globalThis): Storage | null {
-  try {
-    return host.localStorage ?? null;
-  } catch {
-    return null;
-  }
+  try { return host.localStorage ?? null; } catch { return null; }
 }
-
-type Inspection =
-  | { kind: "empty" }
-  | { kind: "ok"; parsed: Parsed }
-  | { kind: "recovered"; parsed: Parsed }
-  | { kind: "invalid"; parsed: Parsed }
-  | { kind: "corrupt" };
-
-/**
- * Classifies raw stored text. Only "ok" and "empty" are safe to overwrite; the rest are not.
- * "empty" means the key is absent (handled by the callers) or holds the valid empty list "[]".
- * An empty string is NOT empty storage: it is not valid JSON and is not the project format, so it is "corrupt".
- */
+export function backupKey(slot: number): string {
+  if (!Number.isInteger(slot) || slot < 1) throw new RangeError("Backup slot must be a positive integer.");
+  return slot === 1 ? BACKUP_KEY : `${BACKUP_KEY}.${slot}`;
+}
+export function backupMetaKey(slot: number): string { return `${backupKey(slot)}.meta`; }
+export function isBackupKeyName(key: string): boolean {
+  if (key === BACKUP_KEY) return true;
+  const prefix = `${BACKUP_KEY}.`;
+  if (!key.startsWith(prefix)) return false;
+  const suffix = key.slice(prefix.length);
+  return /^(?:[2-9]|1[0-9]|20)$/.test(suffix);
+}
+function slotFromKey(key: string): number | null {
+  if (key === BACKUP_KEY) return 1;
+  if (!isBackupKeyName(key)) return null;
+  const n = Number(key.slice(BACKUP_KEY.length + 1));
+  return Number.isInteger(n) && n >= 2 && n <= MAX_BACKUPS ? n : null;
+}
+type Inspection = { kind: "empty" } | { kind: "ok"; parsed: Parsed } | { kind: "recovered"; parsed: Parsed } | { kind: "invalid"; parsed: Parsed } | { kind: "corrupt" };
 function inspectRaw(raw: string): Inspection {
   let json: unknown;
-  try {
-    json = JSON.parse(raw);
-  } catch {
-    return { kind: "corrupt" };
-  }
+  try { json = JSON.parse(raw); } catch { return { kind: "corrupt" }; }
   if (Array.isArray(json) && json.length === 0) return { kind: "empty" };
   const parsed = parseProjects(json);
-  if (parsed.projects.length === 0) return { kind: "invalid", parsed };
-  const lossless = parsed.droppedProjects === 0 && parsed.droppedTasks === 0 && parsed.repairedProjects === 0;
+  if (!parsed.projects.length) return { kind: "invalid", parsed };
+  const lossless = !parsed.droppedProjects && !parsed.droppedTasks && !parsed.repairedProjects;
   return { kind: lossless ? "ok" : "recovered", parsed };
 }
-
-type BackupFailure = "read-only" | "read-error" | "slots-full" | "write-failed" | "verify";
-type BackupOutcome = { ok: true; key: string; created: boolean } | { ok: false; reason: BackupFailure };
-
-/**
- * Copies unreadable raw text into the first free backup slot. It never overwrites a slot that it
- * sees in use, never throws, and reports success only after reading the copy back. This is not a
- * guarantee under concurrency: two tabs can read the same slot as free and both write to it, so one
- * copy can be lost (no locking; see the residual risks in docs/OPERATIONS-ROOM.md entry 31). If an identical copy
- * is already stored it is reused, so reading the same data again does not fill up the slots.
- */
-function backUpUnreadable(storage: ReadableStorage, raw: string): BackupOutcome {
-  if (!storage.setItem) return { ok: false, reason: "read-only" };
-  let freeKey: string | null = null;
-  try {
-    for (let slot = 1; slot <= MAX_BACKUPS; slot += 1) {
-      const key = backupKey(slot);
-      const existing = storage.getItem(key);
-      if (existing === null) {
-        if (freeKey === null) freeKey = key;
-      } else if (existing === raw) {
-        return { ok: true, key, created: false };
-      }
-    }
-  } catch {
-    return { ok: false, reason: "read-error" };
-  }
-  if (freeKey === null) return { ok: false, reason: "slots-full" };
-  try {
-    storage.setItem(freeKey, raw);
-  } catch {
-    return { ok: false, reason: "write-failed" };
-  }
-  try {
-    if (storage.getItem(freeKey) !== raw) return { ok: false, reason: "verify" };
-  } catch {
-    return { ok: false, reason: "verify" };
-  }
-  return { ok: true, key: freeKey, created: true };
+type BackupOutcome = { ok: true; key: string; created: boolean } | { ok: false; reason: string };
+function writeMeta(storage: StorageLike, slot: number, reason: BackupReason): void {
+  try { storage.setItem(backupMetaKey(slot), JSON.stringify({ createdAt: Date.now(), reason })); } catch { /* best effort */ }
 }
-
+function backUpRaw(storage: StorageLike, raw: string, reason: BackupReason): BackupOutcome {
+  let free: number | null = null;
+  try {
+    for (let slot = 1; slot <= MAX_BACKUPS; slot++) {
+      const key = backupKey(slot), existing = storage.getItem(key);
+      if (existing === raw) return { ok: true, key, created: false };
+      if (existing === null && free === null) free = slot;
+    }
+  } catch { return { ok: false, reason: "read-error" }; }
+  if (free === null) return { ok: false, reason: "slots-full" };
+  const key = backupKey(free);
+  try { storage.setItem(key, raw); } catch { return { ok: false, reason: "write-failed" }; }
+  try { if (storage.getItem(key) !== raw) return { ok: false, reason: "verify" }; }
+  catch { return { ok: false, reason: "verify" }; }
+  writeMeta(storage, free, reason);
+  return { ok: true, key, created: true };
+}
 const emptyResult = (status: LoadStatus): LoadResult => ({
-  projects: starter,
-  status,
-  droppedProjects: 0,
-  droppedTasks: 0,
-  repairedProjects: 0,
-  backedUp: false,
-  backupKey: null
+  projects: starter.map((p) => ({ ...p, tasks: [] })), status, droppedProjects: 0,
+  droppedTasks: 0, repairedProjects: 0, backedUp: false, backupKey: null
 });
-
 function backupFields(outcome: BackupOutcome): Pick<LoadResult, "backedUp" | "backupKey"> {
   return outcome.ok ? { backedUp: true, backupKey: outcome.key } : { backedUp: false, backupKey: null };
 }
-
-/** Reads and validates stored projects. Never throws. Raw data that cannot be used as-is is backed up (a slot seen in use is not overwritten; see the concurrency note on backUpUnreadable). */
 export function readProjects(storage: ReadableStorage | null = getBrowserStorage()): LoadResult {
   if (!storage) return emptyResult("unavailable");
   let raw: string | null;
-  try {
-    raw = storage.getItem(STORAGE_KEY);
-  } catch {
-    return emptyResult("unavailable");
-  }
+  try { raw = storage.getItem(STORAGE_KEY); } catch { return emptyResult("unavailable"); }
   if (raw === null) return emptyResult("empty");
-
   const inspected = inspectRaw(raw);
   switch (inspected.kind) {
-    case "empty":
-      return emptyResult("empty");
-    case "ok":
-      return { ...inspected.parsed, status: "ok", backedUp: false, backupKey: null };
-    case "recovered":
-      return { ...inspected.parsed, status: "recovered", ...backupFields(backUpUnreadable(storage, raw)) };
-    case "invalid":
-      return {
-        ...emptyResult("invalid"),
-        droppedProjects: inspected.parsed.droppedProjects,
-        ...backupFields(backUpUnreadable(storage, raw))
-      };
-    case "corrupt":
-      return { ...emptyResult("corrupt"), ...backupFields(backUpUnreadable(storage, raw)) };
+    case "empty": return emptyResult("empty");
+    case "ok": return { ...inspected.parsed, status: "ok", backedUp: false, backupKey: null };
+    case "recovered": return { ...inspected.parsed, status: "recovered", ...backupFields(backUpRaw(storage as StorageLike, raw, "recovered")) };
+    case "invalid": return { ...emptyResult("invalid"), droppedProjects: inspected.parsed.droppedProjects, ...backupFields(backUpRaw(storage as StorageLike, raw, "invalid")) };
+    case "corrupt": return { ...emptyResult("corrupt"), ...backupFields(backUpRaw(storage as StorageLike, raw, "corrupt")) };
   }
 }
-
-/** Backward-compatible wrapper that returns only the projects. Never throws. */
 export function loadProjects(storage?: ReadableStorage | null): Project[] {
   return readProjects(storage === undefined ? getBrowserStorage() : storage).projects;
 }
-
 type Guard = { ok: true; backupKey?: string } | Extract<SaveResult, { ok: false }>;
-
-/**
- * Called before every write. If what is currently stored cannot be used as-is (corrupt, wrong
- * shape, or only partly valid), a verified copy must exist in a backup slot before it may be
- * replaced. If no copy can be made, the write is refused and the original stays untouched.
- */
 function protectStoredOriginal(target: WritableStorage): Guard {
-  if (!target.getItem) return { ok: true }; // a write-only storage cannot be inspected
+  if (!target.getItem) return { ok: true };
   let raw: string | null;
-  try {
-    raw = target.getItem(STORAGE_KEY);
-  } catch (error) {
-    return { ok: false, reason: "unavailable", message: `Browser storage could not be read: ${describeError(error)}` };
-  }
+  try { raw = target.getItem(STORAGE_KEY); }
+  catch (error) { return { ok: false, reason: "unavailable", message: `Browser storage could not be read: ${describeError(error)}` }; }
   if (raw === null) return { ok: true };
   const kind = inspectRaw(raw).kind;
   if (kind === "empty" || kind === "ok") return { ok: true };
-  const outcome = backUpUnreadable(target as BackupStorage, raw);
+  const reason: BackupReason = kind === "corrupt" ? "corrupt" : kind === "invalid" ? "invalid" : "recovered";
+  const outcome = backUpRaw(target as StorageLike, raw, reason);
   if (outcome.ok) return { ok: true, backupKey: outcome.key };
-  return {
-    ok: false,
-    reason: "protect-original",
-    message: `The stored data is unreadable and could not be backed up (${outcome.reason}); it was left untouched.`
-  };
+  return { ok: false, reason: "protect-original", message: `The stored data could not be copied to a backup (${outcome.reason}); it was left untouched.` };
 }
-
-/**
- * Writes projects and reports the real outcome. Never throws. Data that does not match the
- * Project/Task shape is refused before touching storage. Stored data that is unreadable (or only
- * partly readable) is not replaced unless a verified backup copy of it exists (checked just before
- * the write; another tab can still change storage in between, so this is not a concurrency guarantee). A successful
- * write is read back when the storage supports it. A failed setItem leaves the previous value in place.
- */
 export function saveProjects(projects: Project[], storage?: WritableStorage | null): SaveResult {
   const target = storage === undefined ? getBrowserStorage() : storage;
   if (!target) return { ok: false, reason: "unavailable", message: "Browser storage is not available." };
-
   const checked = parseProjects(projects);
-  if (checked.droppedProjects > 0 || checked.droppedTasks > 0 || checked.repairedProjects > 0) {
+  if (checked.droppedProjects || checked.droppedTasks || checked.repairedProjects || checked.projects.length !== projects.length)
     return { ok: false, reason: "invalid-data", message: "Refused to save data that does not match the project format." };
-  }
-
   let serialized: string;
-  try {
-    serialized = JSON.stringify(checked.projects); // only known fields are persisted
-  } catch (error) {
-    return { ok: false, reason: "serialize", message: describeError(error) };
-  }
-
+  try { serialized = JSON.stringify(checked.projects); }
+  catch (error) { return { ok: false, reason: "serialize", message: describeError(error) }; }
   const guard = protectStoredOriginal(target);
   if (!guard.ok) return guard;
-
-  try {
-    target.setItem(STORAGE_KEY, serialized);
-  } catch (error) {
+  try { target.setItem(STORAGE_KEY, serialized); }
+  catch (error) {
     if (isQuotaError(error)) return { ok: false, reason: "quota", message: "Browser storage is full." };
-    const name = typeof error === "object" && error !== null ? (error as { name?: unknown }).name : undefined;
+    const name = isRecord(error) ? error.name : undefined;
     if (name === "SecurityError") return { ok: false, reason: "unavailable", message: "Browser storage is blocked." };
     return { ok: false, reason: "unknown", message: describeError(error) };
   }
-
   if (target.getItem) {
-    try {
-      if (target.getItem(STORAGE_KEY) !== serialized) {
-        return { ok: false, reason: "verify", message: "The saved data could not be read back." };
-      }
-    } catch (error) {
-      return { ok: false, reason: "verify", message: describeError(error) };
-    }
+    try { if (target.getItem(STORAGE_KEY) !== serialized) return { ok: false, reason: "verify", message: "The saved data could not be read back." }; }
+    catch (error) { return { ok: false, reason: "verify", message: describeError(error) }; }
   }
-  return guard.backupKey === undefined ? { ok: true } : { ok: true, backupKey: guard.backupKey };
+  return guard.backupKey ? { ok: true, backupKey: guard.backupKey } : { ok: true };
+}
+type LockFailure = { ok: false; reason: "lock-unavailable" | "lock-timeout" | "lock-error"; message: string };
+type LockResult<T> = { ok: true; value: T } | LockFailure;
+export function hasStorageLock(): boolean {
+  try { return typeof navigator !== "undefined" && typeof navigator.locks?.request === "function"; } catch { return false; }
+}
+export async function withStorageLock<T>(callback: () => T | Promise<T>, options: { timeoutMs?: number } = {}): Promise<LockResult<T>> {
+  if (!hasStorageLock()) return { ok: false, reason: "lock-unavailable", message: "Web Locks are not available in this browser." };
+  const timeoutMs = options.timeoutMs ?? DEFAULT_LOCK_TIMEOUT_MS;
+  const controller = new AbortController();
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    const work = navigator.locks.request(STORAGE_LOCK_NAME, { mode: "exclusive", signal: controller.signal }, async () => {
+      if (timer !== undefined) clearTimeout(timer);
+      return await callback();
+    });
+    const timeout = new Promise<never>((_, reject) => {
+      timer = setTimeout(() => {
+        controller.abort();
+        const error = new Error("Storage lock timed out."); error.name = "TimeoutError"; reject(error);
+      }, timeoutMs);
+    });
+    const value = await Promise.race([work, timeout]);
+    return { ok: true, value };
+  } catch (error) {
+    const name = isRecord(error) ? error.name : undefined;
+    if (name === "TimeoutError" || name === "AbortError") return { ok: false, reason: "lock-timeout", message: "Timed out waiting for the cross-tab storage lock." };
+    return { ok: false, reason: "lock-error", message: describeError(error) };
+  } finally { if (timer !== undefined) clearTimeout(timer); }
+}
+function lockFailure(result: LockFailure): Extract<SaveResult, { ok: false }> {
+  return { ok: false, reason: result.reason, message: result.message };
+}
+export async function saveProjectsLocked(projects: Project[], storage?: WritableStorage | null): Promise<SaveResult> {
+  const locked = await withStorageLock(() => saveProjects(projects, storage));
+  return locked.ok ? locked.value : lockFailure(locked);
+}
+export async function readProjectsLocked(storage: ReadableStorage | null = getBrowserStorage()): Promise<LoadResult> {
+  const locked = await withStorageLock(() => readProjects(storage));
+  if (locked.ok) return locked.value;
+  if (locked.reason === "lock-unavailable") {
+    if (!storage) return emptyResult("unavailable");
+    return readProjects({ getItem: storage.getItem.bind(storage) });
+  }
+  return emptyResult("unavailable");
+}
+export function listBackups(storage: ReadableStorage | null = getBrowserStorage()): BackupInfo[] {
+  if (!storage) return [];
+  const items: BackupInfo[] = [];
+  for (let slot = 1; slot <= MAX_BACKUPS; slot++) {
+    const key = backupKey(slot);
+    let raw: string | null;
+    try { raw = storage.getItem(key); } catch { break; }
+    if (raw === null) continue;
+    let createdAt: number | null = null, reason: BackupReason | null = null;
+    try {
+      const meta = JSON.parse(storage.getItem(backupMetaKey(slot)) ?? "null");
+      if (isRecord(meta)) {
+        if (typeof meta.createdAt === "number" && Number.isFinite(meta.createdAt)) createdAt = meta.createdAt;
+        if (typeof meta.reason === "string" && BACKUP_REASONS.has(meta.reason as BackupReason)) reason = meta.reason as BackupReason;
+      }
+    } catch { /* legacy or unreadable metadata */ }
+    let parseable = false, projectCount: number | null = null;
+    try { const parsed = JSON.parse(raw); if (Array.isArray(parsed)) { parseable = true; projectCount = parsed.length; } } catch { /* raw backup is retained */ }
+    items.push({ key, slot, createdAt, reason, parseable, projectCount, preview: raw.slice(0, 180) });
+  }
+  return items.sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0) || a.slot - b.slot);
+}
+export type RestoreResult =
+  | { ok: true; snapshotKey: string | null }
+  | { ok: false; reason: "lock-unavailable" | "lock-timeout" | "lock-error" | "not-found" | "invalid-key" | "protect-original" | "write-failed" | "verify"; message: string };
+export async function restoreBackup(key: string, storage: StorageLike | null = getBrowserStorage()): Promise<RestoreResult> {
+  if (slotFromKey(key) === null) return { ok: false, reason: "invalid-key", message: "Invalid backup key." };
+  const locked = await withStorageLock((): RestoreResult => {
+    if (!storage) return { ok: false, reason: "write-failed", message: "Browser storage is unavailable." };
+    let backup: string | null, current: string | null;
+    try { backup = storage.getItem(key); current = storage.getItem(STORAGE_KEY); }
+    catch (error) { return { ok: false, reason: "write-failed", message: describeError(error) }; }
+    if (backup === null) return { ok: false, reason: "not-found", message: "The selected backup no longer exists." };
+    let snapshotKey: string | null = null;
+    if (current !== null) {
+      const snapshot = backUpRaw(storage, current, "pre-restore");
+      if (!snapshot.ok) return { ok: false, reason: "protect-original", message: "The current workspace could not be snapshotted; restore was cancelled." };
+      snapshotKey = snapshot.key;
+    }
+    try { storage.setItem(STORAGE_KEY, backup); }
+    catch (error) { return { ok: false, reason: "write-failed", message: describeError(error) }; }
+    try { if (storage.getItem(STORAGE_KEY) !== backup) return { ok: false, reason: "verify", message: "Restored data could not be verified." }; }
+    catch (error) { return { ok: false, reason: "verify", message: describeError(error) }; }
+    return { ok: true, snapshotKey };
+  });
+  return locked.ok ? locked.value : { ok: false, reason: locked.reason, message: locked.message };
+}
+export type DeleteBackupResult =
+  | { ok: true }
+  | { ok: false; reason: "lock-unavailable" | "lock-timeout" | "lock-error" | "not-found" | "invalid-key" | "delete-failed"; message: string };
+export async function deleteBackup(key: string, storage: StorageLike | null = getBrowserStorage()): Promise<DeleteBackupResult> {
+  const slot = slotFromKey(key);
+  if (slot === null) return { ok: false, reason: "invalid-key", message: "Invalid backup key." };
+  const locked = await withStorageLock((): DeleteBackupResult => {
+    if (!storage?.removeItem) return { ok: false, reason: "delete-failed", message: "Browser storage cannot delete backups." };
+    try {
+      if (storage.getItem(key) === null) return { ok: false, reason: "not-found", message: "Backup not found." };
+      storage.removeItem(key);
+      storage.removeItem(backupMetaKey(slot));
+      return storage.getItem(key) === null ? { ok: true } : { ok: false, reason: "delete-failed", message: "Backup could not be removed." };
+    } catch (error) { return { ok: false, reason: "delete-failed", message: describeError(error) }; }
+  });
+  return locked.ok ? locked.value : { ok: false, reason: locked.reason, message: locked.message };
 }

@@ -1,10 +1,28 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { StrictMode, act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import App, { loadNotice, noticeAfterSave } from "./App";
 import { BACKUP_KEY, STORAGE_KEY, type LoadResult } from "./storage";
 
-(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;\n
+function installFakeLocks() {
+  const chains = new Map<string, Promise<unknown>>();
+  Object.defineProperty(navigator, "locks", {
+    configurable: true,
+    value: {
+      request(name: string, _opts: unknown, cb: () => Promise<unknown>) {
+        const prev = chains.get(name) ?? Promise.resolve();
+        const next = prev.then(() => cb());
+        chains.set(name, next.catch(() => undefined));
+        return next;
+      }
+    }
+  });
+}
+function uninstallLocks() {
+  delete (navigator as unknown as { locks?: unknown }).locks;
+}
+
 
 /** In-memory storage. While `failReads` is true every read throws, like a blocked or temporarily unavailable localStorage. */
 class FakeStorage {
@@ -69,7 +87,7 @@ describe("App notices when storage comes back", () => {
   let host: HTMLElement;
   let root: Root;
 
-  function useStorage(storage: FakeStorage) {
+  beforeEach(() => { installFakeLocks(); });\n  function useStorage(storage: FakeStorage) {
     Object.defineProperty(window, "localStorage", { configurable: true, get: () => storage });
   }
 
@@ -162,5 +180,42 @@ describe("App notices when storage comes back", () => {
     expect(status()).toBe(before);
     expect(storage.values.get(BACKUP_KEY)).toBe("{broken");
     expect(storage.values.get(STORAGE_KEY)).toContain("After");
+  });
+});
+
+describe("App cross-tab lock behaviour", () => {
+  const ownDescriptor = Object.getOwnPropertyDescriptor(window, "localStorage");
+  let host: HTMLElement;
+  let root: Root;
+  function useStorage(storage: FakeStorage) {
+    Object.defineProperty(window, "localStorage", { configurable: true, get: () => storage });
+  }
+  async function mount() {
+    host = document.createElement("div");
+    document.body.appendChild(host);
+    root = createRoot(host);
+    await act(async () => { root.render(<StrictMode><App /></StrictMode>); await new Promise((r) => setTimeout(r, 0)); });
+  }
+  afterEach(async () => {
+    uninstallLocks();
+    if (root) await act(async () => root.unmount());
+    host?.remove();
+    if (ownDescriptor) Object.defineProperty(window, "localStorage", ownDescriptor);
+    else delete (window as { localStorage?: unknown }).localStorage;
+  });
+  it("refuses a save when Web Locks are unavailable", async () => {
+    uninstallLocks();
+    const storage = new FakeStorage();
+    useStorage(storage);
+    await mount();
+    const input = host.querySelector('input[aria-label="New project name"]') as HTMLInputElement;
+    const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!;
+    await act(async () => { setter.call(input, "Blocked"); input.dispatchEvent(new Event("input", { bubbles: true })); });
+    await act(async () => {
+      (host.querySelector("form.inline-form") as HTMLFormElement).dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
+      await new Promise((r) => setTimeout(r, 0));
+    });
+    expect(host.querySelector('[role="alert"]')?.textContent).toContain("cross-tab lock");
+    expect(storage.values.has(STORAGE_KEY)).toBe(false);
   });
 });

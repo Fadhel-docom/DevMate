@@ -1,42 +1,29 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties, FormEvent } from "react";
-import { readProjects, saveProjects, type LoadResult, type Project, type SaveResult, type Task } from "./storage";
+import { readProjects, saveProjectsLocked, type LoadResult, type Project, type SaveResult } from "./storage";
+import BackupManager from "./BackupManager";
 
 type Message = { id: string; role: "user" | "assistant"; text: string };
-
-
 const noticeStyle: CSSProperties = {
-  margin: "16px 0 0",
-  padding: "12px 14px",
-  border: "1px solid #f0d9a8",
-  background: "#fff8e8",
-  color: "#6b4a0a",
-  borderRadius: 12,
-  fontSize: 13,
-  lineHeight: 1.5
+  margin: "16px 0 0", padding: "12px 14px", border: "1px solid #f0d9a8",
+  background: "#fff8e8", color: "#6b4a0a", borderRadius: 12, fontSize: 13, lineHeight: 1.5
 };
-
 const errorStyle: CSSProperties = { ...noticeStyle, border: "1px solid #f1b5b5", background: "#fff1f1", color: "#7a1f1f" };
-
 function skippedSummary(result: LoadResult): string {
-  const parts = [
+  return [
     result.droppedProjects > 0 ? `${result.droppedProjects} projects` : "",
     result.droppedTasks > 0 ? `${result.droppedTasks} tasks` : "",
     result.repairedProjects > 0 ? `${result.repairedProjects} projects with a missing task list` : ""
-  ].filter(Boolean);
-  return parts.join(", ");
+  ].filter(Boolean).join(", ");
 }
-
 const STORAGE_NOT_SAFE = "New changes stay on this page only and will not be saved, so browser storage cannot be treated as safe right now.";
-
 const UNAVAILABLE_NOTICE = "Browser storage is unavailable. Your changes will not be saved after you close this page.";
-
 export function loadNotice(result: LoadResult): string | null {
   switch (result.status) {
     case "corrupt":
     case "invalid":
       return result.backedUp
-        ? "Your saved workspace could not be read, so a new one was started. A copy of the unreadable data was saved in this browser before anything is replaced."
+        ? "Your saved workspace could not be read, so a new one was started. A copy of the unreadable data was saved in this browser."
         : `Your saved workspace could not be read, so a new one was started. A backup copy could not be saved, so the original data was left untouched. ${STORAGE_NOT_SAFE}`;
     case "recovered": {
       const skipped = `Part of your saved workspace could not be read and was skipped (${skippedSummary(result)}).`;
@@ -44,19 +31,10 @@ export function loadNotice(result: LoadResult): string | null {
         ? `${skipped} A copy of the original data was saved in this browser.`
         : `${skipped} A backup copy could not be saved, so the original data was left untouched. ${STORAGE_NOT_SAFE}`;
     }
-    case "unavailable":
-      return UNAVAILABLE_NOTICE;
-    default:
-      return null;
+    case "unavailable": return UNAVAILABLE_NOTICE;
+    default: return null;
   }
 }
-
-/**
- * The startup notice to show after a save has succeeded. A working save shows that storage is usable,
- * so the "unavailable" warning is removed; every other notice stays as it was. If the save first had
- * to back up unreadable stored data (backupKey), that is reported as a data-corruption notice with a
- * saved copy, also when the app had started with "unavailable" (reading failed, so the data was unknown).
- */
 export function noticeAfterSave(current: string | null, initial: LoadResult, backupKey?: string): string | null {
   if (backupKey) {
     const status = initial.status === "unavailable" ? "corrupt" : initial.status;
@@ -64,20 +42,19 @@ export function noticeAfterSave(current: string | null, initial: LoadResult, bac
   }
   return current === UNAVAILABLE_NOTICE ? null : current;
 }
-
 export function saveMessage(failure: Extract<SaveResult, { ok: false }>): string {
-  const detail = failure.reason === "protect-original"
-    ? "The data already stored in this browser could not be read and could not be copied to a backup, so it was left untouched."
-    : failure.reason === "quota"
-      ? "Browser storage is full."
-      : failure.reason === "unavailable"
-        ? "Browser storage is unavailable or blocked."
-        : failure.reason === "verify"
-          ? "The data was written but could not be read back, so it may not have been saved."
-          : "The data could not be written.";
+  const detail =
+    failure.reason === "protect-original" ? "The stored data could not be copied to a backup, so it was left untouched." :
+    failure.reason === "quota" ? "Browser storage is full." :
+    failure.reason === "unavailable" ? "Browser storage is unavailable or blocked." :
+    failure.reason === "verify" ? "The data could not be read back after writing." :
+    failure.reason === "lock-unavailable" ? "The cross-tab lock is unavailable, so the write was refused." :
+    failure.reason === "lock-timeout" ? "The cross-tab lock could not be acquired in time, so the write was refused." :
+    failure.reason === "lock-error" ? "The cross-tab lock failed, so the write was refused." :
+    failure.reason === "invalid-data" ? "The project data did not pass validation." :
+    "The data could not be written.";
   return `Your latest changes were not saved. ${detail} They are still visible here but may be lost when you close or reload this page.`;
 }
-
 export default function App() {
   const [initial] = useState<LoadResult>(() => readProjects());
   const [projects, setProjects] = useState<Project[]>(initial.projects);
@@ -87,28 +64,39 @@ export default function App() {
   const [newProject, setNewProject] = useState("");
   const [newTask, setNewTask] = useState("");
   const [prompt, setPrompt] = useState("");
+  const skipNextSave = useRef(false);
   const [messages, setMessages] = useState<Message[]>([
     { id: "welcome", role: "assistant", text: "Hi! I’m DevMate. Tell me what you want to build, fix, or understand. This preview uses a local demo assistant and does not call an AI service." }
   ]);
 
   useEffect(() => {
-    // Nothing has changed yet: do not rewrite what is already stored (it may be an unreadable original).
     if (projects === initial.projects) return;
-    const result = saveProjects(projects);
-    if (result.ok) {
-      setSaveFailure(null);
-      // A save worked: drop a stale "unavailable" warning, and report a backup copy made now so the notice stays true.
-      setStartupNotice((current) => noticeAfterSave(current, initial, result.backupKey));
-    } else {
-      setSaveFailure(result);
-    }
+    if (skipNextSave.current) { skipNextSave.current = false; return; }
+    let active = true;
+    void saveProjectsLocked(projects).then((result) => {
+      if (!active) return;
+      if (result.ok) {
+        setSaveFailure(null);
+        setStartupNotice((current) => noticeAfterSave(current, initial, result.backupKey));
+      } else setSaveFailure(result);
+    }).catch((error: unknown) => {
+      if (active) setSaveFailure({ ok: false, reason: "unknown", message: error instanceof Error ? error.message : String(error) });
+    });
+    return () => { active = false; };
   }, [projects, initial]);
 
   const activeProject = useMemo(
     () => projects.find((project) => project.id === activeId) ?? projects[0],
     [projects, activeId]
   );
-
+  function reloadFromStorage() {
+    const result = readProjects();
+    skipNextSave.current = true;
+    setProjects(result.projects);
+    setActiveId(result.projects[0]?.id ?? "starter");
+    setStartupNotice(loadNotice(result));
+    setSaveFailure(null);
+  }
   function addProject(event: FormEvent) {
     event.preventDefault();
     const name = newProject.trim();
@@ -118,7 +106,6 @@ export default function App() {
     setActiveId(project.id);
     setNewProject("");
   }
-
   function addTask(event: FormEvent) {
     event.preventDefault();
     const title = newTask.trim();
@@ -129,44 +116,34 @@ export default function App() {
     ));
     setNewTask("");
   }
-
   function toggleTask(taskId: string) {
     setProjects((current) => current.map((project) => project.id === activeProject.id
       ? { ...project, tasks: project.tasks.map((task) => task.id === taskId ? { ...task, done: !task.done } : task) }
       : project
     ));
   }
-
   function sendMessage(event: FormEvent) {
     event.preventDefault();
     const text = prompt.trim();
     if (!text) return;
     const response = "I’ve saved your message in this demo conversation. AI connection is intentionally disabled in Phase 1, so no API is called and no usage quota is consumed. The next step is to connect a free/approved model provider safely.";
-    setMessages((current) => [
-      ...current,
-      { id: crypto.randomUUID(), role: "user", text },
-      { id: crypto.randomUUID(), role: "assistant", text: response }
-    ]);
+    setMessages((current) => [...current, { id: crypto.randomUUID(), role: "user", text }, { id: crypto.randomUUID(), role: "assistant", text: response }]);
     setPrompt("");
   }
-
   return (
     <main className="shell">
       <header className="topbar">
         <a className="brand" href="/" aria-label="DevMate home"><span className="brand-mark">D</span><span>DevMate</span></a>
         <span className="top-note">Your coding workspace</span>
       </header>
-
       {startupNotice && <p role="status" style={noticeStyle}>{startupNotice}</p>}
       {saveFailure && <p role="alert" style={errorStyle}>{saveMessage(saveFailure)}</p>}
-
       <section className="intro">
         <p className="eyebrow">BUILD WITH CLARITY</p>
         <h1>Your projects.<br /><span>Your next step.</span></h1>
         <p className="intro-copy">Organize coding work, keep notes, and prepare changes for GitHub — in one simple place.</p>
         <div className="status"><span className="status-dot" /> Phase 1 · Local demo · No AI API calls</div>
       </section>
-
       <div className="workspace">
         <aside className="panel project-panel">
           <div className="section-heading"><div><p className="eyebrow">WORKSPACE</p><h2>Projects</h2></div><span className="count">{projects.length}</span></div>
@@ -182,7 +159,6 @@ export default function App() {
             ))}
           </nav>
         </aside>
-
         <section className="panel tasks-panel">
           <div className="section-heading"><div><p className="eyebrow">PLAN THE WORK</p><h2>{activeProject?.name ?? "Tasks"}</h2></div><span className="count">{activeProject?.tasks.filter((task) => !task.done).length ?? 0} open</span></div>
           <form className="task-form" onSubmit={addTask}>
@@ -192,13 +168,11 @@ export default function App() {
           <div className="task-list">
             {activeProject?.tasks.length ? activeProject.tasks.map((task) => (
               <label className={task.done ? "task done" : "task"} key={task.id}>
-                <input type="checkbox" checked={task.done} onChange={() => toggleTask(task.id)} />
-                <span>{task.title}</span>
+                <input type="checkbox" checked={task.done} onChange={() => toggleTask(task.id)} /><span>{task.title}</span>
               </label>
             )) : <div className="empty-state"><span className="empty-icon">✓</span><strong>A clear space to start</strong><p>Add your first task. Your project data stays in this browser.</p></div>}
           </div>
         </section>
-
         <section className="panel chat-panel">
           <div className="section-heading"><div><p className="eyebrow">THINK IT THROUGH</p><h2>DevMate chat</h2></div><span className="demo-pill">DEMO</span></div>
           <div className="messages" aria-live="polite">
@@ -210,6 +184,7 @@ export default function App() {
           </form>
           <p className="privacy-note">Demo mode · Messages are not sent to an AI provider.</p>
         </section>
+        <BackupManager onRestored={reloadFromStorage} />
       </div>
       <footer><span>DEVMATE</span><span>Built to make focused progress easier.</span></footer>
     </main>

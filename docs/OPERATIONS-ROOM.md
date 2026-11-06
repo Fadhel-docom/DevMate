@@ -1055,3 +1055,16 @@ No merge; no change to Draft status, the PR base, CI or the workflow, `main`, PR
 - The scratch branch `feature/ci-probe-pr10-final-adf867c` and its `docs/CI-PROBE-PR10.md` marker are isolated from PR #10 and `main`; left in place to preserve the CI evidence and avoid creating a second cleanup-triggered run.
 - Next exact action: owner/coordinator may now make the PR #10 merge decision under constitution §7, considering the residual risks and owner-reserved authority. Keep PR #10 Draft until the owner explicitly decides whether to authorize the merge. PR #1 remains untouched.
 - Authorship: CI orchestration, independent review, and this handoff by ChatGPT coordinator.
+
+
+## 36. Storage Reliability Hardening A–D — 2026-11-06 — ChatGPT coordinator implementation
+
+- **Starting checkpoint:** `fix/storage-reliability-hardening` at `57482210bb502cccfc82d5e11103f2871075bc68`, created from PR #10 head. PR #10 remains open, Draft, and unmodified; PR #1 and `main` remain untouched.
+- **Task:** implement storage reliability tasks A–D using the existing source and the owner's supplied test/UI/documentation requirements. No new dependencies or cost.
+- **Implemented:** Web Locks exclusive lock helper with timeout; fail-closed locked saves; read-only fallback when locks are unavailable; safe recursive extra-field preservation; canonical backup-slot validation; best-effort metadata; backup listing; restore with pre-restore snapshot; delete with metadata cleanup; App integration; responsive backup/confirmation styles.
+- **Files:** `src/storage.ts`, `src/App.tsx`, `src/BackupManager.tsx` (new), `src/storage.test.ts`, `src/App.test.tsx`, `src/BackupManager.test.tsx` (new), `src/styles.css`, `docs/STATUS.md`, `docs/OPERATIONS-ROOM.md`.
+- **Review notes:** unit fake locks only test serialized callbacks in the test process. They are not evidence of real browser cross-tab behaviour. The App's first startup read remains synchronous and outside the lock. No browser E2E or real Android/Safari test is claimed.
+- **Not performed:** no package/lockfile/workflow/constitution changes; no push to `main`; no modification or merge of PR #10 or PR #1; no deployment; no paid service or dependency.
+- **Evidence status:** all implementation is **Fixed, not yet verified** until the exact branch head passes CI. Tests, build, audit, and browser behaviour are not claimed as passed here.
+- **Next exact action:** commit this focused set to `fix/storage-reliability-hardening`, trigger the existing push workflow from a separate `feature/**` probe branch at the exact code SHA, inspect the full run, and request an independent review before any merge decision.
+- **Actor attribution:** implementation and Git object creation performed by ChatGPT coordinator through the connected GitHub integration under the owner's prior instruction to begin; GitHub may display the connected owner's account.

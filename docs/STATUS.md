@@ -297,3 +297,28 @@ After this documentation checkpoint is reviewed and merged, perform a read-only 
 - PR #10 remains open and Draft. Current head before this status update: `3114b3eacbe895d510caa44514b2701b1ce8b0fa`; changes after the tested code SHA are documentation-only. Keep Draft until the owner makes the merge decision under §7.
 - Non-blocking wording note: the existing corruption notice phrase “before anything is replaced” can be misleading when a backup is created during a later save. Existing storage risks (multi-tab race, unknown-field stripping, near-full quota, 20-slot cap, no restore/delete UI) remain documented. Real-browser notice behaviour is not verified.
 - Phase 1 is not complete; PR #1 remains untouched and owner-controlled.
+
+
+## Storage Reliability Hardening A–D — 2026-11-06 — ChatGPT coordinator
+
+### Implementation checkpoint
+- Added Web Locks-backed exclusive storage operations: `withStorageLock`, `saveProjectsLocked`, and `readProjectsLocked`. Writes fail closed when the browser does not provide Web Locks or lock acquisition fails. Reads fall back to read-only mode when Web Locks are unavailable.
+- Preserved safe project/task extension fields while filtering `__proto__`, `constructor`, and `prototype` recursively.
+- Retained the existing verified-backup-before-overwrite guard and extended backup records with best-effort metadata (`createdAt`, `reason`).
+- Added backup listing, restore with a pre-restore snapshot, and deletion of a selected backup plus its metadata. Backup slot parsing rejects the non-canonical `.1` alias.
+- Integrated asynchronous locked saves and a backup management panel into the App. Added mobile-oriented backup and confirmation styles.
+
+### Files changed in this implementation
+`src/storage.ts`, `src/App.tsx`, `src/BackupManager.tsx` (new), `src/storage.test.ts`, `src/App.test.tsx`, `src/BackupManager.test.tsx` (new), `src/styles.css`, `docs/STATUS.md`, and `docs/OPERATIONS-ROOM.md`.
+
+### Evidence and limitations
+- **Fixed, not yet verified:** implementation is committed only after the code is reviewed against the exact branch contents. No test, build, audit, or browser result is claimed by this entry.
+- Unit tests use a fake Web Locks implementation. They do not prove real cross-tab coordination in Android Chrome, desktop Chromium, or Safari.
+- App's first synchronous startup read remains outside the Web Locks API; this is a known residual race for backup creation. Locked writes and backup actions are serialized, but a real-browser save/restore race has not been demonstrated.
+- Backup metadata is best effort. Existing backup bytes remain readable if metadata cannot be written.
+- A write-only storage object without `getItem` cannot use the overwrite-protection guard; this compatibility path remains.
+- No automatic backup pruning is introduced. The maximum number of managed slots remains 20.
+- No dependencies, package files, CI workflow, constitution, main branch, PR #1, PR #10, or other repositories are changed.
+
+### Next action
+Run the full Vitest suite, TypeScript/Vite production build, and dependency audit on this exact commit through the existing CI workflow using an isolated `feature/**` probe branch if needed. Then inspect the exact-head run and obtain independent review. Do not merge this PR or PR #10 as part of this task.
