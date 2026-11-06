@@ -932,3 +932,29 @@ No merge, close or delete of any PR or branch; no change to `main`, PR #1, the c
 - Last verified checkpoint: code commit `01dd54cfd2f8bd95789765d299d2c8f369f3b658` (70 tests, build and audit local). The head after this documentation commit differs from it only in `docs/STATUS.md` and `docs/OPERATIONS-ROOM.md`; its SHA is shown on PR #10.
 - Next exact action: coordinator/owner picks the CI route; then an independent reviewer (not Claude) reviews the exact new head and the CI result. PR #10 stays open and draft. Handoff owner: ChatGPT coordinator for review and CI routing; the owner for any workflow or branch-structure change.
 - Handoff authorship: authored by Claude (third assistant) and committed through the GitHub connector under the owner's delegation; GitHub shows the owner's account.
+
+
+## 32. PR #10 — exact-head CI and Android smoke evidence — 2026-11-06 — ChatGPT coordinator
+
+### CI result (Verified from GitHub Actions job log)
+
+- PR #10 head under test: `a4c7bbb48f99ac2734cafca9b0419863ddcd58d8`.
+- Existing scratch branch: `feature/ci-probe-pr10-a4c7bbb`; GitHub branch search confirms it exists. No additional Android branch was created and no Termux push was performed.
+- Workflow: **DevMate CI**, run #89, run ID `42178927687`, event `push`, attempt 1; run URL: https://github.com/Fadhel-docom/DevMate/actions/runs/42178927687.
+- Job `verify`, job ID `127763740640`: completed with conclusion `success`. All observed steps succeeded: checkout, setup Node, `npm ci`, dependency audit report, `npm test`, and `npm run build`.
+- The job log confirms checkout at the exact SHA above; Node `v20.20.2`, npm `10.8.2`; `npm ci` added 155 packages and reported 0 vulnerabilities; audit summary info/low/moderate/high/critical/total all 0; Vitest 4.1.12 passed **1 file / 70 tests**; TypeScript check and Vite production build passed (28 modules transformed).
+- Non-blocking environment notices: npm package deprecation warning and GitHub runner notice that Node 20 actions are being forced to Node 24. Neither caused a failed step.
+- This is an official GitHub Actions success on the exact PR #10 head. The previous statement in entry 31 that no GitHub Actions run existed is historical and is superseded by this entry.
+
+### Android smoke test (Reported by owner from Android/Termux session)
+
+- On Android/Termux: Node `v26.3.1`, npm `11.17.0`; `npm test` passed 70/70 and `npm run build` passed.
+- Manual browser smoke: created a project and task, reloaded the page, and confirmed both remained visible. This verifies basic persistence across reload in that Android browser session.
+- Not tested manually: blocked storage, genuinely full quota, Safari, or other real browsers. Do not overstate the smoke test.
+
+### State and next gate
+
+- PR #10 remains open and Draft; it is not merged. No code, workflow, base branch, PR state, or `main` changes were made to obtain this CI run.
+- The CI gate is now satisfied for exact head `a4c7bbb…`. Independent review by the ChatGPT coordinator remains to be completed against the exact PR diff and the known residual risks, especially multi-tab backup races, unknown-field stripping, backup restore/delete UI, and near-full quota behaviour.
+- Keep PR #10 Draft and unmerged until that independent review and any owner-reserved decision gates are resolved. Do not declare Phase 1 complete.
+- Next exact action: coordinator performs the independent PR #10 review at `a4c7bbb48f99ac2734cafca9b0419863ddcd58d8`, using run #89 as CI evidence; then records a clear accept/request-changes decision. No further Termux push is needed for CI.
