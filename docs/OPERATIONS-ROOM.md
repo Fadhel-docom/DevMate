@@ -1068,3 +1068,16 @@ No merge; no change to Draft status, the PR base, CI or the workflow, `main`, PR
 - **Evidence status:** all implementation is **Fixed, not yet verified** until the exact branch head passes CI. Tests, build, audit, and browser behaviour are not claimed as passed here.
 - **Next exact action:** commit this focused set to `fix/storage-reliability-hardening`, trigger the existing push workflow from a separate `feature/**` probe branch at the exact code SHA, inspect the full run, and request an independent review before any merge decision.
 - **Actor attribution:** implementation and Git object creation performed by ChatGPT coordinator through the connected GitHub integration under the owner's prior instruction to begin; GitHub may display the connected owner's account.
+
+
+## 37. Storage Reliability Hardening — exact-head CI verification — 2026-11-06 — ChatGPT coordinator
+
+- **Code commit tested:** `2e779d4f2d40528450a17dd155357fa283f5e729`.
+- **CI evidence:** GitHub Actions run **#94**, ID `42212513216`, https://github.com/Fadhel-docom/DevMate/actions/runs/42212513216. The run was triggered by updating the isolated branch `feature/storage-hardening-ci` to the exact code commit. It did not change the PR base or workflow.
+- **Observed environment:** Node `20.20.2`, npm `10.8.2`.
+- **Results:** `npm ci` passed (155 packages); audit reported 0 vulnerabilities; Vitest 4.1.12 passed 3 files / 97 tests; `npm run build` passed (TypeScript + Vite production build). Job conclusion: **success**.
+- **Earlier failures preserved:** run #92 failed due to a malformed newline in the App test and two test-fixture/assertion mismatches; run #93 passed all 97 tests but failed TypeScript because a nullable test root was not narrowed. These were fixed in subsequent commits before run #94.
+- **Current PR #11 head at time of this entry:** `2e779d4f2d40528450a17dd155357fa283f5e729`; PR #11 remains open, Draft, and targets `fix/storage-reliability` (PR #10's head). No merge performed.
+- **Still unverified:** real browser multi-tab locking, Android Chrome/Safari smoke, visual/accessibility review of the modal, and an end-to-end concurrent save/restore race. Unit tests use a fake Web Locks manager only.
+- **Independent review:** outstanding. ChatGPT authored the implementation and does not count as an independent reviewer. Keep PR #11 Draft until a separate reviewer inspects the final diff and owner/coordinator makes the merge decision under the constitution.
+- **Next exact action:** independent review of PR #11's code diff at the tested SHA; do not merge automatically after CI.
