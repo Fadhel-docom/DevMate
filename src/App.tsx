@@ -76,7 +76,6 @@ export default function App() {
     void readProjectsLocked().then((result) => {
       if (!active) return;
       baselineRaw.current = result.storageRaw;
-      baselineRaw.current = result.storageRaw;
       setInitial(result);
       setProjects(result.projects);
       setActiveId(result.projects[0]?.id ?? "starter");
@@ -117,12 +116,18 @@ export default function App() {
     setLoaded(false);
     try {
       const result = await readProjectsLocked();
+      baselineRaw.current = result.storageRaw;
       setInitial(result);
       setProjects(result.projects);
       setActiveId(result.projects[0]?.id ?? "starter");
       setStartupNotice(loadNotice(result));
       setSaveFailure(null);
     } catch (error) {
+      baselineRaw.current = null;
+      setInitial({
+        projects, status: "unavailable", droppedProjects: 0, droppedTasks: 0,
+        repairedProjects: 0, backedUp: false, backupKey: null, storageRaw: null
+      });
       setSaveFailure({ ok: false, reason: "unknown", message: error instanceof Error ? error.message : String(error) });
     } finally {
       setLoaded(true);
