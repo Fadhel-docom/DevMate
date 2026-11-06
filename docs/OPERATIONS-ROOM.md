@@ -1347,3 +1347,6 @@ No merge; no change to Draft status, the PR base, CI or the workflow, `main`, PR
 - Branch: `feature/tool-registry-review-followup`.
 - Verify GitHub Actions against the exact latest branch SHA; inspect logs for tests, audit, TypeScript, and Vite build.
 - If successful, request independent review only if the final diff materially changes the reviewed scope; otherwise preserve the existing independent review as applying to its exact reviewed SHA and clearly record the narrow follow-up delta.
+
+
+- **Exact verification for section 51:** GitHub Actions run #147 (ID `42301856450`) passed on exact head `73075eba602b825181369f6f32057eda0718469e`. Job logs confirm `npm ci` (155 packages), dependency audit (0 vulnerabilities), Vitest (4 files, 124/124 tests, including 9 registry tests), TypeScript `tsc --noEmit`, and Vite production build. No real-browser or assistive-technology checks are claimed. PR #15 was re-fetched after the run: open/Draft, head matches the tested SHA, base `feature/tool-registry-foundation`, GitHub reports mergeable=true.
