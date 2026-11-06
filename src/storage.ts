@@ -2,12 +2,21 @@ export type Task = { id: string; title: string; done: boolean; createdAt: number
 export type Project = { id: string; name: string; tasks: Task[] };
 
 export const STORAGE_KEY = "devmate-workspace-v1";
+/** Backup slot 1. This is the key earlier versions of the app already used, so existing backups stay valid. */
 export const BACKUP_KEY = "devmate-workspace-v1.unreadable-backup";
+/** Upper bound on backup slots, so unreadable data can never fill the browser storage without limit. */
+export const MAX_BACKUPS = 20;
+
+/** Slot 1 is BACKUP_KEY; slot n (n >= 2) is BACKUP_KEY + "." + n. Deterministic: no clock, no randomness. */
+export function backupKey(slot: number): string {
+  return slot <= 1 ? BACKUP_KEY : `${BACKUP_KEY}.${slot}`;
+}
 
 const starter: Project[] = [{ id: "starter", name: "My first project", tasks: [] }];
 
 type ReadableStorage = Pick<Storage, "getItem"> & Partial<Pick<Storage, "setItem">>;
 type WritableStorage = Pick<Storage, "setItem"> & Partial<Pick<Storage, "getItem">>;
+type BackupStorage = Pick<Storage, "getItem" | "setItem">;
 
 export type LoadStatus =
   | "ok" // stored data was valid and is returned unchanged
@@ -23,11 +32,23 @@ export type LoadResult = {
   droppedProjects: number;
   droppedTasks: number;
   repairedProjects: number;
+  /** True only when a verified copy of the unreadable original exists in a backup slot (new or already stored). */
   backedUp: boolean;
+  /** The slot key that holds the verified copy, or null when no copy exists. */
+  backupKey: string | null;
 };
 
-export type SaveFailureReason = "unavailable" | "quota" | "invalid-data" | "serialize" | "verify" | "unknown";
-export type SaveResult = { ok: true } | { ok: false; reason: SaveFailureReason; message: string };
+export type SaveFailureReason =
+  | "unavailable"
+  | "quota"
+  | "invalid-data"
+  | "serialize"
+  | "verify"
+  | "protect-original" // stored data is unreadable (or only partly readable) and could not be copied first
+  | "unknown";
+export type SaveResult =
+  | { ok: true; backupKey?: string } // backupKey is set only when stored unreadable data had to be backed up first
+  | { ok: false; reason: SaveFailureReason; message: string };
 
 type Parsed = { projects: Project[]; droppedProjects: number; droppedTasks: number; repairedProjects: number };
 
@@ -100,15 +121,65 @@ export function getBrowserStorage(host: { localStorage?: Storage } = globalThis)
   }
 }
 
-function backUpUnreadable(storage: ReadableStorage, raw: string): boolean {
-  if (!storage.setItem) return false;
+type Inspection =
+  | { kind: "empty" }
+  | { kind: "ok"; parsed: Parsed }
+  | { kind: "recovered"; parsed: Parsed }
+  | { kind: "invalid"; parsed: Parsed }
+  | { kind: "corrupt" };
+
+/** Classifies raw stored text. "ok" and "empty" are safe to overwrite; the rest are not. */
+function inspectRaw(raw: string): Inspection {
+  if (raw === "") return { kind: "empty" };
+  let json: unknown;
   try {
-    if (storage.getItem(BACKUP_KEY) !== null) return false; // keep the first backup; never overwrite it
-    storage.setItem(BACKUP_KEY, raw);
-    return true;
+    json = JSON.parse(raw);
   } catch {
-    return false;
+    return { kind: "corrupt" };
   }
+  if (Array.isArray(json) && json.length === 0) return { kind: "empty" };
+  const parsed = parseProjects(json);
+  if (parsed.projects.length === 0) return { kind: "invalid", parsed };
+  const lossless = parsed.droppedProjects === 0 && parsed.droppedTasks === 0 && parsed.repairedProjects === 0;
+  return { kind: lossless ? "ok" : "recovered", parsed };
+}
+
+type BackupFailure = "read-only" | "read-error" | "slots-full" | "write-failed" | "verify";
+type BackupOutcome = { ok: true; key: string; created: boolean } | { ok: false; reason: BackupFailure };
+
+/**
+ * Copies unreadable raw text into the first free backup slot. Never replaces a slot that is in
+ * use, never throws, and reports success only after reading the copy back. If an identical copy
+ * is already stored it is reused, so reading the same data again does not fill up the slots.
+ */
+function backUpUnreadable(storage: ReadableStorage, raw: string): BackupOutcome {
+  if (!storage.setItem) return { ok: false, reason: "read-only" };
+  let freeKey: string | null = null;
+  try {
+    for (let slot = 1; slot <= MAX_BACKUPS; slot += 1) {
+      const key = backupKey(slot);
+      const existing = storage.getItem(key);
+      if (existing === null) {
+        if (freeKey === null) freeKey = key;
+      } else if (existing === raw) {
+        return { ok: true, key, created: false };
+      }
+    }
+  } catch {
+    return { ok: false, reason: "read-error" };
+  }
+  if (freeKey === null) return { ok: false, reason: "slots-full" };
+  try {
+    storage.setItem(freeKey, raw);
+  } catch {
+    return { ok: false, reason: "write-failed" };
+  }
+  try {
+    if (storage.getItem(freeKey) !== raw) return { ok: false, reason: "verify" };
+  } catch {
+    return { ok: false, reason: "verify" };
+  }
+  return { ok: true, key: freeKey, created: true };
 }
 
 const emptyResult = (status: LoadStatus): LoadResult => ({
@@ -117,10 +188,15 @@ const emptyResult = (status: LoadStatus): LoadResult => ({
   droppedProjects: 0,
   droppedTasks: 0,
   repairedProjects: 0,
-  backedUp: false
+  backedUp: false,
+  backupKey: null
 });
 
-/** Reads and validates stored projects. Never throws. Raw data that cannot be used as-is is backed up once. */
+function backupFields(outcome: BackupOutcome): Pick<LoadResult, "backedUp" | "backupKey"> {
+  return outcome.ok ? { backedUp: true, backupKey: outcome.key } : { backedUp: false, backupKey: null };
+}
+
+/** Reads and validates stored projects. Never throws. Raw data that cannot be used as-is is backed up (never replaced). */
 export function readProjects(storage: ReadableStorage | null = getBrowserStorage()): LoadResult {
   if (!storage) return emptyResult("unavailable");
   let raw: string | null;
@@ -129,24 +205,25 @@ export function readProjects(storage: ReadableStorage | null = getBrowserStorage
   } catch {
     return emptyResult("unavailable");
   }
-  if (raw === null || raw === "") return emptyResult("empty");
+  if (raw === null) return emptyResult("empty");
 
-  let parsedJson: unknown;
-  try {
-    parsedJson = JSON.parse(raw);
-  } catch {
-    return { ...emptyResult("corrupt"), backedUp: backUpUnreadable(storage, raw) };
+  const inspected = inspectRaw(raw);
+  switch (inspected.kind) {
+    case "empty":
+      return emptyResult("empty");
+    case "ok":
+      return { ...inspected.parsed, status: "ok", backedUp: false, backupKey: null };
+    case "recovered":
+      return { ...inspected.parsed, status: "recovered", ...backupFields(backUpUnreadable(storage, raw)) };
+    case "invalid":
+      return {
+        ...emptyResult("invalid"),
+        droppedProjects: inspected.parsed.droppedProjects,
+        ...backupFields(backUpUnreadable(storage, raw))
+      };
+    case "corrupt":
+      return { ...emptyResult("corrupt"), ...backupFields(backUpUnreadable(storage, raw)) };
   }
-
-  if (Array.isArray(parsedJson) && parsedJson.length === 0) return emptyResult("empty");
-
-  const parsed = parseProjects(parsedJson);
-  const lossless = parsed.droppedProjects === 0 && parsed.droppedTasks === 0 && parsed.repairedProjects === 0;
-  if (parsed.projects.length === 0) {
-    return { ...emptyResult("invalid"), droppedProjects: parsed.droppedProjects, backedUp: backUpUnreadable(storage, raw) };
-  }
-  if (lossless) return { ...parsed, status: "ok", backedUp: false };
-  return { ...parsed, status: "recovered", backedUp: backUpUnreadable(storage, raw) };
 }
 
 /** Backward-compatible wrapper that returns only the projects. Never throws. */
@@ -154,10 +231,38 @@ export function loadProjects(storage?: ReadableStorage | null): Project[] {
   return readProjects(storage === undefined ? getBrowserStorage() : storage).projects;
 }
 
+type Guard = { ok: true; backupKey?: string } | Extract<SaveResult, { ok: false }>;
+
+/**
+ * Called before every write. If what is currently stored cannot be used as-is (corrupt, wrong
+ * shape, or only partly valid), a verified copy must exist in a backup slot before it may be
+ * replaced. If no copy can be made, the write is refused and the original stays untouched.
+ */
+function protectStoredOriginal(target: WritableStorage): Guard {
+  if (!target.getItem) return { ok: true }; // a write-only storage cannot be inspected
+  let raw: string | null;
+  try {
+    raw = target.getItem(STORAGE_KEY);
+  } catch (error) {
+    return { ok: false, reason: "unavailable", message: `Browser storage could not be read: ${describeError(error)}` };
+  }
+  if (raw === null) return { ok: true };
+  const kind = inspectRaw(raw).kind;
+  if (kind === "empty" || kind === "ok") return { ok: true };
+  const outcome = backUpUnreadable(target as BackupStorage, raw);
+  if (outcome.ok) return { ok: true, backupKey: outcome.key };
+  return {
+    ok: false,
+    reason: "protect-original",
+    message: `The stored data is unreadable and could not be backed up (${outcome.reason}); it was left untouched.`
+  };
+}
+
 /**
  * Writes projects and reports the real outcome. Never throws. Data that does not match the
- * Project/Task shape is refused before touching storage, and a successful write is read back
- * when the storage supports it. A failed setItem leaves the previously stored value in place.
+ * Project/Task shape is refused before touching storage. Stored data that is unreadable (or only
+ * partly readable) is never replaced unless a verified backup copy of it exists. A successful
+ * write is read back when the storage supports it. A failed setItem leaves the previous value in place.
  */
 export function saveProjects(projects: Project[], storage?: WritableStorage | null): SaveResult {
   const target = storage === undefined ? getBrowserStorage() : storage;
@@ -174,6 +279,9 @@ export function saveProjects(projects: Project[], storage?: WritableStorage | nu
   } catch (error) {
     return { ok: false, reason: "serialize", message: describeError(error) };
   }
+
+  const guard = protectStoredOriginal(target);
+  if (!guard.ok) return guard;
 
   try {
     target.setItem(STORAGE_KEY, serialized);
@@ -193,5 +301,5 @@ export function saveProjects(projects: Project[], storage?: WritableStorage | nu
       return { ok: false, reason: "verify", message: describeError(error) };
     }
   }
-  return { ok: true };
+  return guard.backupKey === undefined ? { ok: true } : { ok: true, backupKey: guard.backupKey };
 }

@@ -18,15 +18,30 @@ const noticeStyle: CSSProperties = {
 
 const errorStyle: CSSProperties = { ...noticeStyle, border: "1px solid #f1b5b5", background: "#fff1f1", color: "#7a1f1f" };
 
-function loadNotice(result: LoadResult): string | null {
+function skippedSummary(result: LoadResult): string {
+  const parts = [
+    result.droppedProjects > 0 ? `${result.droppedProjects} projects` : "",
+    result.droppedTasks > 0 ? `${result.droppedTasks} tasks` : "",
+    result.repairedProjects > 0 ? `${result.repairedProjects} projects with a missing task list` : ""
+  ].filter(Boolean);
+  return parts.join(", ");
+}
+
+const STORAGE_NOT_SAFE = "New changes stay on this page only and will not be saved, so browser storage cannot be treated as safe right now.";
+
+export function loadNotice(result: LoadResult): string | null {
   switch (result.status) {
     case "corrupt":
     case "invalid":
       return result.backedUp
-        ? "Your saved workspace could not be read, so a new one was started. A copy of the unreadable data was kept in this browser."
-        : "Your saved workspace could not be read, so a new one was started.";
-    case "recovered":
-      return `Some saved items were invalid and were skipped (${result.droppedProjects} projects, ${result.droppedTasks} tasks, ${result.repairedProjects} projects with a missing task list).`;
+        ? "Your saved workspace could not be read, so a new one was started. A copy of the unreadable data was saved in this browser before anything is replaced."
+        : `Your saved workspace could not be read, so a new one was started. A backup copy could not be saved, so the original data was left untouched. ${STORAGE_NOT_SAFE}`;
+    case "recovered": {
+      const skipped = `Part of your saved workspace could not be read and was skipped (${skippedSummary(result)}).`;
+      return result.backedUp
+        ? `${skipped} A copy of the original data was saved in this browser.`
+        : `${skipped} A backup copy could not be saved, so the original data was left untouched. ${STORAGE_NOT_SAFE}`;
+    }
     case "unavailable":
       return "Browser storage is unavailable. Your changes will not be saved after you close this page.";
     default:
@@ -34,18 +49,23 @@ function loadNotice(result: LoadResult): string | null {
   }
 }
 
-function saveMessage(failure: Extract<SaveResult, { ok: false }>): string {
-  const detail = failure.reason === "quota"
-    ? "Browser storage is full."
-    : failure.reason === "unavailable"
-      ? "Browser storage is unavailable or blocked."
-      : "The data could not be written.";
+export function saveMessage(failure: Extract<SaveResult, { ok: false }>): string {
+  const detail = failure.reason === "protect-original"
+    ? "The data already stored in this browser could not be read and could not be copied to a backup, so it was left untouched."
+    : failure.reason === "quota"
+      ? "Browser storage is full."
+      : failure.reason === "unavailable"
+        ? "Browser storage is unavailable or blocked."
+        : failure.reason === "verify"
+          ? "The data was written but could not be read back, so it may not have been saved."
+          : "The data could not be written.";
   return `Your latest changes were not saved. ${detail} They are still visible here but may be lost when you close or reload this page.`;
 }
 
 export default function App() {
   const [initial] = useState<LoadResult>(() => readProjects());
   const [projects, setProjects] = useState<Project[]>(initial.projects);
+  const [startupNotice, setStartupNotice] = useState<string | null>(() => loadNotice(initial));
   const [saveFailure, setSaveFailure] = useState<Extract<SaveResult, { ok: false }> | null>(null);
   const [activeId, setActiveId] = useState("starter");
   const [newProject, setNewProject] = useState("");
@@ -59,7 +79,13 @@ export default function App() {
     // Nothing has changed yet: do not rewrite what is already stored (it may be an unreadable original).
     if (projects === initial.projects) return;
     const result = saveProjects(projects);
-    setSaveFailure(result.ok ? null : result);
+    if (result.ok) {
+      setSaveFailure(null);
+      // A backup copy now exists (it could not be made at load time): say so, so the notice stays true.
+      if (result.backupKey) setStartupNotice(loadNotice({ ...initial, backedUp: true, backupKey: result.backupKey }));
+    } else {
+      setSaveFailure(result);
+    }
   }, [projects, initial]);
 
   const activeProject = useMemo(
@@ -107,8 +133,6 @@ export default function App() {
     ]);
     setPrompt("");
   }
-
-  const startupNotice = loadNotice(initial);
 
   return (
     <main className="shell">
