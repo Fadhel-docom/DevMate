@@ -435,3 +435,16 @@ Run the full Vitest suite, TypeScript/Vite production build, and dependency audi
 - **Verification at this checkpoint:** source and tests were committed through GitHub file operations. Automated CI for the exact branch head is pending; no test/build success is claimed yet. Browser/mobile accessibility and visual checks are also not run.
 - Branch commits: `44f3918c8933ee7f695007628708200fa15f0401` (registry), `0012959cd0a115c34b1fdd576dcef9c1d7b026a7` (tests), `d0cfbfac4b604391bf05a776a2c5b2347e4ec62d` (correct readiness-count assertions), `e809a723ad3eb753c17f35e47239ed5d3688e716` (panel), `69f26dbc39f9048bccf025b6dd994cbee1228097` (App integration), `7663b233786062d9c1eeeed8d135521ee5cefa8a` (styles), `f18c4bbf97bc96866288d54d02d78ba01645b34f` (tool registry documentation).
 - Next: inspect the exact branch diff, confirm the branch head and PR base, then rely on GitHub Actions triggered by the feature-branch push. If CI passes, request independent review of this exact head. Do not merge until PR #10's dependency path and the applicable review gates are satisfied.
+
+## Tool registry CI checkpoint — 2026-11-06
+
+- GitHub Actions run #121 (42297196424) completed successfully on exact branch head 273fc8170637aead31fdb988db505599773240c1.
+- Observed steps all succeeded: npm ci, dependency audit report, npm test, and npm run build.
+- Audit log: 0 vulnerabilities at every severity.
+- Tests: 4 test files passed; 121 tests passed, including all 6 tool-registry tests.
+- Build: tsc --noEmit and Vite production build passed.
+- The earlier run #114 failed on an incorrect expected-count assertion; the assertion was corrected in commit d0cfbfac4b604391bf05a776a2c5b2347e4ec62d. The later run #121 on the complete code-bearing head passed.
+- Still not verified: real browser/mobile rendering, keyboard/focus behavior, accessibility, and any external tool integration.
+- PR #13 is open and Draft, stacked on PR #10 branch fix/storage-reliability; it is not merged. PR #10 and PR #12 remain open/Draft; PR #1 remains owner-controlled.
+
+- Note: this status update itself is documentation-only and creates a newer branch head; CI for the resulting head must be checked separately.
