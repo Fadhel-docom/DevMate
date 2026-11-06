@@ -334,3 +334,15 @@ Run the full Vitest suite, TypeScript/Vite production build, and dependency audi
 - Run #94 tests the exact code commit. The follow-up commit that appends this verification record changes documentation only.
 - **Still not verified:** real browser cross-tab behaviour, Android Chrome/Safari smoke, keyboard/focus behaviour of the confirmation dialog, and concurrent save-vs-restore in a real browser.
 - **Review status:** independent review is still required. This contributor authored the implementation and cannot self-approve it. PR #11 remains Draft and unmerged.
+
+
+## Storage Reliability Hardening — validation and startup-lock follow-up — 2026-11-06
+
+- Follow-up implementation was applied to the existing PR #11 branch after confirming the local worktree was clean and exactly matched its prior head.
+- App startup now awaits `readProjectsLocked()` before enabling project/task edits; reload after restore also uses the locked read path. Saves are gated until startup loading completes.
+- Backup restore now performs strict structural inspection before snapshotting or writing. Only fully valid backups and the intentionally empty list `[]` are restorable; rejected backups leave the current workspace untouched.
+- Backup metadata now exposes a `restorable` flag; the UI disables Restore for invalid/incomplete entries and uses the native HTML dialog for browser-managed modal focus.
+- Regression coverage was added for invalid restore preservation, empty-backup acceptance, invalid UI restore disabling, and exclusive-lock startup loading.
+- **Verification state: not yet verified.** The new head must pass the full CI workflow and be independently reviewed. No Android browser test, real cross-tab test, merge, or deployment is claimed.
+- Latest implementation commit at this documentation checkpoint: `a07d9ca0b5f978b39b492bfda93cadd96b9228f0`. This docs entry is being appended after that code commit; the final branch head will be recorded after CI preparation.
+- PR #11 remains Draft and stacked on PR #10. Do not merge independently of its base.
