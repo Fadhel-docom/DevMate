@@ -1081,3 +1081,22 @@ No merge; no change to Draft status, the PR base, CI or the workflow, `main`, PR
 - **Still unverified:** real browser multi-tab locking, Android Chrome/Safari smoke, visual/accessibility review of the modal, and an end-to-end concurrent save/restore race. Unit tests use a fake Web Locks manager only.
 - **Independent review:** outstanding. ChatGPT authored the implementation and does not count as an independent reviewer. Keep PR #11 Draft until a separate reviewer inspects the final diff and owner/coordinator makes the merge decision under the constitution.
 - **Next exact action:** independent review of PR #11's code diff at the tested SHA; do not merge automatically after CI.
+
+
+## 38. Storage restore validation and locked startup follow-up — 2026-11-06 — ChatGPT coordinator
+
+- **Verified starting point:** user confirmed the local worktree was clean on `fix/storage-restore-validation-startup-lock` at `c03fef71ade202c56e5a11e648abffef65624d3b`, matching PR #11 head before these changes.
+- **Implementation commits on PR #11 branch `fix/storage-reliability-hardening`:**
+  - `3c232bba` — strict backup validation before snapshot/write; canonical normalized restore payload; `restorable` metadata.
+  - `4b406691` — asynchronous exclusive-lock startup read and locked reload after restore; edits/saves gated until startup read completes.
+  - `d00ef504` — disable invalid restore actions and replace custom confirmation container with native `<dialog>`.
+  - `94b4fc59` — native dialog styling.
+  - `644d799b` — storage regression tests for invalid restore preserving workspace and acceptance of empty backups.
+  - `269b8f2d` — UI regression test for disabled invalid restore.
+  - `a07d9ca0` — App regression test asserting startup uses an exclusive Web Lock.
+  - `e9e9ab6d` — STATUS checkpoint.
+- **Current state:** implementation and tests have been committed to the existing PR #11 head branch through the GitHub integration. The GitHub Actions history inspected so far contains no run for the new code SHA; previous run #94 on `2e779d4` is not evidence for these changes.
+- **Not yet verified:** full test suite, TypeScript/Vite build, dependency audit on the new head, real Android Chrome behaviour, true browser cross-tab contention, and native dialog keyboard/focus behaviour. The code remains unapproved pending exact-head CI and independent review.
+- **Boundaries maintained:** PR #11 remains Draft and based on PR #10; no merge, deployment, main-branch change, dependency change, or paid service.
+- **Next exact action:** fetch the updated PR #11 branch into Termux, run `npm test` and `npm run build` locally, then create an empty verification commit and push it to the same PR branch to trigger the repository's push workflow. Inspect the run against the exact resulting SHA, fix any failures, then obtain independent review. Do not merge.
+- **Actor attribution:** code and documentation commits were authored through the connected GitHub integration under the user's explicit instruction to continue implementation; local validation and workflow triggering remain pending.
