@@ -6,12 +6,16 @@ import { BACKUP_KEY, STORAGE_KEY, type LoadResult } from "./storage";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
+let lockRequestCount = 0;
 function installFakeLocks() {
   const chains = new Map<string, Promise<unknown>>();
   Object.defineProperty(navigator, "locks", {
     configurable: true,
     value: {
-      request(name: string, _opts: unknown, cb: () => Promise<unknown>) {
+      request(name: string, opts: { mode?: string; signal?: AbortSignal }, cb: () => Promise<unknown>) {
+        lockRequestCount++;
+        if (opts.mode !== "exclusive") throw new Error("Storage operations must request an exclusive lock.");
+        if (opts.signal?.aborted) throw new DOMException("Aborted", "AbortError");
         const prev = chains.get(name) ?? Promise.resolve();
         const next = prev.then(() => cb());
         chains.set(name, next.catch(() => undefined));
@@ -182,6 +186,30 @@ describe("App notices when storage comes back", () => {
     expect(status()).toBe(before);
     expect(storage.values.get(BACKUP_KEY)).toBe("{broken");
     expect(storage.values.get(STORAGE_KEY)).toContain("After");
+  });
+});
+
+describe("App startup storage locking", () => {
+  const ownDescriptor = Object.getOwnPropertyDescriptor(window, "localStorage");
+  let host: HTMLElement;
+  let root: Root;
+  afterEach(async () => {
+    await act(async () => root.unmount());
+    host.remove();
+    if (ownDescriptor) Object.defineProperty(window, "localStorage", ownDescriptor);
+    else delete (window as { localStorage?: unknown }).localStorage;
+  });
+  it("loads the saved workspace through the exclusive Web Lock before enabling edits", async () => {
+    installFakeLocks();
+    lockRequestCount = 0;
+    const storage = new FakeStorage();
+    storage.values.set(STORAGE_KEY, JSON.stringify([{ id: "saved", name: "Locked startup project", tasks: [] }]));
+    Object.defineProperty(window, "localStorage", { configurable: true, get: () => storage });
+    host = document.createElement("div"); document.body.appendChild(host); root = createRoot(host);
+    await act(async () => { root.render(<StrictMode><App /></StrictMode>); await new Promise((resolve) => setTimeout(resolve, 0)); });
+    expect(lockRequestCount).toBeGreaterThan(0);
+    expect(host.textContent).toContain("Locked startup project");
+    expect((host.querySelector('input[aria-label="New project name"]') as HTMLInputElement).disabled).toBe(false);
   });
 });
 
