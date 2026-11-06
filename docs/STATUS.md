@@ -244,3 +244,12 @@ After this documentation checkpoint is reviewed and merged, perform a read-only 
 ### Current next action
 
 Independently review the documentation-only PR that adds `docs/SESSION-START.md` and `docs/DECISIONS.md` and reconciles this status/operations handoff. Confirm it preserves constitution 1.1 and does not change policy or approval boundaries. Do not declare Phase 1 complete until every deferred pre-completion item is either implemented and verified through its own approved work or explicitly resolved by the owner.
+
+
+### Documentation PR in review — 2026-11-06
+
+- PR #8: https://github.com/Fadhel-docom/DevMate/pull/8 — open, unmerged; documentation-only.
+- Branch: `docs/session-start-decisions-and-pr6-closeout`; base: `feature/phase-1-foundation`; PR head at creation: `85599297fc672c7abe656699aad8b99bfd2a63cf`. Re-fetch the live PR head before review or merge because subsequent documentation bookkeeping commits may advance it.
+- Scope: add `docs/SESSION-START.md` and `docs/DECISIONS.md`; reconcile STATUS and append the PR #6/Claude/CI closeout in OPERATIONS-ROOM. Exactly four documentation files; no code or workflow changes.
+- No CI run is configured for this PR branch/base combination under the current workflow triggers. This is not represented as a passed check; apply the Small documentation gates and obtain independent review of the shared instructions.
+- Next: independent review of PR #8 against constitution 1.1. Do not merge until the live diff is reviewed and all applicable gates pass. PR #1 remains separately owner-controlled.
