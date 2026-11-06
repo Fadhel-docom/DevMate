@@ -1,12 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { BACKUP_KEY, MAX_BACKUPS, STORAGE_KEY, backupKey, getBrowserStorage, loadProjects, readProjects, saveProjects, type LoadResult, type Project, type SaveResult } from "./storage";
+import { BACKUP_KEY, MAX_BACKUPS, STORAGE_KEY, backupKey, backupMetaKey, getBrowserStorage, loadProjects, readProjects, readProjectsLocked, saveProjects, saveProjectsLocked, listBackups, restoreBackup, deleteBackup, isBackupKeyName, withStorageLock, type LoadResult, type Project, type SaveResult } from "./storage";
 import { loadNotice, saveMessage } from "./App";
 
 function memoryStorage() {
   const values = new Map<string, string>();
   return {
     getItem: (key: string) => values.get(key) ?? null,
-    setItem: (key: string, value: string) => values.set(key, value)
+    setItem: (key: string, value: string) => values.set(key, value),
+    removeItem: (key: string) => { values.delete(key); }
   };
 }
 
@@ -42,9 +43,15 @@ describe("project persistence", () => {
 });
 
 describe("valid data", () => {
+  it("returns the exact serialized baseline that was written and verified", () => {
+    const storage = memoryStorage();
+    const result = saveProjects(sample, storage);
+    expect(result).toMatchObject({ ok: true, raw: storage.getItem(STORAGE_KEY) });
+  });
+
   it("round-trips projects with tasks unchanged and reports ok", () => {
     const storage = memoryStorage();
-    expect(saveProjects(sample, storage)).toEqual({ ok: true });
+    expect(saveProjects(sample, storage)).toMatchObject({ ok: true });
     const result = readProjects(storage);
     expect(result.status).toBe("ok");
     expect(result.projects).toEqual(sample);
@@ -195,11 +202,11 @@ describe("valid JSON with the wrong structure", () => {
     expect(result.droppedTasks).toBe(1);
   });
 
-  it("copies only known fields and ignores a __proto__ key", () => {
+  it("preserves safe extras and ignores a __proto__ key", () => {
     const storage = memoryStorage();
     storage.setItem(STORAGE_KEY, "[{\"id\":\"p1\",\"name\":\"P\",\"tasks\":[],\"extra\":1,\"__proto__\":{\"polluted\":true}}]");
     const result = readProjects(storage);
-    expect(result.projects).toEqual([{ id: "p1", name: "P", tasks: [] }]);
+    expect(result.projects).toEqual([{ id: "p1", name: "P", tasks: [], extra: 1 }]);
     expect(({} as { polluted?: boolean }).polluted).toBe(undefined);
     expect((result.projects[0] as { polluted?: boolean }).polluted).toBe(undefined);
   });
@@ -208,7 +215,7 @@ describe("valid JSON with the wrong structure", () => {
 describe("save failures", () => {
   it("reports quota errors and keeps the previously saved data", () => {
     const base = memoryStorage();
-    expect(saveProjects(sample, base)).toEqual({ ok: true });
+    expect(saveProjects(sample, base)).toMatchObject({ ok: true });
     const full = { getItem: base.getItem, setItem: () => { throw domError("QuotaExceededError", 22); } };
     const next: Project[] = [...sample, { id: "p3", name: "Third", tasks: [] }];
     const result = saveProjects(next, full);
@@ -250,7 +257,7 @@ describe("save failures", () => {
 
   it("succeeds with a storage that only offers setItem", () => {
     const values = new Map<string, string>();
-    expect(saveProjects(sample, { setItem: (key: string, value: string) => values.set(key, value) })).toEqual({ ok: true });
+    expect(saveProjects(sample, { setItem: (key: string, value: string) => values.set(key, value) })).toMatchObject({ ok: true });
     expect(values.get(STORAGE_KEY)).toBe(JSON.stringify(sample));
   });
 
@@ -463,7 +470,7 @@ describe("protecting unreadable originals when saving", () => {
     expectRefused(saveProjects(next, storage));
     expect(base.getItem(STORAGE_KEY)).toBe("{broken");
     full = false;
-    expect(saveProjects(next, storage)).toEqual({ ok: true, backupKey: BACKUP_KEY });
+    expect(saveProjects(next, storage)).toMatchObject({ ok: true, backupKey: BACKUP_KEY });
     expect(base.getItem(BACKUP_KEY)).toBe("{broken");
     expect(loadProjects(base)).toEqual(next);
   });
@@ -473,7 +480,7 @@ describe("protecting unreadable originals when saving", () => {
     const raw = JSON.stringify([sample[0], { id: "bad" }]);
     base.setItem(STORAGE_KEY, raw);
     readProjects(base);
-    expect(saveProjects(next, base)).toEqual({ ok: true, backupKey: BACKUP_KEY });
+    expect(saveProjects(next, base)).toMatchObject({ ok: true, backupKey: BACKUP_KEY });
     expect(base.getItem(BACKUP_KEY)).toBe(raw);
     expect(loadProjects(base)).toEqual(next);
   });
@@ -502,8 +509,8 @@ describe("protecting unreadable originals when saving", () => {
 
   it("does not create any backup when the stored data is valid", () => {
     const base = memoryStorage();
-    expect(saveProjects(sample, base)).toEqual({ ok: true });
-    expect(saveProjects(next, base)).toEqual({ ok: true });
+    expect(saveProjects(sample, base)).toMatchObject({ ok: true });
+    expect(saveProjects(next, base)).toMatchObject({ ok: true });
     expect(base.getItem(BACKUP_KEY)).toBeNull();
   });
 
@@ -511,7 +518,7 @@ describe("protecting unreadable originals when saving", () => {
     for (const stored of [null, "[]"]) {
       const base = memoryStorage();
       if (stored !== null) base.setItem(STORAGE_KEY, stored);
-      expect(saveProjects(next, base)).toEqual({ ok: true });
+      expect(saveProjects(next, base)).toMatchObject({ ok: true });
       expect(base.getItem(BACKUP_KEY)).toBeNull();
     }
   });
@@ -529,7 +536,7 @@ describe("protecting unreadable originals when saving", () => {
 
   it("keeps the previous data and reports verify when the write does not stick", () => {
     const base = memoryStorage();
-    expect(saveProjects(sample, base)).toEqual({ ok: true });
+    expect(saveProjects(sample, base)).toMatchObject({ ok: true });
     const lossy = { getItem: base.getItem, setItem: () => undefined };
     const result = saveProjects(next, lossy);
     expect(result.ok).toBe(false);
@@ -563,6 +570,7 @@ describe("messages shown to the user", () => {
     repairedProjects: 0,
     backedUp: false,
     backupKey: null,
+    storageRaw: null,
     ...overrides
   });
 
@@ -657,7 +665,7 @@ describe("empty string stored under the workspace key", () => {
   it("is replaced only after a verified backup exists", () => {
     const base = memoryStorage();
     base.setItem(STORAGE_KEY, "");
-    expect(saveProjects(sample, base)).toEqual({ ok: true, backupKey: BACKUP_KEY });
+    expect(saveProjects(sample, base)).toMatchObject({ ok: true, backupKey: BACKUP_KEY });
     expect(base.getItem(BACKUP_KEY)).toBe("");
     expect(loadProjects(base)).toEqual(sample);
   });
@@ -680,7 +688,264 @@ describe("empty string stored under the workspace key", () => {
     emptyList.setItem(STORAGE_KEY, "[]");
     expect(readProjects(emptyList).status).toBe("empty");
     expect(emptyList.getItem(BACKUP_KEY)).toBeNull();
-    expect(saveProjects(sample, emptyList)).toEqual({ ok: true });
-    expect(saveProjects(sample, memoryStorage())).toEqual({ ok: true });
+    expect(saveProjects(sample, emptyList)).toMatchObject({ ok: true });
+    expect(saveProjects(sample, memoryStorage())).toMatchObject({ ok: true });
+  });
+});
+
+
+function installFakeLocks() {
+  const chains = new Map<string, Promise<unknown>>();
+  Object.defineProperty(navigator, "locks", {
+    configurable: true,
+    value: {
+      request(name: string, _opts: unknown, cb: () => Promise<unknown>) {
+        const prev = chains.get(name) ?? Promise.resolve();
+        const next = prev.then(() => cb());
+        chains.set(name, next.catch(() => undefined));
+        return next;
+      }
+    }
+  });
+}
+function uninstallLocks() { delete (navigator as unknown as { locks?: unknown }).locks; }
+
+describe("Web Locks fail-closed behaviour", () => {
+  it("does not run the callback when Web Locks are unavailable", async () => {
+    uninstallLocks(); let calls = 0;
+    const result = await withStorageLock(() => { calls++; return 1; });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.reason).toBe("lock-unavailable");
+    expect(calls).toBe(0);
+  });
+  it("refuses locked writes when locks are missing", async () => {
+    uninstallLocks(); const storage = memoryStorage();
+    const result = await saveProjectsLocked(sample, storage);
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.reason).toBe("lock-unavailable");
+    expect(storage.getItem(STORAGE_KEY)).toBeNull();
+  });
+  it("times out while waiting for a lock", async () => {
+    Object.defineProperty(navigator, "locks", { configurable: true, value: {
+      request(_name: string, opts: { signal?: AbortSignal }) {
+        return new Promise((_, reject) => opts.signal?.addEventListener("abort", () => {
+          const error = new Error("Aborted"); error.name = "AbortError"; reject(error);
+        }));
+      }
+    } });
+    const result = await withStorageLock(() => 1, { timeoutMs: 20 });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.reason).toBe("lock-timeout");
+    uninstallLocks();
+  });
+  it("serializes concurrent saves and backs up the original once", async () => {
+    installFakeLocks();
+    const storage = memoryStorage(); storage.setItem(STORAGE_KEY, "{broken");
+    const results = await Promise.all([
+      saveProjectsLocked([{ id: "a", name: "A", tasks: [] }], storage),
+      saveProjectsLocked([{ id: "b", name: "B", tasks: [] }], storage),
+      saveProjectsLocked([{ id: "c", name: "C", tasks: [] }], storage)
+    ]);
+    expect(results.every((result) => result.ok)).toBe(true);
+    expect(storage.getItem(BACKUP_KEY)).toBe("{broken");
+    uninstallLocks();
+  });
+  it("reads without writing a backup when locks are unavailable", async () => {
+    uninstallLocks(); const storage = memoryStorage(); storage.setItem(STORAGE_KEY, "{broken");
+    const result = await readProjectsLocked(storage);
+    expect(result.status).toBe("corrupt");
+    expect(result.backedUp).toBe(false);
+    expect(storage.getItem(BACKUP_KEY)).toBeNull();
+  });
+});
+
+describe("safe extra fields", () => {
+  it("preserves project and task extras through read and save", () => {
+    const storage = memoryStorage();
+    const input = [{ id: "p1", name: "P", tasks: [{ id: "t1", title: "T", done: false, createdAt: 1, tag: "x" }], meta: { a: 1 } }];
+    storage.setItem(STORAGE_KEY, JSON.stringify(input));
+    const loaded = readProjects(storage);
+    expect(loaded.projects).toEqual(input);
+    expect(saveProjects(loaded.projects, storage)).toMatchObject({ ok: true });
+    expect(readProjects(storage).projects).toEqual(input);
+  });
+  it("drops dangerous keys at nested levels", () => {
+    const storage = memoryStorage();
+    storage.setItem(STORAGE_KEY, '[{"id":"p1","name":"P","tasks":[],"meta":{"a":1,"__proto__":{"polluted":true},"constructor":{"x":1}}}]');
+    const project = readProjects(storage).projects[0] as unknown as Record<string, unknown>;
+    expect(project.meta).toEqual({ a: 1 });
+    expect(({} as { polluted?: boolean }).polluted).toBe(undefined);
+  });
+});
+
+describe("stale-write protection", () => {
+  it("rejects a tab save when storage no longer matches its loaded baseline", async () => {
+    installFakeLocks();
+    const storage = memoryStorage();
+    const baseline = JSON.stringify([{ id: "a", name: "Original", tasks: [] }]);
+    const newer = JSON.stringify([{ id: "b", name: "Saved by another tab", tasks: [] }]);
+    storage.setItem(STORAGE_KEY, baseline);
+    storage.setItem(STORAGE_KEY, newer);
+    const result = await saveProjectsLocked([{ id: "a", name: "Stale tab edit", tasks: [] }], storage, baseline);
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.reason).toBe("conflict");
+    expect(storage.getItem(STORAGE_KEY)).toBe(newer);
+    uninstallLocks();
+  });
+});
+
+describe("backup slot identity", () => {
+  it("refuses to restore a slot whose raw contents changed after listing", async () => {
+    installFakeLocks();
+    const storage = memoryStorage();
+    const originallyListed = JSON.stringify([{ id: "old", name: "Listed copy", tasks: [] }]);
+    const replacement = JSON.stringify([{ id: "new", name: "Replacement copy", tasks: [] }]);
+    storage.setItem(BACKUP_KEY, originallyListed);
+    const selected = listBackups(storage)[0];
+    storage.setItem(BACKUP_KEY, replacement);
+    const result = await restoreBackup(BACKUP_KEY, storage, selected.fingerprint);
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.reason).toBe("stale-backup");
+    expect(storage.getItem(STORAGE_KEY)).toBeNull();
+    uninstallLocks();
+  });
+
+  it("refuses to delete a replacement backup from a reused slot", async () => {
+    installFakeLocks();
+    const storage = memoryStorage();
+    storage.setItem(BACKUP_KEY, "first copy");
+    const selected = listBackups(storage)[0];
+    storage.setItem(BACKUP_KEY, "replacement copy");
+    const result = await deleteBackup(BACKUP_KEY, storage, selected.fingerprint);
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.reason).toBe("stale-backup");
+    expect(storage.getItem(BACKUP_KEY)).toBe("replacement copy");
+    uninstallLocks();
+  });
+});
+
+describe("backup deletion metadata failures", () => {
+  it("reports success when the backup is deleted but metadata cleanup throws", async () => {
+    installFakeLocks();
+    const base = memoryStorage();
+    base.setItem(BACKUP_KEY, "raw backup");
+    base.setItem(backupMetaKey(1), JSON.stringify({ createdAt: 1, reason: "corrupt" }));
+    const storage = {
+      getItem: base.getItem,
+      setItem: base.setItem,
+      removeItem: (key: string) => {
+        if (key === backupMetaKey(1)) throw domError("SecurityError");
+        base.removeItem(key);
+      }
+    };
+    const result = await deleteBackup(BACKUP_KEY, storage);
+    expect(result).toMatchObject({ ok: true });
+    expect(base.getItem(BACKUP_KEY)).toBeNull();
+    expect(base.getItem(backupMetaKey(1))).not.toBeNull();
+    uninstallLocks();
+  });
+});
+
+describe("backup management", () => {
+  it("rejects the non-canonical first-slot alias", () => {
+    expect(isBackupKeyName(BACKUP_KEY + ".1")).toBe(false);
+  });
+  it("lists backup metadata and raw-data status", () => {
+    const storage = memoryStorage();
+    storage.setItem(BACKUP_KEY, JSON.stringify([{ id: "p1", name: "P", tasks: [] }]));
+    storage.setItem(backupMetaKey(1), JSON.stringify({ createdAt: 1234, reason: "corrupt" }));
+    storage.setItem(backupKey(2), "{broken");
+    const list = listBackups(storage);
+    expect(list).toHaveLength(2);
+    expect(list[0].slot).toBe(1);
+    expect(list[0].createdAt).toBe(1234);
+    expect(list[0].parseable).toBe(true);
+    expect(list[0].restorable).toBe(true);
+    expect(list[1].parseable).toBe(false);
+    expect(list[1].restorable).toBe(false);
+  });
+  it("restores a selected backup after preserving the current workspace", async () => {
+    installFakeLocks(); const storage = memoryStorage();
+    storage.setItem(BACKUP_KEY, JSON.stringify([{ id: "old", name: "Old", tasks: [] }]));
+    storage.setItem(STORAGE_KEY, JSON.stringify([{ id: "current", name: "Current", tasks: [] }]));
+    const result = await restoreBackup(BACKUP_KEY, storage);
+    expect(result.ok).toBe(true);
+    expect(loadProjects(storage)[0].id).toBe("old");
+    expect(listBackups(storage).some((backup) => backup.reason === "pre-restore")).toBe(true);
+    uninstallLocks();
+  });
+  it("rejects a parseable but structurally invalid backup without changing the workspace or creating a snapshot", async () => {
+    installFakeLocks();
+    const storage = memoryStorage();
+    const invalid = JSON.stringify([{ id: "p1", name: "P", tasks: [{ id: "t1", title: 9, done: false, createdAt: 1 }] }]);
+    storage.setItem(BACKUP_KEY, invalid);
+    const current = JSON.stringify([{ id: "current", name: "Current", tasks: [] }]);
+    storage.setItem(STORAGE_KEY, current);
+    const result = await restoreBackup(BACKUP_KEY, storage);
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.reason).toBe("invalid-backup");
+    expect(storage.getItem(STORAGE_KEY)).toBe(current);
+    expect(storage.getItem(backupKey(2))).toBeNull();
+    uninstallLocks();
+  });
+  it("rolls the previous workspace back when restore read-back verification fails", async () => {
+    installFakeLocks();
+    const base = memoryStorage();
+    const backup = JSON.stringify([{ id: "backup", name: "Backup", tasks: [] }]);
+    const current = JSON.stringify([{ id: "current", name: "Current", tasks: [] }]);
+    base.setItem(BACKUP_KEY, backup);
+    base.setItem(STORAGE_KEY, current);
+    let failNextWorkspaceRead = false;
+    const storage = {
+      getItem(key: string) {
+        if (key === STORAGE_KEY && failNextWorkspaceRead) {
+          failNextWorkspaceRead = false;
+          return "unexpected read-back value";
+        }
+        return base.getItem(key);
+      },
+      setItem(key: string, value: string) {
+        base.setItem(key, value);
+        if (key === STORAGE_KEY && value === backup) failNextWorkspaceRead = true;
+      },
+      removeItem: base.removeItem
+    };
+    const result = await restoreBackup(BACKUP_KEY, storage);
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.reason).toBe("verify");
+      expect(result.snapshotKey).toBeTruthy();
+    }
+    expect(base.getItem(STORAGE_KEY)).toBe(current);
+    uninstallLocks();
+  });
+
+  it("accepts an intentionally empty backup", async () => {
+    installFakeLocks();
+    const storage = memoryStorage();
+    storage.setItem(BACKUP_KEY, "[]");
+    storage.setItem(STORAGE_KEY, JSON.stringify(sample));
+    const result = await restoreBackup(BACKUP_KEY, storage);
+    expect(result.ok).toBe(true);
+    expect(storage.getItem(STORAGE_KEY)).toBe("[]");
+    uninstallLocks();
+  });
+  it("rejects invalid backup keys", async () => {
+    installFakeLocks();
+    const result = await restoreBackup(BACKUP_KEY + ".1", memoryStorage());
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.reason).toBe("invalid-key");
+    uninstallLocks();
+  });
+  it("deletes the chosen backup and its metadata only", async () => {
+    installFakeLocks(); const storage = memoryStorage();
+    storage.setItem(BACKUP_KEY, "a"); storage.setItem(backupKey(2), "b");
+    storage.setItem(backupMetaKey(2), JSON.stringify({ createdAt: 1, reason: "corrupt" }));
+    const result = await deleteBackup(backupKey(2), storage);
+    expect(result.ok).toBe(true);
+    expect(storage.getItem(backupKey(2))).toBeNull();
+    expect(storage.getItem(backupMetaKey(2))).toBeNull();
+    expect(storage.getItem(BACKUP_KEY)).toBe("a");
+    uninstallLocks();
   });
 });

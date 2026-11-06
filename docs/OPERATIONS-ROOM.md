@@ -1055,3 +1055,125 @@ No merge; no change to Draft status, the PR base, CI or the workflow, `main`, PR
 - The scratch branch `feature/ci-probe-pr10-final-adf867c` and its `docs/CI-PROBE-PR10.md` marker are isolated from PR #10 and `main`; left in place to preserve the CI evidence and avoid creating a second cleanup-triggered run.
 - Next exact action: owner/coordinator may now make the PR #10 merge decision under constitution §7, considering the residual risks and owner-reserved authority. Keep PR #10 Draft until the owner explicitly decides whether to authorize the merge. PR #1 remains untouched.
 - Authorship: CI orchestration, independent review, and this handoff by ChatGPT coordinator.
+
+
+## 36. Storage Reliability Hardening A–D — 2026-11-06 — ChatGPT coordinator implementation
+
+- **Starting checkpoint:** `fix/storage-reliability-hardening` at `57482210bb502cccfc82d5e11103f2871075bc68`, created from PR #10 head. PR #10 remains open, Draft, and unmodified; PR #1 and `main` remain untouched.
+- **Task:** implement storage reliability tasks A–D using the existing source and the owner's supplied test/UI/documentation requirements. No new dependencies or cost.
+- **Implemented:** Web Locks exclusive lock helper with timeout; fail-closed locked saves; read-only fallback when locks are unavailable; safe recursive extra-field preservation; canonical backup-slot validation; best-effort metadata; backup listing; restore with pre-restore snapshot; delete with metadata cleanup; App integration; responsive backup/confirmation styles.
+- **Files:** `src/storage.ts`, `src/App.tsx`, `src/BackupManager.tsx` (new), `src/storage.test.ts`, `src/App.test.tsx`, `src/BackupManager.test.tsx` (new), `src/styles.css`, `docs/STATUS.md`, `docs/OPERATIONS-ROOM.md`.
+- **Review notes:** unit fake locks only test serialized callbacks in the test process. They are not evidence of real browser cross-tab behaviour. The App's first startup read remains synchronous and outside the lock. No browser E2E or real Android/Safari test is claimed.
+- **Not performed:** no package/lockfile/workflow/constitution changes; no push to `main`; no modification or merge of PR #10 or PR #1; no deployment; no paid service or dependency.
+- **Evidence status:** all implementation is **Fixed, not yet verified** until the exact branch head passes CI. Tests, build, audit, and browser behaviour are not claimed as passed here.
+- **Next exact action:** commit this focused set to `fix/storage-reliability-hardening`, trigger the existing push workflow from a separate `feature/**` probe branch at the exact code SHA, inspect the full run, and request an independent review before any merge decision.
+- **Actor attribution:** implementation and Git object creation performed by ChatGPT coordinator through the connected GitHub integration under the owner's prior instruction to begin; GitHub may display the connected owner's account.
+
+
+## 37. Storage Reliability Hardening — exact-head CI verification — 2026-11-06 — ChatGPT coordinator
+
+- **Code commit tested:** `2e779d4f2d40528450a17dd155357fa283f5e729`.
+- **CI evidence:** GitHub Actions run **#94**, ID `42212513216`, https://github.com/Fadhel-docom/DevMate/actions/runs/42212513216. The run was triggered by updating the isolated branch `feature/storage-hardening-ci` to the exact code commit. It did not change the PR base or workflow.
+- **Observed environment:** Node `20.20.2`, npm `10.8.2`.
+- **Results:** `npm ci` passed (155 packages); audit reported 0 vulnerabilities; Vitest 4.1.12 passed 3 files / 97 tests; `npm run build` passed (TypeScript + Vite production build). Job conclusion: **success**.
+- **Earlier failures preserved:** run #92 failed due to a malformed newline in the App test and two test-fixture/assertion mismatches; run #93 passed all 97 tests but failed TypeScript because a nullable test root was not narrowed. These were fixed in subsequent commits before run #94.
+- **Current PR #11 head at time of this entry:** `2e779d4f2d40528450a17dd155357fa283f5e729`; PR #11 remains open, Draft, and targets `fix/storage-reliability` (PR #10's head). No merge performed.
+- **Still unverified:** real browser multi-tab locking, Android Chrome/Safari smoke, visual/accessibility review of the modal, and an end-to-end concurrent save/restore race. Unit tests use a fake Web Locks manager only.
+- **Independent review:** outstanding. ChatGPT authored the implementation and does not count as an independent reviewer. Keep PR #11 Draft until a separate reviewer inspects the final diff and owner/coordinator makes the merge decision under the constitution.
+- **Next exact action:** independent review of PR #11's code diff at the tested SHA; do not merge automatically after CI.
+
+
+## 38. Storage restore validation and locked startup follow-up — 2026-11-06 — ChatGPT coordinator
+
+- **Verified starting point:** user confirmed the local worktree was clean on `fix/storage-restore-validation-startup-lock` at `c03fef71ade202c56e5a11e648abffef65624d3b`, matching PR #11 head before these changes.
+- **Implementation commits on PR #11 branch `fix/storage-reliability-hardening`:**
+  - `3c232bba` — strict backup validation before snapshot/write; canonical normalized restore payload; `restorable` metadata.
+  - `4b406691` — asynchronous exclusive-lock startup read and locked reload after restore; edits/saves gated until startup read completes.
+  - `d00ef504` — disable invalid restore actions and replace custom confirmation container with native `<dialog>`.
+  - `94b4fc59` — native dialog styling.
+  - `644d799b` — storage regression tests for invalid restore preserving workspace and acceptance of empty backups.
+  - `269b8f2d` — UI regression test for disabled invalid restore.
+  - `a07d9ca0` — App regression test asserting startup uses an exclusive Web Lock.
+  - `e9e9ab6d` — STATUS checkpoint.
+- **Current state:** implementation and tests have been committed to the existing PR #11 head branch through the GitHub integration. The GitHub Actions history inspected so far contains no run for the new code SHA; previous run #94 on `2e779d4` is not evidence for these changes.
+- **Not yet verified:** full test suite, TypeScript/Vite build, dependency audit on the new head, real Android Chrome behaviour, true browser cross-tab contention, and native dialog keyboard/focus behaviour. The code remains unapproved pending exact-head CI and independent review.
+- **Boundaries maintained:** PR #11 remains Draft and based on PR #10; no merge, deployment, main-branch change, dependency change, or paid service.
+- **Next exact action:** fetch the updated PR #11 branch into Termux, run `npm test` and `npm run build` locally, then create an empty verification commit and push it to the same PR branch to trigger the repository's push workflow. Inspect the run against the exact resulting SHA, fix any failures, then obtain independent review. Do not merge.
+- **Actor attribution:** code and documentation commits were authored through the connected GitHub integration under the user's explicit instruction to continue implementation; local validation and workflow triggering remain pending.
+
+
+## 39. Storage conflict and restore safety follow-up — 2026-11-06 — ChatGPT coordinator
+
+- **Starting checkpoint:** PR #11 branch fix/storage-reliability-hardening, exact prior head 6be918871c3d6190833887b744a1f15894cea629; PR #11 remains open/Draft and stacked on PR #10.
+- **Changes made:** storage reads now retain the exact raw workspace baseline. App saves compare that baseline with the current stored value while holding the exclusive Web Lock; stale saves return conflict and do not write. Editing is disabled after an unavailable startup read or a detected conflict until a successful reload. Reload failures preserve the unavailable lockout.
+- **Restore changes:** workspace editing is disabled before a restore attempt and the app reloads storage after success or failure. If post-write restore verification fails, storage attempts to restore the pre-restore raw workspace and verifies that rollback; the error includes the retained pre-restore snapshot key and distinguishes verified from unverified rollback.
+- **Tests added/changed:** stale-tab baseline conflict preserves newer stored data; failed restore verification restores the previous workspace; unavailable startup cannot be edited until a successful reload.
+- **Risk assessment:** these changes protect against stale sequential writes and the identified unavailable-read overwrite path. They do not yet prove actual browser Web Locks behaviour, nor resolve all lower-priority review findings (backup-slot identity/reuse, raw export of invalid backups, backup-list refresh timing, slot pruning, sanitization loss, non-Web-Locks compatibility).
+- **Recovery plan:** every restore of an existing workspace snapshots the current raw value first. A failed verification triggers automatic rollback and read-back verification. If rollback cannot be verified, the UI remains locked from editing and the snapshot key is surfaced in the error; user must recover from that snapshot before continuing.
+- **Verification:** exact-head CI pending at this entry. No browser E2E, Android Chrome/Safari smoke, or independent review is claimed.
+- **Boundaries:** no dependency or workflow changes; no PR #10, PR #1, main, base-branch, merge, or deployment changes. PR #11 remains Draft.
+- **Next action:** exact-head CI, then independent review of the updated code and tests. Do not merge without the review gate and explicit owner decision.
+
+
+## 40. Backup identity and recovery visibility safeguards — 2026-11-06 — ChatGPT coordinator
+
+- BackupInfo records the raw contents captured at list time. restoreBackup and deleteBackup accept that expected raw value and compare it under Web Locks before acting. A reused slot is rejected as stale instead of restoring/deleting a different copy.
+- Invalid or corrupt backup copies expose an Export raw control; export preserves the original raw text in a local file.
+- BackupManager refreshes after restore attempts; App passes a refresh revision after startup backups and autosave-created snapshots so the panel does not remain stale.
+- Restore results report rollbackVerified. An unverified rollback sets a persistent in-memory recovery lock: ordinary reload cannot clear it; the user must successfully restore the retained pre-restore snapshot. A successful restore triggers a storage reload and releases the lock.
+- When all backup slots are occupied, the application does not silently prune recovery data. Save/restore failures surface the slots-full reason and leave the existing workspace untouched. Automatic pruning is intentionally deferred pending an explicit retention policy.
+- Verification status: run #100 passed on earlier source head 6624be40de9f22371f853ba0e0f992ef6f51a05b (103 tests, build, audit), but subsequent code changes in this entry require a new exact-head CI run. No latest-head success is claimed yet.
+- Remaining release checks: real-browser two-tab contention, Android Chrome/Safari, native dialog keyboard/focus, and independent review. PR #11 remains Draft and unmerged.
+
+
+## 41. Storage safety exact-head CI verification — 2026-11-06 — ChatGPT coordinator
+
+- **Exact code head tested:** 5f86e83107268b2bfdfe67525cf843b3da09bb77. This was the PR #11 head at the time of verification. The same code head was pushed to an isolated feature/** CI branch; no application code was changed by that trigger.
+- **GitHub Actions run #106:** ID 42241700694, https://github.com/Fadhel-docom/DevMate/actions/runs/42241700694. Job verify completed success.
+- **Environment/results:** Node v20.20.2, npm 10.8.2; npm ci passed (155 packages added, 156 audited); audit 0 vulnerabilities; Vitest 3 files / 107 tests passed (storage 88, BackupManager 9, App 10); npm run build passed (TypeScript and Vite).
+- **Scope now covered by tests:** stale workspace baseline rejected without overwriting newer data; restore read-back failure attempts and verifies rollback; unavailable startup blocks editing until reload; stale backup-slot restore/delete rejected; backup list refresh trigger and raw-export affordance covered.
+- **Remaining evidence gaps:** real-browser two-tab lock contention, Android Chrome/Safari smoke, native dialog keyboard/focus/accessibility, and independent reviewer approval. Do not equate fake-lock tests with cross-tab browser verification.
+- **Current PR state:** PR #11 remains open, Draft, base fix/storage-reliability (PR #10 head), unmerged. No deployment or merge performed.
+- **Next action:** obtain independent review of the final PR diff at 5f86e831... and perform the required browser checks before any merge decision. Do not merge without the independent review and owner decision.
+
+
+## PR #11 — final storage safety corrections from independent review — 2026-11-06 — ChatGPT coordinator
+
+- **Authorized scope:** address only H1, H2, and H3 from the independent review; no work on PR #10, PR #1, or `main`.
+- **H1:** workspace edit gate now blocks both `conflict` and `verify` save failures. Added direct regression coverage for verify lockout and the other existing lockout conditions.
+- **H2:** backup deletion now determines success from the backup key itself. Metadata cleanup is best-effort and cannot report a false failure after the backup has actually been removed. Added a regression test where removing the metadata key throws after the backup key is removed.
+- **H3:** restore resume safety defaults to false. It becomes true only for a confirmed restore or an explicit `rollbackVerified: true` result. Unexpected thrown errors therefore keep editing locked. Added regression coverage for confirmed restore, verified rollback, unverified rollback, and indeterminate failures.
+- **Not included:** M1–M6 and L1–L3 remain deferred; no scope expansion, dependency changes, workflow changes, merge, or deployment.
+- **Verification:** pending exact-head GitHub Actions; do not infer test/build success from source changes alone. Independent review of this correction set is still required before any merge decision.
+
+
+## PR #11 — focused reliability follow-up — 2026-11-06
+
+- Kept the existing implementation and applied narrow patches; no wholesale file replacement.
+- Confirmed the H1 edit gate rejects both `conflict` and `verify`; H2 treats backup metadata cleanup as best-effort only after verifying the backup key is gone; H3 resumes editing only after a confirmed restore or verified rollback.
+- M1 review: retained the existing cancellable Web Locks wait timeout. The timeout is only for acquiring the lock; the timer is cleared once the callback acquires it and in the finalizer. The `Promise.race` observes the work promise's eventual rejection. This does not claim to cancel an already-running storage callback.
+- M3: disabled project/task mutation controls now follow `canEdit`; navigation and chat remain usable while storage editing is locked.
+- M4: raw-backup export object URLs are revoked after a short delay rather than in the download click handler.
+- M5: successful saves return the exact serialized string that was written and read-back verified; App stores that returned value as its next compare-and-swap baseline. Added a regression test for this contract.
+- CI and browser-level multi-tab verification are still required on the resulting head. No merge, deployment, PR #10/PR #1 changes, or main changes.
+
+
+### CI evidence — 2026-11-06
+
+- GitHub Actions run #108, `DevMate CI`, completed successfully: https://github.com/Fadhel-docom/DevMate/actions/runs/42256217928
+- The run checked out commit `f8e2436d86189c101151932bfe60174aedbc2c98`, which is the current PR #11 head and includes the same source tree as the verification trigger commit.
+- `npm ci`, dependency audit reporting, `npm test` (114 tests across 3 files), and `npm run build` all completed successfully.
+- This establishes CI success for the current PR head. It does not substitute for real-browser multi-tab/Web Locks testing or Android Chrome/Safari dialog and download testing; those remain explicitly outstanding.
+
+
+## 42. PR #11 — serialized autosave follow-up and final CI — 2026-11-06 — ChatGPT coordinator
+
+- **Root cause:** save effects captured the compare-and-swap baseline before waiting for Web Locks. A second save queued behind the first could therefore retain the old baseline and return a false conflict after the first save had already committed.
+- **Implementation:** `src/App.tsx` now uses a per-App promise queue. Each save reads `baselineRaw.current` at execution time after earlier saves have completed. A successful write advances the baseline even if the originating effect was cleaned up by a newer render; stale effects cannot overwrite current UI status.
+- **Regression coverage:** a delayed-lock test triggers two rapid saves and checks that both changes persist without a false conflict. This is a controlled deterministic test, not a genuine browser multi-tab test.
+- **Exact code SHA:** `3929ea7ce9fca787a88e3def16ccb71731bc85b2`.
+- **CI run #110:** https://github.com/Fadhel-docom/DevMate/actions/runs/42292489500 — success; 3 test files / 115 tests passed; npm ci passed; audit reported 0 vulnerabilities; TypeScript and Vite production build passed.
+- **Diff since Claude's independent review SHA `1446c1de...`:** only `src/App.tsx` and `src/App.test.tsx`; no package, workflow, storage format, or backup implementation changes. The follow-up was authored by ChatGPT and CI-verified; do not claim Claude reviewed this later two-file patch.
+- **Unverified release checks:** real browser two-tab Web Locks contention, Android Chrome, native dialog focus/keyboard/accessibility, download behavior, and Safari. These remain required before the stacked work reaches `main`. No browser E2E result is claimed.
+- **Merge boundary:** PR #11 is stacked on PR #10. Any merge of #11 is strictly into `fix/storage-reliability` (PR #10's branch), not `main`. PR #10, PR #1, and `main` remain untouched; no deployment.
+- **Next exact action:** update PR #11's verification summary, mark it ready, and merge only into its existing base if GitHub confirms the head is unchanged and the PR remains mergeable. Then report the merge SHA and keep PR #10 open for its own independent review and owner decision.
