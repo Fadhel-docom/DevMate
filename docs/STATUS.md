@@ -420,3 +420,18 @@ Run the full Vitest suite, TypeScript/Vite production build, and dependency audi
 - **Diff since Claude's independent review head `1446c1de...`:** exactly two files, `src/App.tsx` and `src/App.test.tsx`; no dependency, workflow, storage format, or backup implementation changes. The new two-file follow-up was authored by ChatGPT and verified by CI; Claude's prior independent report remains anchored to the preceding head.
 - **Not verified:** real-browser two-tab Web Locks contention, Android Chrome, native dialog keyboard/focus/accessibility, download behavior, and Safari. These remain release checks before the stacked work reaches `main`; fake-lock tests are not represented as browser E2E.
 - **Merge boundary:** PR #11 remains stacked on PR #10 and may only be merged into its base branch, never independently to `main`. PR #10, PR #1, and `main` are untouched. No deployment.
+
+
+## Tool registry foundation — 2026-11-06 — in progress
+
+- Starting checkpoint: PR #10 branch `fix/storage-reliability` at `3b7efe6f4c6085d62c5fa3e5761fee23bab246ca`; PR #10 remains open and Draft. PR #11's work is already present in that branch; no claim is made that PR #10 has passed its own independent review or merge gate.
+- Created stacked branch `feature/tool-registry-foundation` from the exact PR #10 head. This branch and its PR must target `fix/storage-reliability` until PR #10 is resolved; do not merge it directly to `main` or bypass the dependency.
+- Added `src/tools/registry.ts`: typed capability inventory, readiness states, deterministic selection of available tools only, and status counts.
+- Added `src/tools/registry.test.ts`: six unit tests for readiness counts, fail-closed selection, unavailable capabilities, immutability, and injected test tools.
+- Added `src/tools/ToolRegistryPanel.tsx` and responsive styles; integrated the panel into `src/App.tsx`.
+- Added `docs/TOOL-REGISTRY.md` to define readiness semantics, boundaries, and the staged integration path.
+- Important distinction: the GitHub connector available to an external assistant is not an integration inside the DevMate app. DevMate itself still has no GitHub API, code runner, browser automation, review engine, research connector, or AI provider. The panel reports these as disconnected or not built.
+- No API keys, provider SDKs, new permissions, network calls, costs, workflow changes, other repositories, `main`, PR #1, or deployments were changed.
+- **Verification at this checkpoint:** source and tests were committed through GitHub file operations. Automated CI for the exact branch head is pending; no test/build success is claimed yet. Browser/mobile accessibility and visual checks are also not run.
+- Branch commits: `44f3918c8933ee7f695007628708200fa15f0401` (registry), `0012959cd0a115c34b1fdd576dcef9c1d7b026a7` (tests), `d0cfbfac4b604391bf05a776a2c5b2347e4ec62d` (correct readiness-count assertions), `e809a723ad3eb753c17f35e47239ed5d3688e716` (panel), `69f26dbc39f9048bccf025b6dd994cbee1228097` (App integration), `7663b233786062d9c1eeeed8d135521ee5cefa8a` (styles), `f18c4bbf97bc96866288d54d02d78ba01645b34f` (tool registry documentation).
+- Next: inspect the exact branch diff, confirm the branch head and PR base, then rely on GitHub Actions triggered by the feature-branch push. If CI passes, request independent review of this exact head. Do not merge until PR #10's dependency path and the applicable review gates are satisfied.
