@@ -236,6 +236,64 @@ describe("App cross-tab lock behaviour", () => {
     if (ownDescriptor) Object.defineProperty(window, "localStorage", ownDescriptor);
     else delete (window as { localStorage?: unknown }).localStorage;
   });
+  it("serializes rapid saves and uses the latest verified baseline", async () => {
+    const storage = new FakeStorage();
+    useStorage(storage);
+    await mount();
+
+    let releaseFirstSave!: () => void;
+    let signalFirstSaveStarted!: () => void;
+    const firstSaveGate = new Promise<void>((resolve) => { releaseFirstSave = resolve; });
+    const firstSaveStarted = new Promise<void>((resolve) => { signalFirstSaveStarted = resolve; });
+    const chains = new Map<string, Promise<unknown>>();
+    let blockNextCallback = true;
+    Object.defineProperty(navigator, "locks", {
+      configurable: true,
+      value: {
+        request(name: string, _options: unknown, callback: () => Promise<unknown>) {
+          const previous = chains.get(name) ?? Promise.resolve();
+          const next = previous.then(async () => {
+            if (blockNextCallback) {
+              blockNextCallback = false;
+              signalFirstSaveStarted();
+              await firstSaveGate;
+            }
+            return callback();
+          });
+          chains.set(name, next.catch(() => undefined));
+          return next;
+        }
+      }
+    });
+
+    const input = host.querySelector('input[aria-label="New project name"]') as HTMLInputElement;
+    const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!;
+    const submit = () => (host.querySelector("form.inline-form") as HTMLFormElement)
+      .dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
+
+    await act(async () => {
+      setter.call(input, "First rapid save");
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+      submit();
+    });
+    await firstSaveStarted;
+
+    await act(async () => {
+      const currentInput = host.querySelector('input[aria-label="New project name"]') as HTMLInputElement;
+      setter.call(currentInput, "Second rapid save");
+      currentInput.dispatchEvent(new Event("input", { bubbles: true }));
+      submit();
+    });
+    releaseFirstSave();
+    await act(async () => { await new Promise((resolve) => setTimeout(resolve, 0)); });
+    await act(async () => { await new Promise((resolve) => setTimeout(resolve, 0)); });
+
+    const saved = JSON.parse(storage.values.get(STORAGE_KEY) ?? "[]") as Array<{ name: string }>;
+    expect(saved.map((project) => project.name)).toContain("First rapid save");
+    expect(saved.map((project) => project.name)).toContain("Second rapid save");
+    expect(host.querySelector('[role="alert"]')?.textContent ?? "").not.toContain("Another tab or session");
+  });
+
   it("refuses a save when Web Locks are unavailable", async () => {
     uninstallLocks();
     const storage = new FakeStorage();
