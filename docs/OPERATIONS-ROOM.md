@@ -883,3 +883,52 @@ No merge, close or delete of any PR or branch; no change to `main`, PR #1, the c
 - Last verified checkpoint: PR #10 code at `20e4a3bb53779edeff1ef3fe4939fbd15c859e93` (63 tests, build and audit verified locally; no CI). The head after this documentation commit differs from it only in `docs/STATUS.md` and `docs/OPERATIONS-ROOM.md`; its SHA is shown on PR #10.
 - Next exact action: the coordinator/owner decides how to obtain a real CI run on the PR head (options above), then a reviewer other than Claude (author) independently reviews the diff at the exact head and the CI result. Keep PR #10 draft until then. Handoff owner: ChatGPT coordinator for review and CI routing; the owner for any workflow change.
 - Handoff authorship: authored by Claude (third assistant) and committed through the GitHub connector under the owner's delegation; GitHub shows the owner's account.
+
+
+---
+
+## 31. Storage Reliability — review follow-up: empty string and multi-tab limit — 2026-11-06 — Claude (third assistant)
+
+**Risk level (§2):** Standard. Scope limited to the owner's review of PR #10 at `d976077a6ed0cfe7d977bcca795906a8a02c37ba`; the task was not redone or widened.
+
+### Starting checkpoint
+
+- PR #10 head `d976077a6ed0cfe7d977bcca795906a8a02c37ba` (re-fetched live before editing); base `feature/phase-1-foundation` at `39b9c47f1efcca78bd5913719cbb73ce44e9c827`. Governing documents as listed in entry 30 (constitution 1.1, blob `50126a159961b71faf88025a8695cb7e734d63b7`, unchanged).
+
+### Finding 1 — empty string treated as empty storage (Verified, fixed)
+
+- `inspectRaw` in `src/storage.ts` returned `empty` for `""`. An empty string is not valid JSON and not the project format, so treating it as "nothing stored" let `saveProjects` overwrite it with no backup (and `readProjects` skipped the backup).
+- Fix (code commit `01dd54cfd2f8bd95789765d299d2c8f369f3b658`): the special case was removed, so `""` is classified `corrupt`: it is backed up (the backup holds the empty string), and the original key is replaced only after a verified backup exists; if the backup fails, the write is refused (`protect-original`) and the original stays. Unchanged: a missing key reads as empty storage, and the valid list `"[]"` is empty and may be overwritten without a backup.
+- Tests, real Vitest 4.1.12. Before the fix (new tests against the old `src/storage.ts`): **6 failed, 64 passed (70)**; the failing ones are the empty-string tests for classification as corrupt, backup, no duplicate backup on repeated reads, no replacement when the backup fails, replacement only after a verified backup, and no replacement when the backup write silently stores nothing. After the fix: **70 passed, 0 failed**. The 7th new test (missing key and `"[]"` unchanged) passed both before and after, as intended. One earlier test iterated `[null, "", "[]"]` as "nothing meaningful stored"; the `""` was removed from it and is now covered by the new group.
+
+### Finding 2 — multi-tab limit (documented; not solved)
+
+- Backup slots are not overwritten in a normal single-tab run, but two tabs can read the same slot as free and both write to it, so one of the two copies can be lost. The overwrite guard in `saveProjects` is also checked just before the write, and another tab can change storage in between. No locking was added and the architecture was not extended.
+- Wording corrected in the `src/storage.ts` comments (the non-replacement is no longer described as a guarantee). **Correction to entry 30 and to the STATUS update above:** their statements that no backup slot is "ever replaced" and that originals are "never replaced" without a backup describe single-tab behaviour only. The multi-tab problem is **not** resolved. The PR #10 description was updated accordingly. Earlier text is not erased.
+
+### Checks run (observed, local, none on GitHub Actions)
+
+Node v24.22.1, npm 10.8.2 (CI uses Node 20.20.2). Results listed for the code commit's files (blob `5dc4db32d6cee175147d96976b14469ebd11f57b` for `src/storage.ts`, `e07c2b874cbbfb020a45f0015e5101051e0f1eca` for `src/storage.test.ts`; identical to the committed blobs):
+
+- `npm ci`: passed, 155 packages. `tsc --noEmit`: passed.
+- `npm test` (real Vitest 4.1.12, jsdom): **1 file, 70 tests passed.**
+- `npm run build`: passed.
+- `npm audit`: 0 vulnerabilities.
+
+### CI
+
+No GitHub Actions run exists for any PR #10 head (Verified for `09ad473…`/`20e4a3b…` in entry 30; no run is claimed for `01dd54c…` or later). `.github/workflows/ci.yml`, branch settings and the PR base were not changed. Routing for a real CI run stays a coordinator/owner decision (options in entry 30).
+
+### Residual risks (changed)
+
+All entry 30 risks stand, with these changes: **the multi-tab risk is now stated precisely** — concurrent tabs can lose a backup copy (same free slot) or change storage between the guard check and the write; this is not solved. The empty-string classification gap is closed. Still: no UI to restore/delete backups, 20-slot limit, near-full storage can block saving by design, write-only storages skip the guard, unknown extra fields are stripped on save, no real-browser, Node 20, accessibility or independent-review evidence yet.
+
+### Intentionally not done
+
+No merge, close or delete of any PR or branch; no change to `main`, PR #1, the constitution, CI, `package.json`, `package-lock.json`, `src/App.tsx`, branch settings or the PR base; no duplicate PR; no declaration that PR #10 is ready to merge.
+
+### Last verified checkpoint and next exact action
+
+- Last verified checkpoint: code commit `01dd54cfd2f8bd95789765d299d2c8f369f3b658` (70 tests, build and audit local). The head after this documentation commit differs from it only in `docs/STATUS.md` and `docs/OPERATIONS-ROOM.md`; its SHA is shown on PR #10.
+- Next exact action: coordinator/owner picks the CI route; then an independent reviewer (not Claude) reviews the exact new head and the CI result. PR #10 stays open and draft. Handoff owner: ChatGPT coordinator for review and CI routing; the owner for any workflow or branch-structure change.
+- Handoff authorship: authored by Claude (third assistant) and committed through the GitHub connector under the owner's delegation; GitHub shows the owner's account.

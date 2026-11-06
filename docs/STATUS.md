@@ -258,3 +258,9 @@ After this documentation checkpoint is reviewed and merged, perform a read-only 
 - Tested and passed (local, fresh clone of `20e4a3b…`, Node 24.22.1, npm 10.8.2): `npm ci`, real Vitest 4.1.12 (63 tests, 1 file), `npm run build`, `npm audit` (0 vulnerabilities).
 - **Not verified: GitHub Actions.** No run exists for the PR head because the workflow triggers do not match this branch or PR base; the earlier success on `39b9c47…` is not evidence for PR #10. Also not verified: Node 20, real browsers (Android, Safari private mode, a truly full quota), accessibility and visual check of the notices, independent review.
 - Do not merge PR #10 until real CI runs on its exact head and a reviewer other than Claude has reviewed it.
+
+### Storage Reliability (PR #10) — follow-up 2026-11-06 — Claude (third assistant)
+
+- Review findings at `d976077a6ed0cfe7d977bcca795906a8a02c37ba` handled in code commit `01dd54cfd2f8bd95789765d299d2c8f369f3b658` (details: OPERATIONS-ROOM entry 31): an empty stored string is now classified as corrupt data (backed up; replaced only after a verified backup), while a missing key and `"[]"` behave as before.
+- **Correction:** the update above says unreadable originals and backup slots are never replaced. That holds for single-tab use only. Two tabs can pick the same free slot (one copy can be lost) or change storage between the overwrite guard and the write. **The multi-tab problem is not solved**; no locking was added.
+- Tested and passed (local, Node 24.22.1, npm 10.8.2): real Vitest 4.1.12, 70 tests; `npm run build`; `npm audit` 0 vulnerabilities. Not verified: GitHub Actions (no run on the PR head; CI and branch settings unchanged), Node 20, real browsers, independent review. PR #10 stays open, draft and unmerged; it is not declared ready to merge.
