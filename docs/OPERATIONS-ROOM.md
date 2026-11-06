@@ -609,3 +609,44 @@ No PR was merged and no code files were changed in this review handoff.
 - Run: https://github.com/Fadhel-docom/DevMate/actions/runs/42122112066.
 
 - To carry this post-merge correction into the base branch without writing directly to it, documentation-only PR #5 was opened: https://github.com/Fadhel-docom/DevMate/pull/5. It records the merge and post-merge CI result. PR #5 remains open and unmerged pending separate owner approval; the approval for PR #4 does not authorize merging PR #5.
+
+
+## 27. PR #5 merged; current-state correction and Phase 1 resume point — 2026-11-05 — ChatGPT
+
+### Starting checkpoint and inspection
+- Started from `feature/phase-1-foundation` at the merge result of PR #5: `4dfa423b70302539760d4f4389f9d7168f354d7c`.
+- Re-fetched PR #5 from GitHub: state `closed`, `merged=true`; merge commit `4dfa423b70302539760d4f4389f9d7168f354d7c`.
+- Re-read `docs/STATUS.md`, the latest `docs/OPERATIONS-ROOM.md` entries, and the approved `docs/CHARTER-AND-QUALITY-RULES.md` version 1.1.
+- Confirmed PR #1 is still open/draft, targets `main`, and remains unmerged. No attempt was made to merge or modify it.
+- Inspected open PRs: PR #1 is the only open PR returned. No other active PR was found in this check.
+
+### Post-merge verification
+- CI run #81, ID `42122860531`, was a `push` event on the exact PR #5 merge commit `4dfa423b70302539760d4f4389f9d7168f354d7c`; conclusion: `success`. Run: https://github.com/Fadhel-docom/DevMate/actions/runs/42122860531.
+- CI run #82, ID `42122872016`, was a `pull_request` event on the same exact commit and also completed successfully. Its associated PR metadata identifies PR #1, not PR #6. Run: https://github.com/Fadhel-docom/DevMate/actions/runs/42122872016.
+- The observed workflow checks passed: checkout, setup-node, `npm ci`, dependency-audit report, `npm test`, and `npm run build`.
+- Both runs validate the base commit `4dfa423b70302539760d4f4389f9d7168f354d7c`; neither is a CI run on PR #6's head.
+
+### PR #6 review reconciliation — 2026-11-06 — ChatGPT
+
+- Claude's independent review of PR #6 reported no Blocking issue in the documentation-only diff. The review identified four non-blocking corrections; this PR update applies them:
+  1. Renumber this chronological entry from 30 to 27, the next numbered operations-room entry after 26. No sections 27–29 existed as numbered entries in this file.
+  2. Name PR #6 explicitly in STATUS and in this handoff instead of using the ambiguous phrase "This PR".
+  3. Label `4dfa423b70302539760d4f4389f9d7168f354d7c` as the base SHA recorded as of PR #6's creation, not as a perpetually latest commit.
+  4. Record CI runs #81 and #82 with their distinct event types and exact shared SHA.
+- PR #6 was reviewed at head `7fa911d9dec45bec5ac23539fac8e66b208fce26` before these corrections. The updated PR head must receive a fresh independent review.
+- PR #6 targets `feature/phase-1-foundation` and changes only `docs/STATUS.md` and `docs/OPERATIONS-ROOM.md`. The workflow's `pull_request` trigger targets `main`, so it does not run for this PR's feature-branch base. No CI run on PR #6's head was observed.
+- This is a Small, documentation-only change. Under constitution §7, documentation-only changes may qualify for routine merge delegation when they do not alter governing policy or require an owner decision; §8 requires only applicable verification. The successful #81/#82 runs are base-commit evidence, not PR-head evidence. No workflow change was added merely to manufacture a check for this documentation PR.
+- The earlier coordinator instruction that required CI success on the exact PR #6 head was stricter than the constitution's applicable-gates rule. The relevant gates are the complete diff review, independent review of the corrected head, and verification that the changes remain documentation-only and non-policy-changing.
+- No merge was performed in this reconciliation. PR #1, `main`, workflows, source code, deployment, and other repositories remain untouched.
+- Next exact action: obtain Claude's independent review of the corrected PR #6 head. If it finds no Blocking issue and no owner-reserved decision remains, use the owner's existing explicit delegation to Squash-merge PR #6, then verify the merge result and post-merge CI where triggered.
+
+### Documentation correction prepared
+- PR #5's own merged text correctly recorded the PR #4 history at the time, but its final lines still said PR #5 was open/unmerged. This is now superseded by this checkpoint; historical entries are retained, not erased.
+- Prepared a documentation-only update to `docs/STATUS.md` and `docs/OPERATIONS-ROOM.md` on branch `docs/record-pr5-merge-and-phase1-handoff`.
+- The update records PR #5's merge SHA, CI runs #81 and #82, clarifies the current state of PR #1, and defines the next Phase 1 task from the constitution's deferred pre-completion backlog.
+- No source code, dependencies, workflows, license, constitution, `main`, deployment, PR #1, or unrelated repository was changed.
+
+### Next exact action / handoff
+- Obtain Claude's independent re-review of the corrected PR #6 head. If no Blocking issue is found and all applicable constitution 1.1 gates pass, use the owner's explicit delegation to Squash-merge PR #6 only; then verify the merge result and any triggered post-merge CI.
+- After it is merged, perform a read-only inventory for the pre-Phase-1 governance backlog. Check for existing `docs/SESSION-START.md` and `docs/DECISIONS.md` before creating anything; then prepare a focused documentation PR for missing navigation/checklist and decision-log structure. Also record the remaining archive-policy, CI security-baseline, and contributor-access/verification items without silently expanding scope.
+- PR #1 remains explicitly owner-controlled and unmerged. No deployment, `main` change, paid service, or new phase is authorized.
