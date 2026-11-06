@@ -654,7 +654,7 @@ No PR was merged and no code files were changed in this review handoff.
 
 ---
 
-## 28. PR #6 closeout, Claude review record, and session-navigation documentation — 2026-11-06 — ChatGPT
+## 28. PR #6 closeout, Claude review record, and session-navigation documentation — 2026-11-06 — ChatGPT (initial entry); revised by Claude 2026-11-06
 
 ### Starting checkpoint and governing sources
 
@@ -664,21 +664,24 @@ No PR was merged and no code files were changed in this review handoff.
 - Read the current `docs/STATUS.md`, latest `docs/OPERATIONS-ROOM.md` checkpoint, and constitution sections 7–8 and 10–14. Inspected the CI workflow, PR #1, PR #6, and the post-merge CI run.
 - Constitution §10 source-of-truth hierarchy applied: latest explicit owner decision; approved constitution; DECISIONS; STATUS; OPERATIONS-ROOM; SESSION-START navigation.
 
-### Claude's contribution — recorded with evidence limits
+### Claude's contribution — recorded with evidence limits (revised by Claude, 2026-11-06)
 
-- **Reported, not independently verified from a GitHub review object:** Claude's independent review of the earlier PR #6 diff reported no Blocking issue within the portion it inspected and identified four non-blocking documentation corrections.
-- The four findings relayed from Claude were: (1) operations-room heading numbering skipped from 26 to 30; (2) STATUS used an ambiguous “This PR” reference; (3) a SHA label could be mistaken for a live current head rather than a historical base snapshot; and (4) CI run #81 was omitted while #82 was cited.
-- ChatGPT applied the four corrections on PR #6's branch. The corrected PR #6 head was `c17e444320c663f5a225dac9a761a1b3c359c443`; the changes affected only `docs/STATUS.md` and `docs/OPERATIONS-ROOM.md`.
-- Review limitation: the relayed Claude review was explicitly partial; it did not constitute a complete independent audit of the full operations room, full constitution, workflow configuration, PR #1 state, and all downstream effects. The available GitHub PR #6 review and issue-comment endpoints returned no formal review/comment records. Therefore this log does not claim a recorded GitHub approval or independently verified fresh Claude review of the final corrected head.
-- Claude did not author the correction commits or perform the merge in the evidence available to this coordinator. The merge is attributed to the GitHub PR event, not to Claude.
+- **Earlier review of the pre-correction PR #6 diff — Reported, not independently verified.** It was relayed by the owner and recorded by ChatGPT: no Blocking issue and four non-blocking corrections. GitHub history shows PR #6 had two commits (`826c4235a4857acfe33b3c80779985e29a832bc9`, then `7fa911d9dec45bec5ac23539fac8e66b208fce26`) before the corrections. Claude's present session has no copy of that earlier review's original text, so Claude cannot confirm which head it inspected, its exact wording, or how much it covered. No formal GitHub review object exists. The four items below match the corrections the PR #6 entry of this file describes: (1) operations-room heading numbering skipped from 26 to 30; (2) STATUS used an ambiguous “This PR” reference; (3) a SHA label could be mistaken for a live current head rather than a historical base snapshot; (4) CI run #81 was omitted while #82 was cited.
+- ChatGPT applied the four corrections on PR #6's branch (corrected head `c17e444320c663f5a225dac9a761a1b3c359c443`; only `docs/STATUS.md` and `docs/OPERATIONS-ROOM.md` changed). Claude did not author those commits.
+- **Claude's re-review of the corrected head `c17e444320c663f5a225dac9a761a1b3c359c443` — verified by Claude as the reviewer; reported in the owner's chat session and recorded in PR #7 (https://github.com/Fadhel-docom/DevMate/pull/7, branch `docs/record-pr6-review-merge-and-ci`, commit `fbfeab696a0af9ad97bc83b772c997bc48c04b28`). No formal GitHub review object exists.** Inspected: PR #6 metadata and its five commits; the diff of both changed files (`docs/OPERATIONS-ROOM.md` +41, `docs/STATUS.md` +18; 59 additions, 0 deletions); the operations room at that head; constitution 1.1 (blob `50126a159961b71faf88025a8695cb7e734d63b7`), sections 2, 7, 8, 14, 17, and 18; and the GitHub pages of CI runs #81 and #82. Result: the four corrections were applied; no Blocking issue; Small documentation-only change within §7 routine delegation. Not inspected in that review: the full STATUS file at that head (only its diff) and the individual CI steps of runs #81 and #82 (job-level success only).
+- **Merge of PR #6 — executed by Claude.** Under the owner's explicit delegation to Squash-merge PR #6 only, Claude merged it through the GitHub connector on 2026-11-06 (GitHub `merged_at` 00:24:14Z) with the `sha` parameter pinned to `c17e444…`. Because the connector acts with the owner's credentials, GitHub displays the merge under the owner's account (`merged_by` is `Fadhel-docom`). GitHub cannot distinguish Claude from the owner here, so the attribution to Claude rests on Claude's own report in the chat session and is labelled as such.
+- Claude also created PR #7's branch and commit and opened PR #7 through the same connector at the owner's request, and made this revision of PR #8 at the owner's request.
 
-### PR #6 merge and CI — directly verified
+### PR #6 merge and CI — verified
 
-- GitHub reports PR #6 closed and merged; Squash merge commit: `f0b596fd8030f3990ec681e37c99b480dcc18030`. PR: https://github.com/Fadhel-docom/DevMate/pull/6.
-- The integration branch points to that exact commit at this checkpoint.
-- CI run #84 (ID `42136573760`) completed successfully on the same exact SHA. Run: https://github.com/Fadhel-docom/DevMate/actions/runs/42136573760.
-- Run #84 was a `pull_request` event associated with PR #1, not a PR #6 review. PR #1's head SHA was the same merge commit. All job steps passed.
-- Inspected the job log: `npm ci` passed; dependency audit reported 0 vulnerabilities across all severities; `npm test` passed (1 file, 3 tests); `npm run build` passed (TypeScript and Vite production build).
+- GitHub reports PR #6 closed and merged; Squash merge commit `f0b596fd8030f3990ec681e37c99b480dcc18030`. The merge was executed by Claude through the connector under the owner's delegation and is displayed under the owner's account (see above). PR: https://github.com/Fadhel-docom/DevMate/pull/6.
+- The integration branch pointed to that exact commit when checked on 2026-11-06 (re-check before acting).
+- Post-merge CI on `f0b596fd8030f3990ec681e37c99b480dcc18030`, workflow `DevMate CI`, both completed with `success`:
+  - Run **#83**, ID `42136564055`, event **`push`** on `feature/phase-1-foundation`: https://github.com/Fadhel-docom/DevMate/actions/runs/42136564055.
+  - Run **#84**, ID `42136573760`, event **`pull_request`**, associated with PR #1 (its head is the same commit): https://github.com/Fadhel-docom/DevMate/actions/runs/42136573760.
+- Verified by Claude on 2026-11-06 from the GitHub run records (run number, event, head SHA, conclusion) and from the job logs of both runs: every step of job `verify` succeeded; `npm ci` added 155 packages; the audit summary was `{"info":0,"low":0,"moderate":0,"high":0,"critical":0,"total":0}`; `npm test` passed (1 test file, 3 tests); `npm run build` (TypeScript check and Vite production build) succeeded. ChatGPT had also reported the job log of run #84. Each job shows 2 annotations whose text was not read.
+- Correction of record: PR #7's first draft listed `42136564055` as `pull_request` and `42136573760` as `push`. That was Claude's inference and was wrong; the values above come from the GitHub run records.
+- Neither run is a CI run on the head of PR #6, #7, or #8.
 - PR #1 remains open/draft, targets `main`, and is unmerged. It remains excluded from delegated merge authority under constitution §7 and requires separate explicit owner approval under §14. No merge or modification was attempted.
 
 ### Repository inventory and changes prepared
@@ -692,16 +695,15 @@ No PR was merged and no code files were changed in this review handoff.
 
 ### Risk, boundaries, and work not performed
 
-- Risk: the Claude review summary is based on the report relayed to the coordinator; no formal GitHub review object was available to verify it. The log labels that evidence accordingly.
+- Risk (revised): the earlier pre-correction PR #6 review is reported, not independently verified. Claude's re-review and merge execution are verified by Claude as the actor and reported in the chat session; no GitHub review object exists for them. The log labels the evidence accordingly.
 - No constitution amendment, policy change, new phase, source-code edit, dependency change, workflow change, deployment, production release, cost, secret/permission change, or other-repository work was performed.
 - No change to `main` and no action on PR #1 was performed. PR #1 remains owner-controlled and unmerged.
-- The successful run #84 validates the merged branch commit and its build/test workflow; it does not prove Android browser behavior, deployment, or production readiness.
+- The successful runs #83 and #84 validate the merged branch commit and its build/test workflow; it does not prove Android browser behavior, deployment, or production readiness.
 
 ### Last verified checkpoint and next handoff
 
-- Last verified checkpoint: `feature/phase-1-foundation` at `f0b596fd8030f3990ec681e37c99b480dcc18030`; PR #6 merged; CI #84 successful.
-- Next exact action: independently review the new documentation PR against constitution 1.1, especially source hierarchy, mandatory session sequence, append-only decision history, and accurate evidence labels. If the diff remains a Small non-policy documentation change and no blocking issue or owner decision remains, follow constitution §7's routine merge delegation only after the independent review. PR #1 remains separately owner-controlled.
-- Handoff owner: ChatGPT coordinator; Claude is the independent reviewer for the documentation PR when available; the project owner retains all §14 decisions.
+- Last verified checkpoint: `feature/phase-1-foundation` at `f0b596fd8030f3990ec681e37c99b480dcc18030`; PR #6 merged; CI runs #83 and #84 successful.
+- Next exact action and handoff owner: see "Current merge path and handoff" at the end of this entry. The earlier text here, which named Claude as the independent reviewer of PR #8, is superseded because Claude authored the revision.
 
 
 ### PR #8 opened — 2026-11-06
@@ -713,4 +715,36 @@ No PR was merged and no code files were changed in this review handoff.
 - PR #8 is open and unmerged. It is awaiting independent review. No merge was performed.
 - The current CI workflow only triggers PR checks when the PR base is `main`, and push checks only for `main` or `feature/**`; this `docs/**` branch targeting the feature branch has no matching configured trigger. No workflow change was made to manufacture CI for this documentation PR. Apply the Small-change gates in constitution §§2, 7, and 8: complete diff review, link/format/reference checks, and independent review because shared operating instructions changed.
 - The PR's mergeability field was returned as `false` immediately after creation; this can be an uncomputed GitHub state and is not treated as a confirmed conflict. Re-fetch PR #8 before any merge decision and inspect its live mergeability.
-- Next: Claude (or another independent reviewer) reviews the exact current PR #8 head and reports any blocking issue. Re-fetch the live head before acting. PR #1 remains owner-controlled and must not be merged.
+- Next: Claude (or another independent reviewer) reviews the exact current PR #8 head and reports any blocking issue. Re-fetch the live head before acting. PR #1 remains owner-controlled and must not be merged. (Superseded: Claude has since reviewed head `15727dd…` and revised the PR; see the sections that follow.)
+
+
+### PR #7 reconciliation — folded into this entry (Claude, 2026-11-06)
+
+- PR #7: https://github.com/Fadhel-docom/DevMate/pull/7 — opened by Claude at the owner's request to record the PR #6 review, merge, and CI. Head `fbfeab696a0af9ad97bc83b772c997bc48c04b28`; base `f0b596fd8030f3990ec681e37c99b480dcc18030`; it appends one operations-room entry that is also numbered 28. It is open, not merged, and not closed.
+- Problem: PR #7 and PR #8 both append an entry numbered 28 at the end of this file. Merging both would duplicate the number and give two accounts of the same events. PR #7's first draft listed the events of CI runs #83 and #84 the wrong way round, and PR #8's first draft denied that Claude executed the merge.
+- Resolution: everything accurate in PR #7 is folded into this entry: the re-review of `c17e444` (above), the merge details (above), the CI results with corrected event labels (above), and the not-done list (below). PR #7 contains no information absent from this entry.
+- PR #7's text must not be merged as is. Whether to close PR #7 as superseded is the owner's decision. Claude did not close PR #7 or modify its branch.
+
+### Independent review of PR #8 at head `15727dd41a2dbad8a9669ea8b8d696487f92c95c` — Claude — 2026-11-06
+
+- Reported in the owner's chat session; no formal GitHub review object exists. Result: request corrections.
+- Blocking: B1, the record of Claude's work denied that Claude executed the merge and described the earlier review's extent beyond what the evidence shows; B2, unreconciled overlap with PR #7 (duplicate section number 28) and reversed CI event labels for runs #83 and #84.
+- Non-blocking: N1, SESSION-START step 1 cited commit references that the file does not contain; N2, SESSION-START lacked the §11 no-repeat rule and the no-write-access and no-change handoff rules; N3, the DECISIONS rule on inferred approval was not scoped to §14 owner-reserved decisions and did not acknowledge the §7 delegation; N4, older STATUS snapshots were still headed as current; N5, the wording about the earlier review's extent was not provable from evidence.
+- Verified at that head: exactly four documentation files changed; constitution unchanged (blob `50126a159961b71faf88025a8695cb7e734d63b7`); SESSION-START consistent with §§10–11; DECISIONS contains no invented approvals; the CI #84 claims in this entry were accurate.
+
+### Revision by Claude — corrections applied (2026-11-06)
+
+- B1: the contribution subsection and the merge subsection above were rewritten to state who did what and what evidence supports each claim.
+- B2: PR #7 is reconciled above; runs #83 and #84 are labelled correctly; STATUS and this entry now list the open PRs #1, #7, and #8.
+- N1 to N3 are applied in `docs/SESSION-START.md` (commit `25ea73312572cd65b9509efb140a4eb9b92cb1ee`) and `docs/DECISIONS.md` (commit `efc6f3e85dd9253ab58fdf1b5d34c626e16a69e8`). N4 is applied in `docs/STATUS.md` (commit `b32944b4da33a5b7e885d1649173beb57e3f0cea`): older sections are headed as historical snapshots and a single current-state section was added. N5 is applied by removing the “explicitly partial” characterization.
+- The commit containing this entry is the PR head at the time of writing and cannot cite itself; fetch the live head.
+- Statements replaced in this entry (all other text is kept): the characterization of the earlier review as “explicitly partial”; the statements that Claude did not perform the merge and that the merge is attributed to the GitHub PR event rather than to Claude; the label of the PR #6 merge section; the single-run CI record (#84 only); and the designation of Claude as the independent reviewer of PR #8.
+
+### Current merge path and handoff (Claude, 2026-11-06)
+
+- Single merge path: PR #8. PR #7 is superseded pending the owner's decision. PR #1 stays owner-controlled and unmerged.
+- Independence: Claude authored the revision commits after `15727dd41a2dbad8a9669ea8b8d696487f92c95c`, so Claude cannot be their independent reviewer (constitution §8). A contributor other than Claude (the ChatGPT coordinator, or the owner) reviews every commit after `15727dd…` and re-fetches the live head. Claude's review of `15727dd…` plus that review together cover the whole PR without either contributor reviewing their own work.
+- Claude has not merged and will not merge PR #7 or PR #8 under the owner's instruction for this task, and has not closed either. Merging PR #8 afterwards follows §7 routine delegation only if the independent review finds no blocking issue and no owner decision remains.
+- There is no CI on this PR head because of the workflow triggers described in the PR #8 section above. This is not a passed check. Applicable gates: complete diff review, link and reference checks, and independent review.
+- Next exact action: independent review of the Claude revision of PR #8; owner decision on closing PR #7. Handoff owner: ChatGPT coordinator for the review; the project owner for PR #7 and all §14 decisions.
+- Not done: no constitution, permission, or approval-boundary change; no change to `main`, PR #1, workflows, source code, dependencies, or any other repository; no deployment or cost; PR #7 and PR #8 were neither merged nor closed.
