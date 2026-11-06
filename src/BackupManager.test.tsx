@@ -62,6 +62,15 @@ describe("BackupManager UI", () => {
     expect(host!.textContent).toContain("Slot 1");
     expect(host!.textContent).toContain("Slot 2");
   });
+  it("disables restore for parseable but structurally invalid backups", async () => {
+    const storage = new FakeStorage();
+    storage.setItem(BACKUP_KEY, JSON.stringify([{ id: "p1", name: "P", tasks: [{ id: "t1", title: 9, done: false, createdAt: 1 }] }]));
+    useStorage(storage); await mount();
+    const restore = buttons("Restore")[0];
+    expect(restore.disabled).toBe(true);
+    expect(host!.textContent).toContain("Invalid or incomplete backup");
+    expect(storage.getItem(STORAGE_KEY)).toBeNull();
+  });
   it("restores after confirmation and snapshots the current workspace", async () => {
     const storage = new FakeStorage();
     storage.setItem(BACKUP_KEY, JSON.stringify([{ id: "p1", name: "P", tasks: [] }]));
