@@ -1,8 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { deleteBackup, listBackups, restoreBackup, type BackupInfo } from "./storage";
+import { deleteBackup, listBackups, restoreBackup, type BackupInfo, type RestoreResult } from "./storage";
 
 type Props = { onRestoreStart?: () => void; onRestored: (safeToResume?: boolean) => void | Promise<void>; refreshKey?: number };
 type Pending = { action: "restore" | "delete"; backup: BackupInfo } | null;
+
+export function isRestoreSafeToResume(result: RestoreResult): boolean {
+  return result.ok || result.rollbackVerified === true;
+}
 
 export default function BackupManager({ onRestoreStart, onRestored, refreshKey = 0 }: Props) {
   const [backups, setBackups] = useState<BackupInfo[]>([]);
@@ -37,11 +41,11 @@ export default function BackupManager({ onRestoreStart, onRestored, refreshKey =
   async function confirmRestore() {
     if (!pending || pending.action !== "restore" || !pending.backup.restorable) return;
     setBusy(true); setError(null); onRestoreStart?.();
-    let safeToResume = true;
+    let safeToResume = false;
     try {
       const result = await restoreBackup(pending.backup.key, undefined, pending.backup.fingerprint);
+      safeToResume = isRestoreSafeToResume(result);
       if (!result.ok) {
-        if (result.rollbackVerified === false) safeToResume = false;
         setError(result.message || `Restore failed: ${result.reason}`);
       }
       else { setPending(null); refresh(); }
