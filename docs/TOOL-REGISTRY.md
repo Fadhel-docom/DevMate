@@ -9,7 +9,7 @@ Give DevMate an honest, inspectable inventory of tools before building orchestra
 ## Readiness states
 
 - **Available in DevMate:** implemented in the current app and safe to use within its stated boundary.
-- **Not connected:** the capability is identified, but the app has no authorized connection to it.
+- **Not connected:** the capability is identified, but the adapter exists but no authorized connection is configured.
 - **Not built yet:** the adapter or execution environment does not exist.
 
 A status must not be upgraded because a plan exists, a service is available in another application, or a contributor says it should work. Update a status only with implementation and verification evidence.
@@ -19,12 +19,12 @@ A status must not be upgraded because a plan exists, a service is available in a
 | Tool | Current state | Boundary |
 |---|---|---|
 | Workspace storage | Available in DevMate | Browser-local project/task persistence only; not cloud sync or repository storage |
-| GitHub read-only | Not connected | No GitHub API connection inside DevMate; external assistant connectors are separate |
+| GitHub read-only | Not built yet | No GitHub API adapter exists inside DevMate; external assistant connectors are separate |
 | Test and build runner | Not built yet | Requires a trusted, isolated execution environment and resource limits |
 | Code review | Not built yet | No review engine or model provider is connected |
 | Browser testing | Not built yet | No browser automation adapter inside the app |
-| Research and SEO/CAO | Not connected | No research connector inside the app; future findings require dated sources |
-| AI model provider | Not connected | Disabled pending privacy, server-side secret handling, quota, fallback, and owner-approval gates |
+| Research and SEO/CAO | Not built yet | No research adapter exists inside the app; future findings require dated sources |
+| AI model provider | Not built yet | No provider adapter exists; any future connection is gated by privacy, server-side secret handling, quota, fallback, and owner approval |
 
 ## Selection contract
 
