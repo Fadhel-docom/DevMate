@@ -23,8 +23,8 @@ export default function ToolRegistryPanel() {
         <span className="count">{counts.available} available now</span>
       </div>
       <p className="tools-intro">
-        DevMate only selects tools that are available inside this app. External services are shown honestly
-        as disconnected or not built; they cannot be used from this screen yet.
+        This inventory marks only capabilities already implemented in this app as available. It does not yet
+        route tasks or execute external tools; missing adapters are shown as not built.
       </p>
       <div className="tool-grid">
         {TOOL_REGISTRY.map((tool) => (
