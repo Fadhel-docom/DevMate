@@ -508,7 +508,7 @@ describe("protecting unreadable originals when saving", () => {
   });
 
   it("does not create any backup when nothing meaningful is stored", () => {
-    for (const stored of [null, "", "[]"]) {
+    for (const stored of [null, "[]"]) {
       const base = memoryStorage();
       if (stored !== null) base.setItem(STORAGE_KEY, stored);
       expect(saveProjects(next, base)).toEqual({ ok: true });
@@ -613,5 +613,74 @@ describe("messages shown to the user", () => {
     expect(protectedText).toContain("could not be copied to a backup");
     expect(protectedText).toContain("left untouched");
     expect(saveMessage({ ok: false, reason: "verify", message: "x" })).toContain("could not be read back");
+  });
+});
+
+describe("empty string stored under the workspace key", () => {
+  it("is classified as corrupt data, not as empty storage", () => {
+    const storage = memoryStorage();
+    storage.setItem(STORAGE_KEY, "");
+    const result = readProjects(storage);
+    expect(result.status).toBe("corrupt");
+    expect(result.projects[0].id).toBe("starter");
+  });
+
+  it("is backed up, and the backup holds the empty string", () => {
+    const storage = memoryStorage();
+    storage.setItem(STORAGE_KEY, "");
+    const result = readProjects(storage);
+    expect(result.backedUp).toBe(true);
+    expect(result.backupKey).toBe(BACKUP_KEY);
+    expect(storage.getItem(BACKUP_KEY)).toBe("");
+  });
+
+  it("is not duplicated when read repeatedly, and does not hide an earlier backup", () => {
+    const storage = memoryStorage();
+    storage.setItem(BACKUP_KEY, "{earlier");
+    storage.setItem(STORAGE_KEY, "");
+    for (let i = 0; i < 3; i += 1) expect(readProjects(storage).backupKey).toBe(backupKey(2));
+    expect(storage.getItem(BACKUP_KEY)).toBe("{earlier");
+    expect(storage.getItem(backupKey(3))).toBeNull();
+  });
+
+  it("is not replaced when the backup cannot be saved", () => {
+    const { base, storage } = controllableStorage(isBackupKey);
+    base.setItem(STORAGE_KEY, "");
+    expect(readProjects(storage).backedUp).toBe(false);
+    const result = saveProjects(sample, storage);
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.reason).toBe("protect-original");
+    expect(base.getItem(STORAGE_KEY)).toBe("");
+    expect(base.getItem(BACKUP_KEY)).toBeNull();
+  });
+
+  it("is replaced only after a verified backup exists", () => {
+    const base = memoryStorage();
+    base.setItem(STORAGE_KEY, "");
+    expect(saveProjects(sample, base)).toEqual({ ok: true, backupKey: BACKUP_KEY });
+    expect(base.getItem(BACKUP_KEY)).toBe("");
+    expect(loadProjects(base)).toEqual(sample);
+  });
+
+  it("is not replaced when the backup write silently stores nothing", () => {
+    const base = memoryStorage();
+    base.setItem(STORAGE_KEY, "");
+    const lossy = { getItem: base.getItem, setItem: () => undefined };
+    const result = saveProjects(sample, lossy);
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.reason).toBe("protect-original");
+    expect(base.getItem(STORAGE_KEY)).toBe("");
+  });
+
+  it("keeps the behaviour for a missing key and for a valid empty list", () => {
+    const missing = memoryStorage();
+    expect(readProjects(missing).status).toBe("empty");
+    expect(missing.getItem(BACKUP_KEY)).toBeNull();
+    const emptyList = memoryStorage();
+    emptyList.setItem(STORAGE_KEY, "[]");
+    expect(readProjects(emptyList).status).toBe("empty");
+    expect(emptyList.getItem(BACKUP_KEY)).toBeNull();
+    expect(saveProjects(sample, emptyList)).toEqual({ ok: true });
+    expect(saveProjects(sample, memoryStorage())).toEqual({ ok: true });
   });
 });

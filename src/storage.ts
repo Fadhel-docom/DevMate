@@ -128,9 +128,12 @@ type Inspection =
   | { kind: "invalid"; parsed: Parsed }
   | { kind: "corrupt" };
 
-/** Classifies raw stored text. "ok" and "empty" are safe to overwrite; the rest are not. */
+/**
+ * Classifies raw stored text. Only "ok" and "empty" are safe to overwrite; the rest are not.
+ * "empty" means the key is absent (handled by the callers) or holds the valid empty list "[]".
+ * An empty string is NOT empty storage: it is not valid JSON and is not the project format, so it is "corrupt".
+ */
 function inspectRaw(raw: string): Inspection {
-  if (raw === "") return { kind: "empty" };
   let json: unknown;
   try {
     json = JSON.parse(raw);
@@ -148,8 +151,10 @@ type BackupFailure = "read-only" | "read-error" | "slots-full" | "write-failed" 
 type BackupOutcome = { ok: true; key: string; created: boolean } | { ok: false; reason: BackupFailure };
 
 /**
- * Copies unreadable raw text into the first free backup slot. Never replaces a slot that is in
- * use, never throws, and reports success only after reading the copy back. If an identical copy
+ * Copies unreadable raw text into the first free backup slot. It never overwrites a slot that it
+ * sees in use, never throws, and reports success only after reading the copy back. This is not a
+ * guarantee under concurrency: two tabs can read the same slot as free and both write to it, so one
+ * copy can be lost (no locking; see the residual risks in docs/OPERATIONS-ROOM.md entry 31). If an identical copy
  * is already stored it is reused, so reading the same data again does not fill up the slots.
  */
 function backUpUnreadable(storage: ReadableStorage, raw: string): BackupOutcome {
@@ -196,7 +201,7 @@ function backupFields(outcome: BackupOutcome): Pick<LoadResult, "backedUp" | "ba
   return outcome.ok ? { backedUp: true, backupKey: outcome.key } : { backedUp: false, backupKey: null };
 }
 
-/** Reads and validates stored projects. Never throws. Raw data that cannot be used as-is is backed up (never replaced). */
+/** Reads and validates stored projects. Never throws. Raw data that cannot be used as-is is backed up (a slot seen in use is not overwritten; see the concurrency note on backUpUnreadable). */
 export function readProjects(storage: ReadableStorage | null = getBrowserStorage()): LoadResult {
   if (!storage) return emptyResult("unavailable");
   let raw: string | null;
@@ -261,7 +266,8 @@ function protectStoredOriginal(target: WritableStorage): Guard {
 /**
  * Writes projects and reports the real outcome. Never throws. Data that does not match the
  * Project/Task shape is refused before touching storage. Stored data that is unreadable (or only
- * partly readable) is never replaced unless a verified backup copy of it exists. A successful
+ * partly readable) is not replaced unless a verified backup copy of it exists (checked just before
+ * the write; another tab can still change storage in between, so this is not a concurrency guarantee). A successful
  * write is read back when the storage supports it. A failed setItem leaves the previous value in place.
  */
 export function saveProjects(projects: Project[], storage?: WritableStorage | null): SaveResult {
