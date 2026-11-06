@@ -10,11 +10,11 @@ export const DEFAULT_LOCK_TIMEOUT_MS = 8000;
 export type LoadStatus = "ok" | "empty" | "recovered" | "invalid" | "corrupt" | "unavailable";
 export type LoadResult = {
   projects: Project[]; status: LoadStatus; droppedProjects: number; droppedTasks: number;
-  repairedProjects: number; backedUp: boolean; backupKey: string | null;
+  repairedProjects: number; backedUp: boolean; backupKey: string | null; storageRaw: string | null;
 };
 export type SaveFailureReason =
   | "unavailable" | "quota" | "invalid-data" | "serialize" | "verify" | "protect-original"
-  | "unknown" | "lock-unavailable" | "lock-timeout" | "lock-error" | "not-found" | "invalid-key";
+  | "unknown" | "conflict" | "lock-unavailable" | "lock-timeout" | "lock-error" | "not-found" | "invalid-key";
 export type SaveResult = { ok: true; backupKey?: string } | { ok: false; reason: SaveFailureReason; message: string };
 export type BackupReason = "corrupt" | "invalid" | "recovered" | "pre-restore";
 export type BackupInfo = {
@@ -151,7 +151,7 @@ function backUpRaw(storage: StorageLike, raw: string, reason: BackupReason): Bac
 }
 const emptyResult = (status: LoadStatus): LoadResult => ({
   projects: starter.map((p) => ({ ...p, tasks: [] })), status, droppedProjects: 0,
-  droppedTasks: 0, repairedProjects: 0, backedUp: false, backupKey: null
+  droppedTasks: 0, repairedProjects: 0, backedUp: false, backupKey: null, storageRaw: null
 });
 function backupFields(outcome: BackupOutcome): Pick<LoadResult, "backedUp" | "backupKey"> {
   return outcome.ok ? { backedUp: true, backupKey: outcome.key } : { backedUp: false, backupKey: null };
@@ -163,11 +163,11 @@ export function readProjects(storage: ReadableStorage | null = getBrowserStorage
   if (raw === null) return emptyResult("empty");
   const inspected = inspectRaw(raw);
   switch (inspected.kind) {
-    case "empty": return emptyResult("empty");
-    case "ok": return { ...inspected.parsed, status: "ok", backedUp: false, backupKey: null };
-    case "recovered": return { ...inspected.parsed, status: "recovered", ...backupFields(backUpRaw(storage as StorageLike, raw, "recovered")) };
-    case "invalid": return { ...emptyResult("invalid"), droppedProjects: inspected.parsed.droppedProjects, ...backupFields(backUpRaw(storage as StorageLike, raw, "invalid")) };
-    case "corrupt": return { ...emptyResult("corrupt"), ...backupFields(backUpRaw(storage as StorageLike, raw, "corrupt")) };
+    case "empty": return { ...emptyResult("empty"), storageRaw: raw };
+    case "ok": return { ...inspected.parsed, status: "ok", backedUp: false, backupKey: null, storageRaw: raw };
+    case "recovered": return { ...inspected.parsed, status: "recovered", ...backupFields(backUpRaw(storage as StorageLike, raw, "recovered")), storageRaw: raw };
+    case "invalid": return { ...emptyResult("invalid"), droppedProjects: inspected.parsed.droppedProjects, ...backupFields(backUpRaw(storage as StorageLike, raw, "invalid")), storageRaw: raw };
+    case "corrupt": return { ...emptyResult("corrupt"), ...backupFields(backUpRaw(storage as StorageLike, raw, "corrupt")), storageRaw: raw };
   }
 }
 export function loadProjects(storage?: ReadableStorage | null): Project[] {
@@ -187,7 +187,7 @@ function protectStoredOriginal(target: WritableStorage): Guard {
   if (outcome.ok) return { ok: true, backupKey: outcome.key };
   return { ok: false, reason: "protect-original", message: `The stored data could not be copied to a backup (${outcome.reason}); it was left untouched.` };
 }
-export function saveProjects(projects: Project[], storage?: WritableStorage | null): SaveResult {
+export function saveProjects(projects: Project[], storage?: WritableStorage | null, expectedRaw?: string | null): SaveResult {
   const target = storage === undefined ? getBrowserStorage() : storage;
   if (!target) return { ok: false, reason: "unavailable", message: "Browser storage is not available." };
   const checked = parseProjects(projects);
@@ -196,6 +196,12 @@ export function saveProjects(projects: Project[], storage?: WritableStorage | nu
   let serialized: string;
   try { serialized = JSON.stringify(checked.projects); }
   catch (error) { return { ok: false, reason: "serialize", message: describeError(error) }; }
+  if (expectedRaw !== undefined && target.getItem) {
+    let currentRaw: string | null;
+    try { currentRaw = target.getItem(STORAGE_KEY); }
+    catch (error) { return { ok: false, reason: "unavailable", message: `Browser storage could not be read: ${describeError(error)}` }; }
+    if (currentRaw !== expectedRaw) return { ok: false, reason: "conflict", message: "The workspace changed in another tab or session. Reload the latest saved workspace before editing again." };
+  }
   const guard = protectStoredOriginal(target);
   if (!guard.ok) return guard;
   try { target.setItem(STORAGE_KEY, serialized); }
@@ -243,8 +249,8 @@ export async function withStorageLock<T>(callback: () => T | Promise<T>, options
 function lockFailure(result: LockFailure): Extract<SaveResult, { ok: false }> {
   return { ok: false, reason: result.reason, message: result.message };
 }
-export async function saveProjectsLocked(projects: Project[], storage?: WritableStorage | null): Promise<SaveResult> {
-  const locked = await withStorageLock(() => saveProjects(projects, storage));
+export async function saveProjectsLocked(projects: Project[], storage?: WritableStorage | null, expectedRaw?: string | null): Promise<SaveResult> {
+  const locked = await withStorageLock(() => saveProjects(projects, storage, expectedRaw));
   return locked.ok ? locked.value : lockFailure(locked);
 }
 export async function readProjectsLocked(storage: ReadableStorage | null = getBrowserStorage()): Promise<LoadResult> {
@@ -282,7 +288,7 @@ export function listBackups(storage: ReadableStorage | null = getBrowserStorage(
 }
 export type RestoreResult =
   | { ok: true; snapshotKey: string | null }
-  | { ok: false; reason: "lock-unavailable" | "lock-timeout" | "lock-error" | "not-found" | "invalid-key" | "protect-original" | "write-failed" | "verify" | "invalid-backup"; message: string };
+  | { ok: false; reason: "lock-unavailable" | "lock-timeout" | "lock-error" | "not-found" | "invalid-key" | "protect-original" | "write-failed" | "verify" | "invalid-backup"; message: string; snapshotKey?: string | null };
 export async function restoreBackup(key: string, storage: StorageLike | null = getBrowserStorage()): Promise<RestoreResult> {
   if (slotFromKey(key) === null) return { ok: false, reason: "invalid-key", message: "Invalid backup key." };
   const locked = await withStorageLock((): RestoreResult => {
@@ -305,8 +311,26 @@ export async function restoreBackup(key: string, storage: StorageLike | null = g
     }
     try { storage.setItem(STORAGE_KEY, normalized); }
     catch (error) { return { ok: false, reason: "write-failed", message: describeError(error) }; }
-    try { if (storage.getItem(STORAGE_KEY) !== normalized) return { ok: false, reason: "verify", message: "Restored data could not be verified." }; }
-    catch (error) { return { ok: false, reason: "verify", message: describeError(error) }; }
+    let verifyError: string | null = null;
+    try { if (storage.getItem(STORAGE_KEY) !== normalized) verifyError = "Restored data did not match the requested backup."; }
+    catch (error) { verifyError = describeError(error); }
+    if (verifyError !== null) {
+      let rolledBack = false;
+      try {
+        if (current === null) {
+          if (!storage.removeItem) throw new Error("Storage cannot remove the uncommitted restore.");
+          storage.removeItem(STORAGE_KEY);
+          rolledBack = storage.getItem(STORAGE_KEY) === null;
+        } else {
+          storage.setItem(STORAGE_KEY, current);
+          rolledBack = storage.getItem(STORAGE_KEY) === current;
+        }
+      } catch { rolledBack = false; }
+      const recovery = snapshotKey ? ` The pre-restore snapshot is retained at ${snapshotKey}.` : "";
+      return { ok: false, reason: "verify", snapshotKey, message: rolledBack
+        ? `Restore verification failed; the previous workspace was restored automatically.${recovery}`
+        : `Restore verification failed and automatic rollback could not be verified. Do not edit yet; the pre-restore snapshot is at ${snapshotKey ?? "unavailable"}.` };
+    }
     return { ok: true, snapshotKey };
   });
   return locked.ok ? locked.value : { ok: false, reason: locked.reason, message: locked.message };
