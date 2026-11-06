@@ -51,6 +51,7 @@ function loadResult(status: LoadResult["status"], extra: Partial<LoadResult> = {
     repairedProjects: 0,
     backedUp: false,
     backupKey: null,
+    storageRaw: null,
     ...extra
   };
 }
@@ -58,120 +59,35 @@ function loadResult(status: LoadResult["status"], extra: Partial<LoadResult> = {
 describe("startup notice after a successful save (pure)", () => {
   const unavailable = loadResult("unavailable");
 
-  it("removes the stale 'storage unavailable' warning once a save has worked", () => {
-    const current = loadNotice(unavailable);
-    expect(current).toContain("unavailable");
-    expect(noticeAfterSave(current, unavailable)).toBeNull();
-  });
 
-  it("keeps any other notice when a save works without a backup", () => {
-    const corrupt = loadResult("corrupt", { backedUp: true, backupKey: BACKUP_KEY });
-    const current = loadNotice(corrupt);
-    expect(noticeAfterSave(current, corrupt)).toBe(current);
-    expect(noticeAfterSave(null, loadResult("ok"))).toBeNull();
-  });
-
-  it("reports a backup made by the save as a data-corruption notice, even after an 'unavailable' start", () => {
-    const text = noticeAfterSave(loadNotice(unavailable), unavailable, BACKUP_KEY) ?? "";
-    expect(text).toContain("could not be read");
-    expect(text).toContain("A copy of the unreadable data was saved");
-    expect(text).not.toContain("unavailable");
-  });
-
-  it("keeps the earlier behaviour for a start that was not 'unavailable'", () => {
-    const recovered = loadResult("recovered", { droppedTasks: 1 });
-    expect(noticeAfterSave(loadNotice(recovered), recovered, BACKUP_KEY)).toBe(
-      loadNotice({ ...recovered, backedUp: true, backupKey: BACKUP_KEY })
-    );
-    expect(noticeAfterSave(null, loadResult("ok"), BACKUP_KEY)).toBeNull();
-  });
-});
-
-describe("App notices when storage comes back", () => {
-  const ownDescriptor = Object.getOwnPropertyDescriptor(window, "localStorage");
-  let host: HTMLElement;
-  let root: Root;
-
-  beforeEach(() => { installFakeLocks(); });
-  function useStorage(storage: FakeStorage) {
-    Object.defineProperty(window, "localStorage", { configurable: true, get: () => storage });
-  }
-
-  async function mount() {
-    host = document.createElement("div");
-    document.body.appendChild(host);
-    root = createRoot(host);
-    await act(async () => {
-      root.render(<StrictMode><App /></StrictMode>);
-    });
-  }
-
-  async function addProject(name: string) {
+  it("does not enable edits after an unavailable startup until a successful reload", async () => {
+    const storage = new FakeStorage();
+    storage.failReads = true;
+    storage.values.set(STORAGE_KEY, JSON.stringify([{ id: "saved", name: "Protected", tasks: [] }]));
+    useStorage(storage);
+    await mount();
+    expect(status()).toContain("Browser storage is unavailable");
     const input = host.querySelector('input[aria-label="New project name"]') as HTMLInputElement;
-    const setValue = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!;
-    await act(async () => {
-      setValue.call(input, name);
-      input.dispatchEvent(new Event("input", { bubbles: true }));
-    });
-    await act(async () => {
-      (host.querySelector("form.inline-form") as HTMLFormElement).dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
-    });
-  }
-
-  const status = () => host.querySelector('[role="status"]')?.textContent ?? null;
-  const alert = () => host.querySelector('[role="alert"]');
-
-  afterEach(async () => {
-    await act(async () => root.unmount());
-    host.remove();
-    if (ownDescriptor) Object.defineProperty(window, "localStorage", ownDescriptor);
-    else delete (window as { localStorage?: unknown }).localStorage;
-  });
-
-  it("removes the 'unavailable' warning after a later save succeeds", async () => {
-    const storage = new FakeStorage();
-    storage.failReads = true;
-    useStorage(storage);
-    await mount();
-    expect(status()).toContain("Browser storage is unavailable");
-
-    storage.failReads = false; // storage works again
-    await addProject("Recovered");
-
-    expect(status()).toBeNull();
-    expect(alert()).toBeNull();
-    expect(storage.values.get(STORAGE_KEY)).toContain("Recovered");
-  });
-
-  it("keeps the 'unavailable' warning, and shows the save alert, while saving keeps failing", async () => {
-    const storage = new FakeStorage();
-    storage.failReads = true;
-    useStorage(storage);
-    await mount();
-    await addProject("Not saved");
-
-    expect(status()).toContain("Browser storage is unavailable");
-    expect(alert()?.textContent).toContain("were not saved");
-    expect(storage.values.size).toBe(0);
-  });
-
-  it("replaces it with the data-corruption notice when the save had to back up unreadable data", async () => {
-    const storage = new FakeStorage();
-    storage.values.set(STORAGE_KEY, "{broken");
-    storage.failReads = true;
-    useStorage(storage);
-    await mount();
-    expect(status()).toContain("Browser storage is unavailable");
+    expect(input.disabled).toBe(true);
+    expect(storage.values.get(STORAGE_KEY)).toContain("Protected");
 
     storage.failReads = false;
-    await addProject("First");
-    expect(storage.values.get(BACKUP_KEY)).toBe("{broken");
-    expect(status()).toContain("A copy of the unreadable data was saved");
-    expect(status()).not.toContain("unavailable");
+    const retry = Array.from(host.querySelectorAll("button")).find((button) => button.textContent?.includes("Reload saved workspace")) as HTMLButtonElement;
+    await act(async () => { retry.click(); await new Promise((resolve) => setTimeout(resolve, 0)); });
+    expect(status()).toBeNull();
+    expect((host.querySelector('input[aria-label="New project name"]') as HTMLInputElement).disabled).toBe(false);
+    expect(host.textContent).toContain("Protected");
+  });
 
-    await addProject("Second"); // a later save must not drop that notice
-    expect(status()).toContain("A copy of the unreadable data was saved");
-    expect(alert()).toBeNull();
+  it("keeps editing disabled and preserves the original when startup reads keep failing", async () => {
+    const storage = new FakeStorage();
+    storage.failReads = true;
+    storage.values.set(STORAGE_KEY, JSON.stringify([{ id: "saved", name: "Protected", tasks: [] }]));
+    useStorage(storage);
+    await mount();
+    expect(status()).toContain("Browser storage is unavailable");
+    expect((host.querySelector('input[aria-label="New project name"]') as HTMLInputElement).disabled).toBe(true);
+    expect(storage.values.get(STORAGE_KEY)).toContain("Protected");
   });
 
   it("keeps a data-corruption notice after a successful save", async () => {
