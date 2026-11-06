@@ -1305,3 +1305,18 @@ No merge; no change to Draft status, the PR base, CI or the workflow, `main`, PR
 - Created `feature/tool-registry-review-followup` from the exact follow-up code head `011d54cdd668936c9a946e9c05670e30e7bc2d7e`; added this documentation-only note to trigger the existing feature-branch push workflow without changing workflow configuration or application code.
 - The follow-up PR will target `feature/tool-registry-foundation` (PR #13's head branch), preserving the stack. The initial PR #14 used the fix-prefixed head and is to be closed as superseded by the feature-prefixed equivalent; no code changes are discarded.
 - Next: verify GitHub Actions on the exact feature-branch head, inspect job logs, then obtain independent review of that exact head. Keep the PR draft/unmerged; PR #13 and PR #10 remain separate dependencies.
+
+
+---
+
+## 50. PR #13 review follow-up — exact CI verification — 2026-11-06 — ChatGPT coordinator
+
+- PR #15 was re-fetched: open/Draft, base `feature/tool-registry-foundation` (PR #13 head), head at verification `5b8159b35e131998e26f7a006be713db254765b6`; no merge.
+- GitHub Actions run #137 (ID `42300207617`) completed successfully on that exact head.
+- Observed job steps: `npm ci`, dependency audit report, `npm test`, and `npm run build` all succeeded.
+- Job log evidence: 155 packages installed; audit reported 0 vulnerabilities; Vitest reported 4 test files and 123/123 tests passed; `tsc --noEmit` and Vite production build passed.
+- The 123 tests include the new fail-closed selection, readiness, unique-ID, non-empty-capability, runtime-freeze, and injected-tool coverage. No claim is made that the application dispatches work or invokes AI providers.
+- Contrast calculations for the updated registry text/background pairs are above WCAG AA's 4.5:1 threshold (computed ratios approximately 7.11:1, 6.63:1, 6.07:1, 7.91:1, and 6.14:1). Real browser rendering, keyboard navigation, and screen-reader behavior remain unverified.
+- No application source changes were made after the tested head. This entry is documentation-only and its resulting head must receive its own CI verification.
+- PR #15 remains Draft and unmerged; PR #13 remains Draft and unmerged; PR #10 remains open/Draft and unresolved. No provider, connector, API key, permission, dependency, cost, deployment, main change, or other-repository change.
+- Next: verify CI on the new documentation head, then request independent review of PR #15's exact final head. Keep the stacked PRs unmerged pending applicable gates and the PR #10 dependency path.
