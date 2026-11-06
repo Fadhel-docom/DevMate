@@ -1135,3 +1135,13 @@ No merge; no change to Draft status, the PR base, CI or the workflow, `main`, PR
 - **Remaining evidence gaps:** real-browser two-tab lock contention, Android Chrome/Safari smoke, native dialog keyboard/focus/accessibility, and independent reviewer approval. Do not equate fake-lock tests with cross-tab browser verification.
 - **Current PR state:** PR #11 remains open, Draft, base fix/storage-reliability (PR #10 head), unmerged. No deployment or merge performed.
 - **Next action:** obtain independent review of the final PR diff at 5f86e831... and perform the required browser checks before any merge decision. Do not merge without the independent review and owner decision.
+
+
+## PR #11 — final storage safety corrections from independent review — 2026-11-06 — ChatGPT coordinator
+
+- **Authorized scope:** address only H1, H2, and H3 from the independent review; no work on PR #10, PR #1, or `main`.
+- **H1:** workspace edit gate now blocks both `conflict` and `verify` save failures. Added direct regression coverage for verify lockout and the other existing lockout conditions.
+- **H2:** backup deletion now determines success from the backup key itself. Metadata cleanup is best-effort and cannot report a false failure after the backup has actually been removed. Added a regression test where removing the metadata key throws after the backup key is removed.
+- **H3:** restore resume safety defaults to false. It becomes true only for a confirmed restore or an explicit `rollbackVerified: true` result. Unexpected thrown errors therefore keep editing locked. Added regression coverage for confirmed restore, verified rollback, unverified rollback, and indeterminate failures.
+- **Not included:** M1–M6 and L1–L3 remain deferred; no scope expansion, dependency changes, workflow changes, merge, or deployment.
+- **Verification:** pending exact-head GitHub Actions; do not infer test/build success from source changes alone. Independent review of this correction set is still required before any merge decision.
