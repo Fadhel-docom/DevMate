@@ -772,3 +772,33 @@ Carried over from PR #7's entry (previously omitted):
 - Next exact action: independent review of Claude's revisions of PR #8, meaning every commit after `15727dd41a2dbad8a9669ea8b8d696487f92c95c`. Handoff owner: ChatGPT coordinator for the review; the project owner for all §14 decisions and PR #1.
 - Not done: no constitution, permission, or approval-boundary change; no change to `main`, PR #1, workflows, source code, dependencies, or any other repository; no deployment or cost; PR #8 was neither merged nor closed by Claude, and PR #7 was not merged or closed by Claude.
 - GitHub connector access — Reported by the owner's work order, not independently verified by Claude: the connector's broad permissions are intentional for this work, and the owner plans to remove the connection later. This is not an accidental permission change. Claude has not revoked or altered the connection and has not inspected its exact scopes (Unknown / not checked). This note is not a DECISIONS.md entry and does not create an owner-approval record under §14.
+
+
+---
+
+## 29. Independent review, Squash merge of PR #8, and post-merge CI — 2026-11-06 — ChatGPT coordinator
+
+### Starting checkpoint and review scope
+
+- Started from PR #8 head `e092e1a7d50450c40869a80e1c1381a25051ef16`, base `feature/phase-1-foundation` at `f0b596fd8030f3990ec681e37c99b480dcc18030`.
+- Re-fetched live PR #8 metadata: open, not draft, mergeable; exactly four changed files; head matched the reviewed SHA.
+- Compared `15727dd41a2dbad8a9669ea8b8d696487f92c95c` through `e092e1a7d50450c40869a80e1c1381a25051ef16`: eight commits ahead, no base divergence, and only the four documentation files `docs/DECISIONS.md`, `docs/OPERATIONS-ROOM.md`, `docs/SESSION-START.md`, and `docs/STATUS.md`.
+- The earlier independent review of the first six commits identified one attribution issue at `fc4d427b52328c919f93440116a8df67a56d8c36`. The final two commits were reviewed separately: `261502d39257d7c2e67558fa8b3e86e63e87ab6f` changed only the PR #7 comment attribution in STATUS (+1/-1); `e092e1a7d50450c40869a80e1c1381a25051ef16` changed only OPERATIONS-ROOM (+8/-1), recording the same correction and a general connector-attribution note.
+- Verified that comment `6677915578` and its timestamp remain recorded as facts, while Claude's posting of it is labelled **Reported by Claude**; the documents explain that GitHub shows the owner's account and cannot identify the actual operator from its actor record alone.
+- Rechecked the CI event labels against the actual GitHub workflow-run records: run #83 (ID `42136564055`) was `push`; run #84 (ID `42136573760`) was `pull_request`. Both were completed successfully on `f0b596fd8030f3990ec681e37c99b480dcc18030`. The earlier PR #7 draft had those event labels reversed; PR #8's corrected records are accurate.
+- Reviewed the final documentation against the approved constitution v1.1, especially §§2, 7, 8, and 10–14. No blocking issue remained. The final attribution note was within the documented scope and did not change policy, permissions, secrets, workflows, source, dependencies, costs, deployment, or licensing.
+- A formal GitHub APPROVE review was attempted but GitHub rejected it because the connected GitHub identity is also the PR author. No formal GitHub review object was created. The independent review itself was performed by the ChatGPT coordinator, who did not author the PR changes; this review is recorded here.
+
+### Merge and verification
+
+- Under the owner's conditional instruction to merge when all rules and quality gates are satisfied, and the routine merge delegation in constitution §7, PR #8 was Squash-merged with the expected head pinned to `e092e1a7d50450c40869a80e1c1381a25051ef16`.
+- PR #8: https://github.com/Fadhel-docom/DevMate/pull/8 — GitHub confirms `state=closed`, `merged=true`, `merged_at=2026-11-06T06:02:40Z`.
+- Exact merge commit: `3312d22e4da9e663148c2f7af235c4290fa4e607`. GitHub confirms the integration branch `feature/phase-1-foundation` now points to this SHA.
+- Post-merge CI: run #85, ID `42171970747`, event `push`, head SHA exactly `3312d22e4da9e663148c2f7af235c4290fa4e607`, conclusion `success`: https://github.com/Fadhel-docom/DevMate/actions/runs/42171970747. The `verify` job completed successfully; the recorded steps `npm ci`, dependency-audit report, `npm test`, and `npm run build` all completed successfully. No more detailed audit/test output is claimed in this entry.
+- PR #7 remains closed and unmerged. PR #1 remains open, draft, targets `main`, and remains owner-controlled; its head now reflects the shared feature branch at `3312d22…`. No action on PR #1 or `main` was taken.
+- No deployment, production publication, cost, permission/scope/secret change, workflow change, constitution amendment, or other-repository action was performed.
+
+### Current checkpoint and next handoff
+
+- Last verified checkpoint: `feature/phase-1-foundation` at `3312d22e4da9e663148c2f7af235c4290fa4e607`; PR #8 merged; post-merge CI run #85 successful on that exact commit.
+- Next exact action: independently review the focused documentation-only PR opened for this closeout (PR #9) at its exact head. If it passes §7/§8 gates, merge under the existing routine delegation; otherwise record the blocker. Afterward resume the already documented pre-Phase-1 governance backlog as separate tasks. PR #1 remains owner-controlled and unmerged.
