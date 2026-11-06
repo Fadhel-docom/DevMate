@@ -465,3 +465,10 @@ Run the full Vitest suite, TypeScript/Vite production build, and dependency audi
 - The corrected registry semantics are verified: one available capability, zero built-but-disconnected adapters, and six adapters not built yet. A test fixture explicitly confirms that a disconnected adapter is not selected.
 - Not verified: real browser/mobile rendering, keyboard/focus and accessibility checks, and live external integrations.
 - Documentation-only status/operations-room commits follow this code head; CI for the final documentation head is checked separately. Do not attribute run #130 to a later SHA.
+## Final PR #13 head verification — 2026-11-06
+
+- GitHub Actions run #132 (ID 42297632316) completed successfully on exact PR head 5af88c6fcce2e96473b47f1168bf556bd3627461.
+- npm ci, dependency audit, npm test, and npm run build all passed. Audit reported 0 vulnerabilities; Vitest reported 4 test files and 121/121 tests passed; TypeScript and Vite production build passed.
+- PR #13 remains open/Draft, based on fix/storage-reliability at 3b7efe6f4c6085d62c5fa3e5761fee23bab246ca. It is stacked on PR #10 and has not been merged.
+- Real browser/mobile rendering, accessibility, and live tool integrations remain unverified/not built.
+- The subsequent operations-room-only update creates a newer documentation head; its push CI run is checked in this session. No application code changes follow the verified code head.
