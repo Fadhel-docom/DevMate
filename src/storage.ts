@@ -19,7 +19,7 @@ export type SaveResult = { ok: true; backupKey?: string } | { ok: false; reason:
 export type BackupReason = "corrupt" | "invalid" | "recovered" | "pre-restore";
 export type BackupInfo = {
   key: string; slot: number; createdAt: number | null; reason: BackupReason | null;
-  parseable: boolean; restorable: boolean; projectCount: number | null; preview: string;
+  parseable: boolean; restorable: boolean; projectCount: number | null; preview: string; fingerprint: string;
 };
 type Parsed = { projects: Project[]; droppedProjects: number; droppedTasks: number; repairedProjects: number };
 type StorageLike = Pick<Storage, "getItem" | "setItem"> & Partial<Pick<Storage, "removeItem">>;
@@ -282,14 +282,14 @@ export function listBackups(storage: ReadableStorage | null = getBrowserStorage(
     try { const parsed = JSON.parse(raw); if (Array.isArray(parsed)) { parseable = true; projectCount = parsed.length; } } catch { /* raw backup is retained */ }
     const inspection = inspectRaw(raw);
     const restorable = inspection.kind === "ok" || inspection.kind === "empty";
-    items.push({ key, slot, createdAt, reason, parseable, restorable, projectCount, preview: raw.slice(0, 180) });
+    items.push({ key, slot, createdAt, reason, parseable, restorable, projectCount, preview: raw.slice(0, 180), fingerprint: raw });
   }
   return items.sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0) || a.slot - b.slot);
 }
 export type RestoreResult =
   | { ok: true; snapshotKey: string | null }
-  | { ok: false; reason: "lock-unavailable" | "lock-timeout" | "lock-error" | "not-found" | "invalid-key" | "protect-original" | "write-failed" | "verify" | "invalid-backup"; message: string; snapshotKey?: string | null; rollbackVerified?: boolean };
-export async function restoreBackup(key: string, storage: StorageLike | null = getBrowserStorage()): Promise<RestoreResult> {
+  | { ok: false; reason: "lock-unavailable" | "lock-timeout" | "lock-error" | "not-found" | "invalid-key" | "protect-original" | "write-failed" | "verify" | "invalid-backup" | "stale-backup"; message: string; snapshotKey?: string | null; rollbackVerified?: boolean };
+export async function restoreBackup(key: string, storage: StorageLike | null = getBrowserStorage(), expectedRaw?: string): Promise<RestoreResult> {
   if (slotFromKey(key) === null) return { ok: false, reason: "invalid-key", message: "Invalid backup key." };
   const locked = await withStorageLock((): RestoreResult => {
     if (!storage) return { ok: false, reason: "write-failed", message: "Browser storage is unavailable." };
@@ -297,6 +297,7 @@ export async function restoreBackup(key: string, storage: StorageLike | null = g
     try { backup = storage.getItem(key); current = storage.getItem(STORAGE_KEY); }
     catch (error) { return { ok: false, reason: "write-failed", message: describeError(error) }; }
     if (backup === null) return { ok: false, reason: "not-found", message: "The selected backup no longer exists." };
+    if (expectedRaw !== undefined && backup !== expectedRaw) return { ok: false, reason: "stale-backup", message: "This backup slot changed after the list was loaded. Refresh the list and select the intended copy again." };
     // Validate the complete backup before creating a snapshot or changing the workspace.
     const inspection = inspectRaw(backup);
     if (inspection.kind !== "ok" && inspection.kind !== "empty") {
@@ -337,14 +338,16 @@ export async function restoreBackup(key: string, storage: StorageLike | null = g
 }
 export type DeleteBackupResult =
   | { ok: true }
-  | { ok: false; reason: "lock-unavailable" | "lock-timeout" | "lock-error" | "not-found" | "invalid-key" | "delete-failed"; message: string };
-export async function deleteBackup(key: string, storage: StorageLike | null = getBrowserStorage()): Promise<DeleteBackupResult> {
+  | { ok: false; reason: "lock-unavailable" | "lock-timeout" | "lock-error" | "not-found" | "invalid-key" | "delete-failed" | "stale-backup"; message: string };
+export async function deleteBackup(key: string, storage: StorageLike | null = getBrowserStorage(), expectedRaw?: string): Promise<DeleteBackupResult> {
   const slot = slotFromKey(key);
   if (slot === null) return { ok: false, reason: "invalid-key", message: "Invalid backup key." };
   const locked = await withStorageLock((): DeleteBackupResult => {
     if (!storage?.removeItem) return { ok: false, reason: "delete-failed", message: "Browser storage cannot delete backups." };
     try {
-      if (storage.getItem(key) === null) return { ok: false, reason: "not-found", message: "Backup not found." };
+      const currentBackup = storage.getItem(key);
+      if (currentBackup === null) return { ok: false, reason: "not-found", message: "Backup not found." };
+      if (expectedRaw !== undefined && currentBackup !== expectedRaw) return { ok: false, reason: "stale-backup", message: "This backup slot changed after the list was loaded. Refresh the list and select the intended copy again." };
       storage.removeItem(key);
       storage.removeItem(backupMetaKey(slot));
       return storage.getItem(key) === null ? { ok: true } : { ok: false, reason: "delete-failed", message: "Backup could not be removed." };
