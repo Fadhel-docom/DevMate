@@ -44,7 +44,7 @@ export function noticeAfterSave(current: string | null, initial: LoadResult, bac
 }
 export function saveMessage(failure: Extract<SaveResult, { ok: false }>): string {
   const detail =
-    failure.reason === "protect-original" ? failure.message :
+    failure.reason === "protect-original" ? `The stored data could not be copied to a backup, so it was left untouched. ${failure.message}` :
     failure.reason === "quota" ? "Browser storage is full." :
     failure.reason === "unavailable" ? "Browser storage is unavailable or blocked." :
     failure.reason === "verify" ? "The data could not be read back after writing." :
