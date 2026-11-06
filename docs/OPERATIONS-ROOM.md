@@ -1164,3 +1164,16 @@ No merge; no change to Draft status, the PR base, CI or the workflow, `main`, PR
 - The run checked out commit `f8e2436d86189c101151932bfe60174aedbc2c98`, which is the current PR #11 head and includes the same source tree as the verification trigger commit.
 - `npm ci`, dependency audit reporting, `npm test` (114 tests across 3 files), and `npm run build` all completed successfully.
 - This establishes CI success for the current PR head. It does not substitute for real-browser multi-tab/Web Locks testing or Android Chrome/Safari dialog and download testing; those remain explicitly outstanding.
+
+
+## 42. PR #11 — serialized autosave follow-up and final CI — 2026-11-06 — ChatGPT coordinator
+
+- **Root cause:** save effects captured the compare-and-swap baseline before waiting for Web Locks. A second save queued behind the first could therefore retain the old baseline and return a false conflict after the first save had already committed.
+- **Implementation:** `src/App.tsx` now uses a per-App promise queue. Each save reads `baselineRaw.current` at execution time after earlier saves have completed. A successful write advances the baseline even if the originating effect was cleaned up by a newer render; stale effects cannot overwrite current UI status.
+- **Regression coverage:** a delayed-lock test triggers two rapid saves and checks that both changes persist without a false conflict. This is a controlled deterministic test, not a genuine browser multi-tab test.
+- **Exact code SHA:** `3929ea7ce9fca787a88e3def16ccb71731bc85b2`.
+- **CI run #110:** https://github.com/Fadhel-docom/DevMate/actions/runs/42292489500 — success; 3 test files / 115 tests passed; npm ci passed; audit reported 0 vulnerabilities; TypeScript and Vite production build passed.
+- **Diff since Claude's independent review SHA `1446c1de...`:** only `src/App.tsx` and `src/App.test.tsx`; no package, workflow, storage format, or backup implementation changes. The follow-up was authored by ChatGPT and CI-verified; do not claim Claude reviewed this later two-file patch.
+- **Unverified release checks:** real browser two-tab Web Locks contention, Android Chrome, native dialog focus/keyboard/accessibility, download behavior, and Safari. These remain required before the stacked work reaches `main`. No browser E2E result is claimed.
+- **Merge boundary:** PR #11 is stacked on PR #10. Any merge of #11 is strictly into `fix/storage-reliability` (PR #10's branch), not `main`. PR #10, PR #1, and `main` remain untouched; no deployment.
+- **Next exact action:** update PR #11's verification summary, mark it ready, and merge only into its existing base if GitHub confirms the head is unchanged and the PR remains mergeable. Then report the merge SHA and keep PR #10 open for its own independent review and owner decision.
