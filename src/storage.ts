@@ -288,7 +288,7 @@ export function listBackups(storage: ReadableStorage | null = getBrowserStorage(
 }
 export type RestoreResult =
   | { ok: true; snapshotKey: string | null }
-  | { ok: false; reason: "lock-unavailable" | "lock-timeout" | "lock-error" | "not-found" | "invalid-key" | "protect-original" | "write-failed" | "verify" | "invalid-backup"; message: string; snapshotKey?: string | null };
+  | { ok: false; reason: "lock-unavailable" | "lock-timeout" | "lock-error" | "not-found" | "invalid-key" | "protect-original" | "write-failed" | "verify" | "invalid-backup"; message: string; snapshotKey?: string | null; rollbackVerified?: boolean };
 export async function restoreBackup(key: string, storage: StorageLike | null = getBrowserStorage()): Promise<RestoreResult> {
   if (slotFromKey(key) === null) return { ok: false, reason: "invalid-key", message: "Invalid backup key." };
   const locked = await withStorageLock((): RestoreResult => {
@@ -327,7 +327,7 @@ export async function restoreBackup(key: string, storage: StorageLike | null = g
         }
       } catch { rolledBack = false; }
       const recovery = snapshotKey ? ` The pre-restore snapshot is retained at ${snapshotKey}.` : "";
-      return { ok: false, reason: "verify", snapshotKey, message: rolledBack
+      return { ok: false, reason: "verify", snapshotKey, rollbackVerified: rolledBack, message: rolledBack
         ? `Restore verification failed; the previous workspace was restored automatically.${recovery}`
         : `Restore verification failed and automatic rollback could not be verified. Do not edit yet; the pre-restore snapshot is at ${snapshotKey ?? "unavailable"}.` };
     }
