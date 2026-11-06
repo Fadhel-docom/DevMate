@@ -8,7 +8,7 @@ Give DevMate an honest, inspectable inventory of tools before building orchestra
 
 ## Readiness states
 
-- **Available in DevMate:** an adapter is implemented in the current app. This does not guarantee every operation will succeed at runtime; callers must still handle browser, storage, lock, and safety-gate failures.
+- **Implemented (runtime-gated):** an adapter is implemented in the current app. This does not guarantee every operation will succeed at runtime; callers must still handle browser, storage, lock, and safety-gate failures.
 - **Not connected:** an adapter exists, but no authorized connection is configured.
 - **Not built yet:** the adapter or execution environment does not exist.
 
@@ -18,7 +18,7 @@ A status must not be upgraded because a plan exists, a service is available in a
 
 | Tool | Current state | Boundary |
 |---|---|---|
-| Workspace storage | Available in DevMate | Browser-local project/task persistence only; not cloud sync or repository storage |
+| Workspace storage | Implemented (runtime-gated) | Browser-local project/task persistence only; not cloud sync or repository storage |
 | GitHub read-only | Not built yet | No GitHub API adapter exists inside DevMate; external assistant connectors are separate |
 | Test and build runner | Not built yet | Requires a trusted, isolated execution environment and resource limits |
 | Code review | Not built yet | No review engine or model provider is connected |
@@ -28,12 +28,12 @@ A status must not be upgraded because a plan exists, a service is available in a
 
 ## Selection contract
 
-src/tools/registry.ts defines the typed registry and selectAvailableTools:
+src/tools/registry.ts defines the typed registry and selectAvailableTools. Its optional registry argument is a test seam for deterministic fixtures; production callers must use the default frozen registry, not pass caller-controlled tool definitions:
 
 1. A task declares the capabilities it requires.
 2. The selector returns only entries whose state is available and that cover at least one requested capability.
 3. Every missing capability is returned as unavailable.
-4. The result's `satisfied` flag is true only when **all** requested capabilities are available. Callers must check this flag and must not treat a non-empty tool list as proof that a multi-capability task is executable.
+4. The result's `satisfied` flag is true only when the request contains at least one capability and **all** requested capabilities are available. An empty request returns `satisfied: false` (no work was specified). Callers must check this flag and must not treat a non-empty tool list as proof that a multi-capability task is executable.
 5. The registry is descriptive and deterministic. It does not make network calls, execute code, invoke an AI model, or grant permissions.
 
 The current selector is a foundation for future routing, not an orchestrator. It is not yet used to dispatch work. The workspace-storage entry describes existing in-browser project/task persistence; it does not expose a new privileged execution interface.
@@ -54,7 +54,7 @@ The current selector is a foundation for future routing, not an orchestrator. It
 - Selection returns only tools marked available and reports `satisfied: true` only when all required capabilities are covered.
 - Missing capabilities are surfaced rather than guessed or routed to a disconnected tool.
 - Registry counts, selection behavior, invariants, and immutability have unit tests.
-- The internal registry panel uses semantic list markup and readable text contrast; visual/browser accessibility still requires manual verification.
+- The registry is not exposed in the public workspace. An owner-only dashboard is deferred until real authentication and authorization exist; no UI component or styling is shipped for it in this slice.
 - No external API calls or AI provider calls occur.
 
 ## Next implementation sequence
