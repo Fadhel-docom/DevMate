@@ -1239,3 +1239,16 @@ No merge; no change to Draft status, the PR base, CI or the workflow, `main`, PR
 - This correction is important to prevent overstating current capability. No external integration, permission, secret, API call, cost, or provider connection was added.
 - New commits after the prior CI run change registry metadata, tests, panel copy, and documentation. The next CI run on the latest branch head is authoritative for this corrected state; do not rely on earlier run #121 for these later changes.
 - PR #13 remains Draft, stacked on PR #10. Next: verify CI on the exact latest head, then obtain independent review of the corrected diff.
+---
+
+## 46. Corrected tool registry code verification — 2026-11-06 — ChatGPT coordinator
+
+- Final code correction: GitHub read-only, research/SEO/CAO, and AI-provider capabilities are classified as Not built yet because no adapters exist in the app. Not connected is reserved for a built adapter awaiting authorized connection.
+- The disconnected-adapter selector test now uses an injected fixture with status not-connected and confirms that it is not selected. The production registry currently counts 1 available, 0 not connected, and 6 not built.
+- Updated UI copy now states that the registry does not yet route tasks or execute external tools; it is an inventory and deterministic selection foundation.
+- GitHub Actions run #130 (ID 42297529540) completed successfully on exact code head b8cff401a090c703e709c004cd234d19ceca88d6.
+- Observed job steps: npm ci, dependency audit, npm test, npm run build — all succeeded. Logs confirm 0 vulnerabilities, 4 test files passed, 121/121 tests passed (including all 6 registry tests), TypeScript check passed, and Vite production build passed.
+- The earlier runs #124 and #114 failed on temporary incorrect expected-count assertions during the classification correction; the assertions were corrected, and later runs #125–#130 passed. The final corrected code head is #130.
+- No live integration, provider, API key, new permission, external call, cost, browser test, accessibility test, deployment, merge, main change, or other-repository action.
+- Documentation-only STATUS/OPERATIONS-ROOM commits after code head b8cff401... are being recorded separately. Their own latest-head CI run must be checked before the documentation head is described as verified.
+- PR #13 remains Draft, base fix/storage-reliability, and stacked on PR #10. Independent review is still required; PR #10's own gate remains separate.
