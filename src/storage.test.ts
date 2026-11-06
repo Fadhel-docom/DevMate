@@ -785,7 +785,9 @@ describe("backup management", () => {
     expect(list[0].slot).toBe(1);
     expect(list[0].createdAt).toBe(1234);
     expect(list[0].parseable).toBe(true);
+    expect(list[0].restorable).toBe(true);
     expect(list[1].parseable).toBe(false);
+    expect(list[1].restorable).toBe(false);
   });
   it("restores a selected backup after preserving the current workspace", async () => {
     installFakeLocks(); const storage = memoryStorage();
@@ -795,6 +797,30 @@ describe("backup management", () => {
     expect(result.ok).toBe(true);
     expect(loadProjects(storage)[0].id).toBe("old");
     expect(listBackups(storage).some((backup) => backup.reason === "pre-restore")).toBe(true);
+    uninstallLocks();
+  });
+  it("rejects a parseable but structurally invalid backup without changing the workspace or creating a snapshot", async () => {
+    installFakeLocks();
+    const storage = memoryStorage();
+    const invalid = JSON.stringify([{ id: "p1", name: "P", tasks: [{ id: "t1", title: 9, done: false, createdAt: 1 }] }]);
+    storage.setItem(BACKUP_KEY, invalid);
+    const current = JSON.stringify([{ id: "current", name: "Current", tasks: [] }]);
+    storage.setItem(STORAGE_KEY, current);
+    const result = await restoreBackup(BACKUP_KEY, storage);
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.reason).toBe("invalid-backup");
+    expect(storage.getItem(STORAGE_KEY)).toBe(current);
+    expect(storage.getItem(backupKey(2))).toBeNull();
+    uninstallLocks();
+  });
+  it("accepts an intentionally empty backup", async () => {
+    installFakeLocks();
+    const storage = memoryStorage();
+    storage.setItem(BACKUP_KEY, "[]");
+    storage.setItem(STORAGE_KEY, JSON.stringify(sample));
+    const result = await restoreBackup(BACKUP_KEY, storage);
+    expect(result.ok).toBe(true);
+    expect(storage.getItem(STORAGE_KEY)).toBe("[]");
     uninstallLocks();
   });
   it("rejects invalid backup keys", async () => {
