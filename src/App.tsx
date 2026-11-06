@@ -44,7 +44,7 @@ export function noticeAfterSave(current: string | null, initial: LoadResult, bac
 }
 export function saveMessage(failure: Extract<SaveResult, { ok: false }>): string {
   const detail =
-    failure.reason === "protect-original" ? "The stored data could not be copied to a backup, so it was left untouched." :
+    failure.reason === "protect-original" ? failure.message :
     failure.reason === "quota" ? "Browser storage is full." :
     failure.reason === "unavailable" ? "Browser storage is unavailable or blocked." :
     failure.reason === "verify" ? "The data could not be read back after writing." :
@@ -118,6 +118,7 @@ export default function App() {
   );
   async function reloadFromStorage(safeToResume = true) {
     setLoaded(false);
+    if (!safeToResume) setRecoveryRequired(true);
     try {
       const result = await readProjectsLocked();
       baselineRaw.current = result.storageRaw;
