@@ -18,8 +18,16 @@ describe("tool registry", () => {
   });
 
   it("does not select a disconnected tool even when it matches the requested capability", () => {
-    const selection = selectAvailableTools(["repository.read"]);
+    const disconnectedTool: ToolDefinition = {
+      id: "disconnected-test-tool",
+      name: "Disconnected test tool",
+      summary: "Its adapter exists but no connection is configured.",
+      status: "not-connected",
+      capabilities: ["repository.read"],
+      boundary: "Test fixture only."
+    };
 
+    const selection = selectAvailableTools(["repository.read"], [disconnectedTool]);
     expect(selection.tools).toEqual([]);
     expect(selection.unavailableCapabilities).toEqual(["repository.read"]);
   });
