@@ -10,11 +10,12 @@ describe("tool registry", () => {
     });
   });
 
-  it("selects only capabilities backed by tools available in the app", () => {
+  it("marks a mixed request unsatisfied when any required capability is unavailable", () => {
     const selection = selectAvailableTools(["workspace.read", "repository.read", "code.test"]);
 
     expect(selection.tools.map((tool) => tool.id)).toEqual(["workspace-storage"]);
     expect(selection.unavailableCapabilities).toEqual(["repository.read", "code.test"]);
+    expect(selection.satisfied).toBe(false);
   });
 
   it("does not select a disconnected tool even when it matches the requested capability", () => {
@@ -30,19 +31,34 @@ describe("tool registry", () => {
     const selection = selectAvailableTools(["repository.read"], [disconnectedTool]);
     expect(selection.tools).toEqual([]);
     expect(selection.unavailableCapabilities).toEqual(["repository.read"]);
+    expect(selection.satisfied).toBe(false);
   });
 
-  it("reports an empty selection for an unknown-to-the-registry capability request", () => {
+  it("reports a known capability as unavailable when no production tool implements it", () => {
     const selection = selectAvailableTools(["browser.test"]);
 
     expect(selection.tools).toEqual([]);
     expect(selection.unavailableCapabilities).toEqual(["browser.test"]);
+    expect(selection.satisfied).toBe(false);
   });
 
-  it("does not mutate the registry when selecting tools", () => {
-    const before = TOOL_REGISTRY.map((tool) => tool.id);
-    selectAvailableTools(["workspace.write", "model.generate"]);
-    expect(TOOL_REGISTRY.map((tool) => tool.id)).toEqual(before);
+  it("marks a request satisfied only when every requested capability is available", () => {
+    const selection = selectAvailableTools(["workspace.read", "workspace.write"]);
+    expect(selection.satisfied).toBe(true);
+    expect(selection.unavailableCapabilities).toEqual([]);
+    expect(selection.satisfied).toBe(true);
+  });
+
+  it("keeps production tool identifiers unique and capability lists non-empty", () => {
+    const ids = TOOL_REGISTRY.map((tool) => tool.id);
+    expect(new Set(ids).size).toBe(ids.length);
+    expect(TOOL_REGISTRY.every((tool) => tool.capabilities.length > 0)).toBe(true);
+  });
+
+  it("freezes the registry, each tool, and nested capability lists at runtime", () => {
+    expect(Object.isFrozen(TOOL_REGISTRY)).toBe(true);
+    expect(TOOL_REGISTRY.every((tool) => Object.isFrozen(tool))).toBe(true);
+    expect(TOOL_REGISTRY.every((tool) => Object.isFrozen(tool.capabilities))).toBe(true);
   });
 
   it("can select an injected test tool without changing production registry state", () => {
