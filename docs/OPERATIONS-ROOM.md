@@ -1350,3 +1350,6 @@ No merge; no change to Draft status, the PR base, CI or the workflow, `main`, PR
 
 
 - **Exact verification for section 51:** GitHub Actions run #147 (ID `42301856450`) passed on exact head `73075eba602b825181369f6f32057eda0718469e`. Job logs confirm `npm ci` (155 packages), dependency audit (0 vulnerabilities), Vitest (4 files, 124/124 tests, including 9 registry tests), TypeScript `tsc --noEmit`, and Vite production build. No real-browser or assistive-technology checks are claimed. PR #15 was re-fetched after the run: open/Draft, head matches the tested SHA, base `feature/tool-registry-foundation`, GitHub reports mergeable=true.
+
+
+- **Documentation-head CI:** run #149 (ID `42301948481`) completed successfully on exact head `12452cf86efac66ab2912426b653e24fdafbb3bb`. Logs confirm 155 packages installed, 0 vulnerabilities, 4 test files / 124 tests passed (90 storage, 11 backup manager, 14 App, 9 registry), TypeScript check and Vite production build passed. This verifies the documentation commits after tested code head `73075eba602b825181369f6f32057eda0718469e`; no source code changed after that code head.
