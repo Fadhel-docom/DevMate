@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties, FormEvent } from "react";
 import { readProjectsLocked, saveProjectsLocked, type LoadResult, type Project, type SaveResult } from "./storage";
 import BackupManager from "./BackupManager";
@@ -52,11 +52,13 @@ export function saveMessage(failure: Extract<SaveResult, { ok: false }>): string
     failure.reason === "lock-timeout" ? "The cross-tab lock could not be acquired in time, so the write was refused." :
     failure.reason === "lock-error" ? "The cross-tab lock failed, so the write was refused." :
     failure.reason === "invalid-data" ? "The project data did not pass validation." :
+    failure.reason === "conflict" ? "Another tab or session saved newer data. Reload the saved workspace before continuing." :
     "The data could not be written.";
   return `Your latest changes were not saved. ${detail} They are still visible here but may be lost when you close or reload this page.`;
 }
 export default function App() {
   const [initial, setInitial] = useState<LoadResult | null>(null);
+  const baselineRaw = useRef<string | null>(null);
   const [projects, setProjects] = useState<Project[]>([{ id: "starter", name: "My first project", tasks: [] }]);
   const [loaded, setLoaded] = useState(false);
   const [startupNotice, setStartupNotice] = useState<string | null>(null);
@@ -73,6 +75,8 @@ export default function App() {
     let active = true;
     void readProjectsLocked().then((result) => {
       if (!active) return;
+      baselineRaw.current = result.storageRaw;
+      baselineRaw.current = result.storageRaw;
       setInitial(result);
       setProjects(result.projects);
       setActiveId(result.projects[0]?.id ?? "starter");
@@ -80,7 +84,7 @@ export default function App() {
       setLoaded(true);
     }).catch((error: unknown) => {
       if (!active) return;
-      const fallback: LoadResult = { projects: [{ id: "starter", name: "My first project", tasks: [] }], status: "unavailable", droppedProjects: 0, droppedTasks: 0, repairedProjects: 0, backedUp: false, backupKey: null };
+      const fallback: LoadResult = { projects: [{ id: "starter", name: "My first project", tasks: [] }], status: "unavailable", droppedProjects: 0, droppedTasks: 0, repairedProjects: 0, backedUp: false, backupKey: null, storageRaw: null };
       setInitial(fallback);
       setStartupNotice(loadNotice(fallback));
       setSaveFailure({ ok: false, reason: "unknown", message: error instanceof Error ? error.message : String(error) });
@@ -92,9 +96,10 @@ export default function App() {
   useEffect(() => {
     if (!loaded || !initial || projects === initial.projects) return;
     let active = true;
-    void saveProjectsLocked(projects).then((result) => {
+    void saveProjectsLocked(projects, undefined, baselineRaw.current).then((result) => {
       if (!active) return;
       if (result.ok) {
+        baselineRaw.current = JSON.stringify(projects);
         setSaveFailure(null);
         setStartupNotice((current) => noticeAfterSave(current, initial, result.backupKey));
       } else setSaveFailure(result);
@@ -123,9 +128,10 @@ export default function App() {
       setLoaded(true);
     }
   }
+  const canEdit = loaded && initial?.status !== "unavailable" && saveFailure?.reason !== "conflict";
   function addProject(event: FormEvent) {
     event.preventDefault();
-    if (!loaded) return;
+    if (!canEdit) return;
     const name = newProject.trim();
     if (!name) return;
     const project = { id: crypto.randomUUID(), name, tasks: [] };
@@ -135,7 +141,7 @@ export default function App() {
   }
   function addTask(event: FormEvent) {
     event.preventDefault();
-    if (!loaded) return;
+    if (!canEdit) return;
     const title = newTask.trim();
     if (!title || !activeProject) return;
     const task = { id: crypto.randomUUID(), title, done: false, createdAt: Date.now() };
@@ -145,7 +151,7 @@ export default function App() {
     setNewTask("");
   }
   function toggleTask(taskId: string) {
-    if (!loaded) return;
+    if (!canEdit) return;
     setProjects((current) => current.map((project) => project.id === activeProject.id
       ? { ...project, tasks: project.tasks.map((task) => task.id === taskId ? { ...task, done: !task.done } : task) }
       : project
@@ -168,6 +174,11 @@ export default function App() {
       {!loaded && <p role="status" style={noticeStyle}>Loading your workspace safely…</p>}
       {startupNotice && <p role="status" style={noticeStyle}>{startupNotice}</p>}
       {saveFailure && <p role="alert" style={errorStyle}>{saveMessage(saveFailure)}</p>}
+      {loaded && (initial?.status === "unavailable" || saveFailure?.reason === "conflict") && (
+        <button type="button" className="secondary-button" onClick={() => { void reloadFromStorage(); }}>
+          Reload saved workspace
+        </button>
+      )}
       <section className="intro">
         <p className="eyebrow">BUILD WITH CLARITY</p>
         <h1>Your projects.<br /><span>Your next step.</span></h1>
@@ -178,7 +189,7 @@ export default function App() {
         <aside className="panel project-panel">
           <div className="section-heading"><div><p className="eyebrow">WORKSPACE</p><h2>Projects</h2></div><span className="count">{projects.length}</span></div>
           <form className="inline-form" onSubmit={addProject}>
-            <input aria-label="New project name" disabled={!loaded} value={newProject} onChange={(event) => setNewProject(event.target.value)} placeholder="New project name" />
+            <input aria-label="New project name" disabled={!canEdit} value={newProject} onChange={(event) => setNewProject(event.target.value)} placeholder="New project name" />
             <button className="icon-button" type="submit" aria-label="Add project" disabled={!loaded}>+</button>
           </form>
           <nav className="project-list" aria-label="Projects">
@@ -214,7 +225,7 @@ export default function App() {
           </form>
           <p className="privacy-note">Demo mode · Messages are not sent to an AI provider.</p>
         </section>
-        <BackupManager onRestored={reloadFromStorage} />
+        <BackupManager onRestoreStart={() => setLoaded(false)} onRestored={reloadFromStorage} />
       </div>
       <footer><span>DEVMATE</span><span>Built to make focused progress easier.</span></footer>
     </main>
