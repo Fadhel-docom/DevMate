@@ -1124,3 +1124,14 @@ No merge; no change to Draft status, the PR base, CI or the workflow, `main`, PR
 - When all backup slots are occupied, the application does not silently prune recovery data. Save/restore failures surface the slots-full reason and leave the existing workspace untouched. Automatic pruning is intentionally deferred pending an explicit retention policy.
 - Verification status: run #100 passed on earlier source head 6624be40de9f22371f853ba0e0f992ef6f51a05b (103 tests, build, audit), but subsequent code changes in this entry require a new exact-head CI run. No latest-head success is claimed yet.
 - Remaining release checks: real-browser two-tab contention, Android Chrome/Safari, native dialog keyboard/focus, and independent review. PR #11 remains Draft and unmerged.
+
+
+## 41. Storage safety exact-head CI verification — 2026-11-06 — ChatGPT coordinator
+
+- **Exact code head tested:** 5f86e83107268b2bfdfe67525cf843b3da09bb77. This was the PR #11 head at the time of verification. The same code head was pushed to an isolated feature/** CI branch; no application code was changed by that trigger.
+- **GitHub Actions run #106:** ID 42241700694, https://github.com/Fadhel-docom/DevMate/actions/runs/42241700694. Job verify completed success.
+- **Environment/results:** Node v20.20.2, npm 10.8.2; npm ci passed (155 packages added, 156 audited); audit 0 vulnerabilities; Vitest 3 files / 107 tests passed (storage 88, BackupManager 9, App 10); npm run build passed (TypeScript and Vite).
+- **Scope now covered by tests:** stale workspace baseline rejected without overwriting newer data; restore read-back failure attempts and verifies rollback; unavailable startup blocks editing until reload; stale backup-slot restore/delete rejected; backup list refresh trigger and raw-export affordance covered.
+- **Remaining evidence gaps:** real-browser two-tab lock contention, Android Chrome/Safari smoke, native dialog keyboard/focus/accessibility, and independent reviewer approval. Do not equate fake-lock tests with cross-tab browser verification.
+- **Current PR state:** PR #11 remains open, Draft, base fix/storage-reliability (PR #10 head), unmerged. No deployment or merge performed.
+- **Next action:** obtain independent review of the final PR diff at 5f86e831... and perform the required browser checks before any merge decision. Do not merge without the independent review and owner decision.
