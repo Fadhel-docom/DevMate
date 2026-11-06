@@ -62,6 +62,7 @@ export default function App() {
   const [projects, setProjects] = useState<Project[]>([{ id: "starter", name: "My first project", tasks: [] }]);
   const [loaded, setLoaded] = useState(false);
   const [recoveryRequired, setRecoveryRequired] = useState(false);
+  const [backupRefreshKey, setBackupRefreshKey] = useState(0);
   const [startupNotice, setStartupNotice] = useState<string | null>(null);
   const [saveFailure, setSaveFailure] = useState<Extract<SaveResult, { ok: false }> | null>(null);
   const [activeId, setActiveId] = useState("starter");
@@ -77,6 +78,7 @@ export default function App() {
     void readProjectsLocked().then((result) => {
       if (!active) return;
       baselineRaw.current = result.storageRaw;
+      if (result.backedUp) setBackupRefreshKey((value) => value + 1);
       setInitial(result);
       setProjects(result.projects);
       setActiveId(result.projects[0]?.id ?? "starter");
@@ -100,6 +102,7 @@ export default function App() {
       if (!active) return;
       if (result.ok) {
         baselineRaw.current = JSON.stringify(projects);
+        if (result.backupKey) setBackupRefreshKey((value) => value + 1);
         setSaveFailure(null);
         setStartupNotice((current) => noticeAfterSave(current, initial, result.backupKey));
       } else setSaveFailure(result);
@@ -118,6 +121,7 @@ export default function App() {
     try {
       const result = await readProjectsLocked();
       baselineRaw.current = result.storageRaw;
+      if (result.backedUp) setBackupRefreshKey((value) => value + 1);
       setRecoveryRequired(!safeToResume);
       setInitial(safeToResume ? result : { ...result, status: "unavailable" });
       setProjects(result.projects);
@@ -238,7 +242,7 @@ export default function App() {
           </form>
           <p className="privacy-note">Demo mode · Messages are not sent to an AI provider.</p>
         </section>
-        <BackupManager onRestoreStart={() => setLoaded(false)} onRestored={reloadFromStorage} />
+        <BackupManager onRestoreStart={() => setLoaded(false)} onRestored={reloadFromStorage} refreshKey={backupRefreshKey} />
       </div>
       <footer><span>DEVMATE</span><span>Built to make focused progress easier.</span></footer>
     </main>
