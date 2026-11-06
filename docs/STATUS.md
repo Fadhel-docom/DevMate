@@ -249,3 +249,12 @@ After this documentation checkpoint is reviewed and merged, perform a read-only 
 1. Independently review PR #9, the documentation-only closeout for PR #8, against constitution 1.1; verify its exact head and evidence before any merge decision.
 2. If PR #9 passes the applicable gates and no owner-reserved decision is implicated, merge it under the §7 routine delegation; otherwise record the blocker and stop.
 3. After the closeout, resume the deferred pre-Phase-1 governance backlog as separate, focused tasks: archive-policy implementation, CI security baseline, and contributor access/verification limits. Do not declare Phase 1 complete until every deferred item is implemented and verified or explicitly resolved by the owner. PR #1 stays owner-controlled.
+
+
+### Storage Reliability (PR #10) — update 2026-11-06 — Claude (third assistant)
+
+- PR #9 is closed and merged (merge commit `39b9c47f1efcca78bd5913719cbb73ce44e9c827`, Verified on GitHub 2026-11-06); the statements above that list PR #9 as open are historical. PRs #1 (draft, owner-controlled) and #10 (draft) were each checked and are open; no full list of open PRs was taken.
+- PR #10 (`fix/storage-reliability` → `feature/phase-1-foundation`, https://github.com/Fadhel-docom/DevMate/pull/10): storage reliability code at `20e4a3bb53779edeff1ef3fe4939fbd15c859e93`. Unreadable data is now kept in numbered backup slots (never replaced, de-duplicated, verified by read-back), stored data that is unreadable or only partly readable is never overwritten without a verified backup, and the App notices say exactly whether a copy was saved. Details: OPERATIONS-ROOM entry 30.
+- Tested and passed (local, fresh clone of `20e4a3b…`, Node 24.22.1, npm 10.8.2): `npm ci`, real Vitest 4.1.12 (63 tests, 1 file), `npm run build`, `npm audit` (0 vulnerabilities).
+- **Not verified: GitHub Actions.** No run exists for the PR head because the workflow triggers do not match this branch or PR base; the earlier success on `39b9c47…` is not evidence for PR #10. Also not verified: Node 20, real browsers (Android, Safari private mode, a truly full quota), accessibility and visual check of the notices, independent review.
+- Do not merge PR #10 until real CI runs on its exact head and a reviewer other than Claude has reviewed it.

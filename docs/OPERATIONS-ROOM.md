@@ -806,3 +806,80 @@ Carried over from PR #7's entry (previously omitted):
 
 - Last verified checkpoint: `feature/phase-1-foundation` at `3312d22e4da9e663148c2f7af235c4290fa4e607`; PR #8 merged; post-merge CI run #85 successful on that exact commit.
 - Next exact action: independently review the focused documentation-only PR opened for this closeout (PR #9) at its exact head. If it passes §7/§8 gates, merge under the existing routine delegation; otherwise record the blocker. Afterward resume the already documented pre-Phase-1 governance backlog as separate tasks. PR #1 remains owner-controlled and unmerged.
+
+
+---
+
+## 30. Storage Reliability — takeover, completion and verification — 2026-11-06 — Claude (third assistant)
+
+**Risk level (constitution §2):** Standard — product code change; no new dependency, no CI/lockfile change, no data-format change (same storage key; new backup keys are additive).
+
+### Starting checkpoint and governing sources
+
+- Branch `fix/storage-reliability` at `09ad473fe7013bc5d90cde6ed0ec28aae45386f0` (one commit ahead of `feature/phase-1-foundation` at `39b9c47f1efcca78bd5913719cbb73ce44e9c827`); PR #10 open, draft, unmerged, three files (`src/storage.ts`, `src/storage.test.ts`, `src/App.tsx`).
+- Verified live on GitHub before editing: PR #10 head and base SHAs as above; PR #9 closed and merged (merge commit `39b9c47…`); PR #1 open, draft, targets `main`, head `39b9c47…`; no workflow run exists for `09ad473…` (0 runs).
+- Governing documents read in full at `39b9c47…`: [OPERATIONS-ROOM](https://github.com/Fadhel-docom/DevMate/blob/39b9c47f1efcca78bd5913719cbb73ce44e9c827/docs/OPERATIONS-ROOM.md) (blob `d30245c391ef63f7b54b00c4ac724c7143319369`), [STATUS](https://github.com/Fadhel-docom/DevMate/blob/39b9c47f1efcca78bd5913719cbb73ce44e9c827/docs/STATUS.md) (blob `26dd43bd4df96238a2cd0a1ab315554edc4e769a`), [constitution 1.1](https://github.com/Fadhel-docom/DevMate/blob/39b9c47f1efcca78bd5913719cbb73ce44e9c827/docs/CHARTER-AND-QUALITY-RULES.md) (blob `50126a159961b71faf88025a8695cb7e734d63b7`, unchanged), SESSION-START (blob `a1a06cff72403a81c7b1d728a84ee4d82acddc84`), DECISIONS (blob `67f5e6f4ac3c18fd09f41fc4cd070290a8288818`).
+
+### What the previous contributor actually delivered (Verified)
+
+- Claude II's PR #10 commit `09ad473…` adds schema validation, a never-throwing `readProjects`, `saveProjects` returning a real `SaveResult` with read-back verification, App notices, and 29 new tests (32 total). Its description says its 32 tests ran only under a shim, not Vitest.
+- Verified by this contributor on a fresh clone of `09ad473…`: `npm ci` (0 vulnerabilities), real `npm test` = **Vitest 4.1.12, 1 file, 32 tests passed**, `npm run build` passed. Claude II's work was not redone.
+
+### Defects confirmed at `09ad473…` (Verified by reading the code)
+
+1. Only one backup slot (`devmate-workspace-v1.unreadable-backup`): a second unreadable value was not kept at all.
+2. Backup success was reported without reading the copy back.
+3. Protection gap: if the backup could not be written, the first edit made `saveProjects` overwrite the unreadable (or only partly recovered) original, losing it. The App only skipped the initial re-save.
+4. Reading the same unreadable data again would have been indistinguishable from new damage once multiple slots exist (needed de-duplication).
+5. App notices did not distinguish "copy saved" from "no copy" for partly recovered data, said nothing about the unprotected original, and a notice about a failed backup could not become true later.
+
+### Changes (code commit `20e4a3bb53779edeff1ef3fe4939fbd15c859e93`)
+
+- `src/storage.ts` (blob `e64eff61c1dd23dbc4977526dfe502aab1a628f6`):
+  - Backup slots: slot 1 is the existing key, then `<key>.2`, `<key>.3`, … up to `MAX_BACKUPS = 20`. First free slot is chosen deterministically (no clock, no randomness). No slot is ever replaced. An identical copy already stored is reused. Success is reported only after the copy is read back; read, write, verify and slot-limit failures return "no backup".
+  - `saveProjects` now inspects what is currently stored. If it is corrupt, wrongly shaped or only partly readable, it is replaced only after a verified backup exists; otherwise the write is refused (`reason: "protect-original"`) and the original is untouched. A later save retries the backup. `SaveResult` gains an optional `backupKey` (set only when a backup was ensured during the save). `LoadResult` gains `backupKey`; `backedUp` is kept.
+- `src/App.tsx` (blob `ad52cfa5cc505caf84c37d59110b6764a9e55ca9`): `loadNotice` and `saveMessage` (now exported) give distinct text for: healthy/empty (no notice), partly recovered with a saved copy, partly recovered without one, corrupt/invalid with a saved copy, corrupt/invalid without one (original untouched; changes are in memory only and not saved), unavailable storage, and each save failure including `protect-original` and `verify`. The startup notice is recomputed if a backup is made later, so it never goes stale.
+- `src/storage.test.ts` (blob `a7d62f83430e5d0510ff6b5c29c6f7eac0ed797b`): 63 tests (was 32). New groups: multiple backups (first/second/third copy, legacy key kept, repeated reads, identical copy in a later slot, partly recovered backup, full storage, silent write failure, slot-read failure, read-only storage, slot limit), protecting originals on save (backup failed for corrupt / partly recovered / wrong-shape data, slots full, later retry, backup-then-replace, backup ok but main write fails, unreadable stored value, no backup for valid/empty data, invalid data never touches storage, verify failures), and user-facing messages.
+- **Test change to disclose:** one earlier test, "never overwrites an existing backup", asserted the old limitation (a second unreadable copy was not kept: `backedUp === false`). It was rewritten to assert the same safety property (the first copy is never overwritten) plus the new behaviour (the second copy is stored in slot 2). All other earlier tests are unchanged.
+
+### Checks run (observed; all local, none on GitHub Actions)
+
+Environment: Linux sandbox, Node v24.22.1, npm 10.8.2 (CI uses Node 20.20.2 / npm 10.8.2). Fresh `git clone` of `20e4a3b…`, blob SHAs identical to the committed files.
+
+- `npm ci`: passed, 155 packages, 0 vulnerabilities.
+- `npm test` (real Vitest 4.1.12, jsdom): **1 file, 63 tests passed**.
+- `tsc --noEmit && vite build` (`npm run build`): passed (28 modules transformed).
+- `npm audit`: 0 vulnerabilities (info/low/moderate/high/critical = 0) for the installed tree.
+- Mutation checks (not committed): removing the overwrite guard fails 6 tests; disabling duplicate detection fails 3; removing the backup read-back fails 1.
+- jsdom render smoke test of `App` (not committed — a new test file is outside the allowed paths): healthy data (no notice, edit saves); corrupt data with working backup (notice says a copy was saved, original unchanged until the edit, backup holds the original afterwards); corrupt data with a blocked backup (notice says no copy could be saved, edit refused with an alert, original unchanged, change still visible in memory). 3 of 3 passed.
+
+### CI
+
+- **No GitHub Actions run exists for `09ad473…` or `20e4a3b…` (0 runs, Verified).** `.github/workflows/ci.yml` runs on `pull_request` to `main` and on `push` to `main` and `feature/**`; `fix/storage-reliability` matches neither and PR #10 targets `feature/phase-1-foundation`. The CI success recorded for `39b9c47…` does not test PR #10. CI was not modified.
+- Compatible ways to get real CI (need coordinator/owner decision; not done): (a) push the same commit to a scratch branch named `feature/storage-reliability-ci` (no PR) so the existing push trigger runs; (b) rename/recreate the branch under `feature/**` and retarget PR #10 (changes the branch structure); (c) a separate task to add `fix/**` or all-branch PR triggers to the workflow (workflow change, owner-reserved).
+
+### Not verified / Unknown
+
+- Real browsers (Android, Safari private mode, a genuinely full quota); accessibility and visual look of the inline-styled notices.
+- Node 20: a Node 20 download failed in the sandbox, so the local runs used Node 24.
+- Behaviour with two tabs open (cross-tab races), see risks.
+- Independent review has not happened (Gate D): this contributor authored the latest commit and Claude II authored the first one, so the reviewer must be someone else (the ChatGPT coordinator or the owner).
+
+### Residual risks
+
+- No UI to list, restore or delete backups; slots are never cleaned up automatically. After 20 distinct unreadable copies, no further copy can be made and saves are refused while unreadable data is stored, until space is freed manually.
+- Near-full storage: a backup needs as much space as the unreadable data, so a nearly full browser can end up unable to save until space is freed. This is the intended trade-off (data kept over changes saved); the user is told changes are not saved.
+- A write-only storage object (no `getItem`) cannot be inspected, so the overwrite guard is skipped; real `localStorage` always has `getItem`.
+- Another tab can change the stored value between the guard's read and the write (no `storage` event handling; last write wins).
+- Unknown extra fields in stored data are still stripped on the next save (carried over from PR #10).
+- The first save after load may create a backup of partly valid data before replacing it (extra storage use; intended).
+
+### Intentionally not done
+
+No merge, close or delete of any PR or branch; no change to `main`, PR #1, the constitution, CI, `package.json`, `package-lock.json` or dependencies; no new branch or duplicate PR; no RateNest or other-repository access; no deployment.
+
+### Last verified checkpoint and next exact action
+
+- Last verified checkpoint: PR #10 code at `20e4a3bb53779edeff1ef3fe4939fbd15c859e93` (63 tests, build and audit verified locally; no CI). The head after this documentation commit differs from it only in `docs/STATUS.md` and `docs/OPERATIONS-ROOM.md`; its SHA is shown on PR #10.
+- Next exact action: the coordinator/owner decides how to obtain a real CI run on the PR head (options above), then a reviewer other than Claude (author) independently reviews the diff at the exact head and the CI result. Keep PR #10 draft until then. Handoff owner: ChatGPT coordinator for review and CI routing; the owner for any workflow change.
+- Handoff authorship: authored by Claude (third assistant) and committed through the GitHub connector under the owner's delegation; GitHub shows the owner's account.
