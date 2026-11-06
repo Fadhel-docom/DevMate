@@ -43,9 +43,15 @@ describe("project persistence", () => {
 });
 
 describe("valid data", () => {
+  it("returns the exact serialized baseline that was written and verified", () => {
+    const storage = memoryStorage();
+    const result = saveProjects(sample, storage);
+    expect(result).toMatchObject({ ok: true, raw: storage.getItem(STORAGE_KEY) });
+  });
+
   it("round-trips projects with tasks unchanged and reports ok", () => {
     const storage = memoryStorage();
-    expect(saveProjects(sample, storage)).toEqual({ ok: true });
+    expect(saveProjects(sample, storage)).toMatchObject({ ok: true });
     const result = readProjects(storage);
     expect(result.status).toBe("ok");
     expect(result.projects).toEqual(sample);
@@ -209,7 +215,7 @@ describe("valid JSON with the wrong structure", () => {
 describe("save failures", () => {
   it("reports quota errors and keeps the previously saved data", () => {
     const base = memoryStorage();
-    expect(saveProjects(sample, base)).toEqual({ ok: true });
+    expect(saveProjects(sample, base)).toMatchObject({ ok: true });
     const full = { getItem: base.getItem, setItem: () => { throw domError("QuotaExceededError", 22); } };
     const next: Project[] = [...sample, { id: "p3", name: "Third", tasks: [] }];
     const result = saveProjects(next, full);
@@ -251,7 +257,7 @@ describe("save failures", () => {
 
   it("succeeds with a storage that only offers setItem", () => {
     const values = new Map<string, string>();
-    expect(saveProjects(sample, { setItem: (key: string, value: string) => values.set(key, value) })).toEqual({ ok: true });
+    expect(saveProjects(sample, { setItem: (key: string, value: string) => values.set(key, value) })).toMatchObject({ ok: true });
     expect(values.get(STORAGE_KEY)).toBe(JSON.stringify(sample));
   });
 
@@ -464,7 +470,7 @@ describe("protecting unreadable originals when saving", () => {
     expectRefused(saveProjects(next, storage));
     expect(base.getItem(STORAGE_KEY)).toBe("{broken");
     full = false;
-    expect(saveProjects(next, storage)).toEqual({ ok: true, backupKey: BACKUP_KEY });
+    expect(saveProjects(next, storage)).toMatchObject({ ok: true, backupKey: BACKUP_KEY });
     expect(base.getItem(BACKUP_KEY)).toBe("{broken");
     expect(loadProjects(base)).toEqual(next);
   });
@@ -474,7 +480,7 @@ describe("protecting unreadable originals when saving", () => {
     const raw = JSON.stringify([sample[0], { id: "bad" }]);
     base.setItem(STORAGE_KEY, raw);
     readProjects(base);
-    expect(saveProjects(next, base)).toEqual({ ok: true, backupKey: BACKUP_KEY });
+    expect(saveProjects(next, base)).toMatchObject({ ok: true, backupKey: BACKUP_KEY });
     expect(base.getItem(BACKUP_KEY)).toBe(raw);
     expect(loadProjects(base)).toEqual(next);
   });
@@ -503,8 +509,8 @@ describe("protecting unreadable originals when saving", () => {
 
   it("does not create any backup when the stored data is valid", () => {
     const base = memoryStorage();
-    expect(saveProjects(sample, base)).toEqual({ ok: true });
-    expect(saveProjects(next, base)).toEqual({ ok: true });
+    expect(saveProjects(sample, base)).toMatchObject({ ok: true });
+    expect(saveProjects(next, base)).toMatchObject({ ok: true });
     expect(base.getItem(BACKUP_KEY)).toBeNull();
   });
 
@@ -512,7 +518,7 @@ describe("protecting unreadable originals when saving", () => {
     for (const stored of [null, "[]"]) {
       const base = memoryStorage();
       if (stored !== null) base.setItem(STORAGE_KEY, stored);
-      expect(saveProjects(next, base)).toEqual({ ok: true });
+      expect(saveProjects(next, base)).toMatchObject({ ok: true });
       expect(base.getItem(BACKUP_KEY)).toBeNull();
     }
   });
@@ -530,7 +536,7 @@ describe("protecting unreadable originals when saving", () => {
 
   it("keeps the previous data and reports verify when the write does not stick", () => {
     const base = memoryStorage();
-    expect(saveProjects(sample, base)).toEqual({ ok: true });
+    expect(saveProjects(sample, base)).toMatchObject({ ok: true });
     const lossy = { getItem: base.getItem, setItem: () => undefined };
     const result = saveProjects(next, lossy);
     expect(result.ok).toBe(false);
@@ -659,7 +665,7 @@ describe("empty string stored under the workspace key", () => {
   it("is replaced only after a verified backup exists", () => {
     const base = memoryStorage();
     base.setItem(STORAGE_KEY, "");
-    expect(saveProjects(sample, base)).toEqual({ ok: true, backupKey: BACKUP_KEY });
+    expect(saveProjects(sample, base)).toMatchObject({ ok: true, backupKey: BACKUP_KEY });
     expect(base.getItem(BACKUP_KEY)).toBe("");
     expect(loadProjects(base)).toEqual(sample);
   });
@@ -682,8 +688,8 @@ describe("empty string stored under the workspace key", () => {
     emptyList.setItem(STORAGE_KEY, "[]");
     expect(readProjects(emptyList).status).toBe("empty");
     expect(emptyList.getItem(BACKUP_KEY)).toBeNull();
-    expect(saveProjects(sample, emptyList)).toEqual({ ok: true });
-    expect(saveProjects(sample, memoryStorage())).toEqual({ ok: true });
+    expect(saveProjects(sample, emptyList)).toMatchObject({ ok: true });
+    expect(saveProjects(sample, memoryStorage())).toMatchObject({ ok: true });
   });
 });
 
@@ -760,7 +766,7 @@ describe("safe extra fields", () => {
     storage.setItem(STORAGE_KEY, JSON.stringify(input));
     const loaded = readProjects(storage);
     expect(loaded.projects).toEqual(input);
-    expect(saveProjects(loaded.projects, storage)).toEqual({ ok: true });
+    expect(saveProjects(loaded.projects, storage)).toMatchObject({ ok: true });
     expect(readProjects(storage).projects).toEqual(input);
   });
   it("drops dangerous keys at nested levels", () => {
@@ -833,7 +839,7 @@ describe("backup deletion metadata failures", () => {
       }
     };
     const result = await deleteBackup(BACKUP_KEY, storage);
-    expect(result).toEqual({ ok: true });
+    expect(result).toMatchObject({ ok: true });
     expect(base.getItem(BACKUP_KEY)).toBeNull();
     expect(base.getItem(backupMetaKey(1))).not.toBeNull();
     uninstallLocks();
