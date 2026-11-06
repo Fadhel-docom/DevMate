@@ -25,12 +25,21 @@ export default function BackupManager({ onRestoreStart, onRestored, refreshKey =
     }
   }, [pending]);
 
+  function exportRaw(backup: BackupInfo) {
+    const blob = new Blob([backup.fingerprint], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = `devmate-backup-slot-${backup.slot}.txt`;
+    anchor.addEventListener("click", () => URL.revokeObjectURL(url), { once: true });
+    anchor.click();
+  }
   async function confirmRestore() {
     if (!pending || pending.action !== "restore" || !pending.backup.restorable) return;
     setBusy(true); setError(null); onRestoreStart?.();
     let safeToResume = true;
     try {
-      const result = await restoreBackup(pending.backup.key);
+      const result = await restoreBackup(pending.backup.key, undefined, pending.backup.fingerprint);
       if (!result.ok) {
         if (result.rollbackVerified === false) safeToResume = false;
         setError(result.message || `Restore failed: ${result.reason}`);
@@ -44,7 +53,7 @@ export default function BackupManager({ onRestoreStart, onRestored, refreshKey =
     if (!pending || pending.action !== "delete") return;
     setBusy(true); setError(null);
     try {
-      const result = await deleteBackup(pending.backup.key);
+      const result = await deleteBackup(pending.backup.key, undefined, pending.backup.fingerprint);
       if (!result.ok) setError(result.message || `Delete failed: ${result.reason}`);
       else { setPending(null); refresh(); }
     } catch (cause) {
@@ -74,6 +83,7 @@ export default function BackupManager({ onRestoreStart, onRestored, refreshKey =
               <div className="backup-actions">
                 <button className="primary-button" type="button" disabled={busy || !backup.restorable} onClick={() => { setError(null); setPending({ action: "restore", backup }); }}>Restore</button>
                 <button className="secondary-button" type="button" disabled={busy} onClick={() => { setError(null); setPending({ action: "delete", backup }); }}>Delete</button>
+                {!backup.restorable && <button className="secondary-button" type="button" disabled={busy} onClick={() => exportRaw(backup)}>Export raw</button>}
               </div>
             </li>
           ))}
