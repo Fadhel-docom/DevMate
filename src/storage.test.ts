@@ -564,6 +564,7 @@ describe("messages shown to the user", () => {
     repairedProjects: 0,
     backedUp: false,
     backupKey: null,
+    storageRaw: null,
     ...overrides
   });
 
