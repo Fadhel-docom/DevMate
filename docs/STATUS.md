@@ -422,7 +422,7 @@ Run the full Vitest suite, TypeScript/Vite production build, and dependency audi
 - **Merge boundary:** PR #11 remains stacked on PR #10 and may only be merged into its base branch, never independently to `main`. PR #10, PR #1, and `main` are untouched. No deployment.
 
 
-## Tool registry foundation — 2026-11-06 — in progress
+## Tool registry foundation — 2026-11-06 — historical checkpoint (superseded by review follow-ups)
 
 - Starting checkpoint: PR #10 branch `fix/storage-reliability` at `3b7efe6f4c6085d62c5fa3e5761fee23bab246ca`; PR #10 remains open and Draft. PR #11's work is already present in that branch; no claim is made that PR #10 has passed its own independent review or merge gate.
 - Created stacked branch `feature/tool-registry-foundation` from the exact PR #10 head. This branch and its PR must target `fix/storage-reliability` until PR #10 is resolved; do not merge it directly to `main` or bypass the dependency.
@@ -452,7 +452,7 @@ Run the full Vitest suite, TypeScript/Vite production build, and dependency audi
 
 - Clarified the state contract: Not connected means an adapter exists but has no authorized connection configured; Not built yet means the adapter itself does not exist.
 - GitHub read-only, research/SEO/CAO, and AI-provider adapters do not yet exist inside DevMate. They are now correctly marked Not built yet, alongside the test/build runner, code review, and browser testing.
-- Current inventory count: 1 available (browser-local workspace storage), 0 not connected, 6 not built.
+- Current inventory count: 1 implemented (runtime-gated) capability (browser-local workspace storage), 0 not connected, 6 not built.
 - Updated the panel copy to state explicitly that the registry does not yet route tasks or execute external tools. This is a descriptive registry and selection-function foundation, not an orchestrator.
 - This is a classification/documentation correction, not a new integration or permission grant.
 ## Corrected tool registry code verification — 2026-11-06
@@ -477,7 +477,7 @@ Run the full Vitest suite, TypeScript/Vite production build, and dependency audi
 
 - Owner decision: the tool inventory is for owner/internal operations, not a public product panel.
 - Security correction: DevMate currently has no authentication or authorization layer. Therefore the Tool Registry panel has been removed from the general workspace UI; it must not be described as owner-only until a real authenticated admin surface exists. The registry code remains internal and is not an active orchestrator.
-- Review follow-up in progress on branch `fix/tool-registry-review-followup`, created from PR #13 head `62003acbc9b6eb7166b4fa8eeadf86a45c6ed673`.
+- Review follow-up continued on branch `feature/tool-registry-review-followup`, stacked on PR #13 head `62003acbc9b6eb7166b4fa8eeadf86a45c6ed673`.
 - Implemented in this follow-up: explicit `satisfied` result so a non-empty partial tool selection cannot be mistaken for full task coverage; readonly tool definitions and runtime freezing of the registry and nested capability arrays; tests for full coverage, unique IDs, non-empty capabilities, and runtime immutability; corrected test naming; panel semantics and typography/contrast adjustments; removed public mounting of the internal panel.
 - Documentation corrections: clarified that `available` means implemented, not guaranteed success under every runtime condition; fixed readiness wording and removed a reference to a governance document absent from this branch.
 - **Verification:** GitHub Actions run #137 (ID 42300207617) passed on exact application-code head `5b8159b35e131998e26f7a006be713db254765b6`: npm ci passed, dependency audit reported 0 vulnerabilities, Vitest passed 4 files / 123 tests, TypeScript check and Vite production build passed. This head includes the implementation changes and the CI-trigger documentation note. A subsequent documentation-only evidence update creates a new head and requires its own CI check. No local test run or browser/device test is claimed.
@@ -489,3 +489,13 @@ Run the full Vitest suite, TypeScript/Vite production build, and dependency audi
 
 
 - **Exact CI evidence:** [GitHub Actions run #137](https://github.com/Fadhel-docom/DevMate/actions/runs/42300207617) — success on `5b8159b35e131998e26f7a006be713db254765b6`; 0 vulnerabilities; 4 test files / 123 tests passed; TypeScript and Vite build passed. Computed text/background contrast ratios for the updated registry text styles are all above 4.5:1 (approximately 7.11:1, 6.63:1, 6.07:1, 7.91:1, and 6.14:1). This calculation does not replace a visual or assistive-technology check.
+
+
+## PR #15 second review follow-up — 2026-11-06
+
+- Independent review at exact head `fa96f0a7b092244f1ae342c67a5434b5ee66849f` found no blockers and identified low-risk follow-ups.
+- Defined empty capability requests as unsatisfied (`satisfied: false`) and added a regression test. The selector now also returns frozen result containers; the optional injected registry argument is documented as a deterministic test seam, not a production input.
+- Removed the unused ToolRegistryPanel component and its CSS rather than leaving stale UI copy and styling in the app. The owner-only dashboard is deferred until actual authentication/authorization exists.
+- Updated readiness terminology to “Implemented (runtime-gated)” consistently and marked the original registry status section as a historical checkpoint.
+- **Verification:** pending exact-head GitHub Actions. No browser or assistive-technology test is claimed.
+- PR #15 remains Draft/unmerged, stacked on PR #13; PR #13 remains stacked on PR #10. No merge, workflow change, external integration, provider, key, permission, dependency, cost, deployment, or main change.
