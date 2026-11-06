@@ -448,3 +448,10 @@ Run the full Vitest suite, TypeScript/Vite production build, and dependency audi
 - PR #13 is open and Draft, stacked on PR #10 branch fix/storage-reliability; it is not merged. PR #10 and PR #12 remain open/Draft; PR #1 remains owner-controlled.
 
 - Note: this status update itself is documentation-only and creates a newer branch head; CI for the resulting head must be checked separately.
+## Tool readiness classification correction — 2026-11-06
+
+- Clarified the state contract: Not connected means an adapter exists but has no authorized connection configured; Not built yet means the adapter itself does not exist.
+- GitHub read-only, research/SEO/CAO, and AI-provider adapters do not yet exist inside DevMate. They are now correctly marked Not built yet, alongside the test/build runner, code review, and browser testing.
+- Current inventory count: 1 available (browser-local workspace storage), 0 not connected, 6 not built.
+- Updated the panel copy to state explicitly that the registry does not yet route tasks or execute external tools. This is a descriptive registry and selection-function foundation, not an orchestrator.
+- This is a classification/documentation correction, not a new integration or permission grant.
