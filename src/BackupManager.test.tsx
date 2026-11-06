@@ -30,10 +30,10 @@ describe("BackupManager UI", () => {
   function useStorage(storage: FakeStorage) {
     Object.defineProperty(window, "localStorage", { configurable: true, get: () => storage });
   }
-  async function mount(onRestored: () => void = () => undefined) {
+  async function mount(onRestored: (safeToResume?: boolean) => void | Promise<void> = () => undefined, refreshKey = 0) {
     host = document.createElement("div"); document.body.appendChild(host);
     root = createRoot(host);
-    await act(async () => { root!.render(<StrictMode><BackupManager onRestored={onRestored} /></StrictMode>); await new Promise((r) => setTimeout(r, 0)); });
+    await act(async () => { root!.render(<StrictMode><BackupManager onRestored={onRestored} refreshKey={refreshKey} /></StrictMode>); await new Promise((r) => setTimeout(r, 0)); });
   }
   function buttons(label: string): HTMLButtonElement[] {
     return Array.from(host!.querySelectorAll("button")).filter((b) => (b.textContent ?? "").trim().includes(label)) as HTMLButtonElement[];
@@ -53,6 +53,27 @@ describe("BackupManager UI", () => {
     useStorage(new FakeStorage()); await mount();
     expect(host!.textContent).toContain("No backups yet");
   });
+  it("refreshes the backup list when the parent refresh key changes", async () => {
+    const storage = new FakeStorage();
+    useStorage(storage);
+    await mount();
+    expect(host!.textContent).toContain("No backups yet");
+    storage.setItem(BACKUP_KEY, "{broken");
+    await act(async () => {
+      root!.render(<StrictMode><BackupManager onRestored={() => undefined} refreshKey={1} /></StrictMode>);
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+    expect(host!.textContent).toContain("Slot 1");
+  });
+
+  it("offers raw export for an unreadable backup", async () => {
+    const storage = new FakeStorage();
+    storage.setItem(BACKUP_KEY, "{broken");
+    useStorage(storage);
+    await mount();
+    expect(buttons("Export raw")).toHaveLength(1);
+  });
+
   it("lists backups with slot info", async () => {
     const storage = new FakeStorage();
     storage.setItem(BACKUP_KEY, "{broken");
