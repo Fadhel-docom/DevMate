@@ -59,7 +59,6 @@ function loadResult(status: LoadResult["status"], extra: Partial<LoadResult> = {
 describe("startup notice after a successful save (pure)", () => {
   const unavailable = loadResult("unavailable");
 
-
   it("does not enable edits after an unavailable startup until a successful reload", async () => {
     const storage = new FakeStorage();
     storage.failReads = true;
@@ -88,6 +87,23 @@ describe("startup notice after a successful save (pure)", () => {
     expect(status()).toContain("Browser storage is unavailable");
     expect((host.querySelector('input[aria-label="New project name"]') as HTMLInputElement).disabled).toBe(true);
     expect(storage.values.get(STORAGE_KEY)).toContain("Protected");
+  });
+
+  it("backs up unreadable data during an explicit successful reload before enabling edits", async () => {
+    const storage = new FakeStorage();
+    storage.values.set(STORAGE_KEY, "{broken");
+    storage.failReads = true;
+    useStorage(storage);
+    await mount();
+    expect(status()).toContain("Browser storage is unavailable");
+    expect(storage.values.get(STORAGE_KEY)).toBe("{broken");
+
+    storage.failReads = false;
+    const retry = Array.from(host.querySelectorAll("button")).find((button) => button.textContent?.includes("Reload saved workspace")) as HTMLButtonElement;
+    await act(async () => { retry.click(); await new Promise((resolve) => setTimeout(resolve, 0)); });
+    expect(storage.values.get(BACKUP_KEY)).toBe("{broken");
+    expect(status()).toContain("A copy of the unreadable data was saved");
+    expect((host.querySelector('input[aria-label="New project name"]') as HTMLInputElement).disabled).toBe(false);
   });
 
   it("keeps a data-corruption notice after a successful save", async () => {
