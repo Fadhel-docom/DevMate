@@ -650,3 +650,55 @@ No PR was merged and no code files were changed in this review handoff.
 - Obtain Claude's independent re-review of the corrected PR #6 head. If no Blocking issue is found and all applicable constitution 1.1 gates pass, use the owner's explicit delegation to Squash-merge PR #6 only; then verify the merge result and any triggered post-merge CI.
 - After it is merged, perform a read-only inventory for the pre-Phase-1 governance backlog. Check for existing `docs/SESSION-START.md` and `docs/DECISIONS.md` before creating anything; then prepare a focused documentation PR for missing navigation/checklist and decision-log structure. Also record the remaining archive-policy, CI security-baseline, and contributor-access/verification items without silently expanding scope.
 - PR #1 remains explicitly owner-controlled and unmerged. No deployment, `main` change, paid service, or new phase is authorized.
+
+
+---
+
+## 28. PR #6 closeout, Claude review record, and session-navigation documentation — 2026-11-06 — ChatGPT
+
+### Starting checkpoint and governing sources
+
+- Assigned task: read the current operations room, resume the documented DevMate work, record Claude's contribution accurately, and bring the current-state/handoff documents into line with GitHub.
+- Started from `feature/phase-1-foundation` at `f0b596fd8030f3990ec681e37c99b480dcc18030`, the verified Squash merge commit for PR #6.
+- Governing constitution: `docs/CHARTER-AND-QUALITY-RULES.md`, version 1.1; file blob SHA at the starting checkpoint: `50126a159961b71faf88025a8695cb7e734d63b7`. Source: https://github.com/Fadhel-docom/DevMate/blob/f0b596fd8030f3990ec681e37c99b480dcc18030/docs/CHARTER-AND-QUALITY-RULES.md.
+- Read the current `docs/STATUS.md`, latest `docs/OPERATIONS-ROOM.md` checkpoint, and constitution sections 7–8 and 10–14. Inspected the CI workflow, PR #1, PR #6, and the post-merge CI run.
+- Constitution §10 source-of-truth hierarchy applied: latest explicit owner decision; approved constitution; DECISIONS; STATUS; OPERATIONS-ROOM; SESSION-START navigation.
+
+### Claude's contribution — recorded with evidence limits
+
+- **Reported, not independently verified from a GitHub review object:** Claude's independent review of the earlier PR #6 diff reported no Blocking issue within the portion it inspected and identified four non-blocking documentation corrections.
+- The four findings relayed from Claude were: (1) operations-room heading numbering skipped from 26 to 30; (2) STATUS used an ambiguous “This PR” reference; (3) a SHA label could be mistaken for a live current head rather than a historical base snapshot; and (4) CI run #81 was omitted while #82 was cited.
+- ChatGPT applied the four corrections on PR #6's branch. The corrected PR #6 head was `c17e444320c663f5a225dac9a761a1b3c359c443`; the changes affected only `docs/STATUS.md` and `docs/OPERATIONS-ROOM.md`.
+- Review limitation: the relayed Claude review was explicitly partial; it did not constitute a complete independent audit of the full operations room, full constitution, workflow configuration, PR #1 state, and all downstream effects. The available GitHub PR #6 review and issue-comment endpoints returned no formal review/comment records. Therefore this log does not claim a recorded GitHub approval or independently verified fresh Claude review of the final corrected head.
+- Claude did not author the correction commits or perform the merge in the evidence available to this coordinator. The merge is attributed to the GitHub PR event, not to Claude.
+
+### PR #6 merge and CI — directly verified
+
+- GitHub reports PR #6 closed and merged; Squash merge commit: `f0b596fd8030f3990ec681e37c99b480dcc18030`. PR: https://github.com/Fadhel-docom/DevMate/pull/6.
+- The integration branch points to that exact commit at this checkpoint.
+- CI run #84 (ID `42136573760`) completed successfully on the same exact SHA. Run: https://github.com/Fadhel-docom/DevMate/actions/runs/42136573760.
+- Run #84 was a `pull_request` event associated with PR #1, not a PR #6 review. PR #1's head SHA was the same merge commit. All job steps passed.
+- Inspected the job log: `npm ci` passed; dependency audit reported 0 vulnerabilities across all severities; `npm test` passed (1 file, 3 tests); `npm run build` passed (TypeScript and Vite production build).
+- PR #1 remains open/draft, targets `main`, and is unmerged. It remains excluded from delegated merge authority under constitution §7 and requires separate explicit owner approval under §14. No merge or modification was attempted.
+
+### Repository inventory and changes prepared
+
+- Verified that `docs/SESSION-START.md` and `docs/DECISIONS.md` were absent at the starting commit. Also checked for root `CLAUDE.md` and `AGENTS.md`; neither was found at that commit.
+- Found stale current-state statements in STATUS and the latest operations handoff that still described PR #6 as open and awaiting re-review. These are retained as historical entries and superseded by a new current-state checkpoint.
+- This session prepares a focused documentation-only change on branch `docs/session-start-decisions-and-pr6-closeout`: add the session-start navigation/checklist and decision-log structure; update STATUS; append this evidence-based operations entry.
+- `SESSION-START.md` follows constitution §§10–11: it uses the approved source hierarchy and required session sequence, defines conflict handling, and includes the required handoff fields. It does not create new authority.
+- `DECISIONS.md` starts with no backfilled entries. No historical decisions are invented from chat summaries or operations notes; any future inventory must cite verifiable approvals and immutable references.
+- Remaining deferred pre-Phase-1 work remains open: archive-policy implementation, CI security baseline, and contributor access/verification limits. This session records them but does not implement them or declare Phase 1 complete.
+
+### Risk, boundaries, and work not performed
+
+- Risk: the Claude review summary is based on the report relayed to the coordinator; no formal GitHub review object was available to verify it. The log labels that evidence accordingly.
+- No constitution amendment, policy change, new phase, source-code edit, dependency change, workflow change, deployment, production release, cost, secret/permission change, or other-repository work was performed.
+- No change to `main` and no action on PR #1 was performed. PR #1 remains owner-controlled and unmerged.
+- The successful run #84 validates the merged branch commit and its build/test workflow; it does not prove Android browser behavior, deployment, or production readiness.
+
+### Last verified checkpoint and next handoff
+
+- Last verified checkpoint: `feature/phase-1-foundation` at `f0b596fd8030f3990ec681e37c99b480dcc18030`; PR #6 merged; CI #84 successful.
+- Next exact action: independently review the new documentation PR against constitution 1.1, especially source hierarchy, mandatory session sequence, append-only decision history, and accurate evidence labels. If the diff remains a Small non-policy documentation change and no blocking issue or owner decision remains, follow constitution §7's routine merge delegation only after the independent review. PR #1 remains separately owner-controlled.
+- Handoff owner: ChatGPT coordinator; Claude is the independent reviewer for the documentation PR when available; the project owner retains all §14 decisions.
