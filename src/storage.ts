@@ -19,7 +19,7 @@ export type SaveResult = { ok: true; backupKey?: string } | { ok: false; reason:
 export type BackupReason = "corrupt" | "invalid" | "recovered" | "pre-restore";
 export type BackupInfo = {
   key: string; slot: number; createdAt: number | null; reason: BackupReason | null;
-  parseable: boolean; projectCount: number | null; preview: string;
+  parseable: boolean; restorable: boolean; projectCount: number | null; preview: string;
 };
 type Parsed = { projects: Project[]; droppedProjects: number; droppedTasks: number; repairedProjects: number };
 type StorageLike = Pick<Storage, "getItem" | "setItem"> & Partial<Pick<Storage, "removeItem">>;
@@ -274,13 +274,15 @@ export function listBackups(storage: ReadableStorage | null = getBrowserStorage(
     } catch { /* legacy or unreadable metadata */ }
     let parseable = false, projectCount: number | null = null;
     try { const parsed = JSON.parse(raw); if (Array.isArray(parsed)) { parseable = true; projectCount = parsed.length; } } catch { /* raw backup is retained */ }
-    items.push({ key, slot, createdAt, reason, parseable, projectCount, preview: raw.slice(0, 180) });
+    const inspection = inspectRaw(raw);
+    const restorable = inspection.kind === "ok" || inspection.kind === "empty";
+    items.push({ key, slot, createdAt, reason, parseable, restorable, projectCount, preview: raw.slice(0, 180) });
   }
   return items.sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0) || a.slot - b.slot);
 }
 export type RestoreResult =
   | { ok: true; snapshotKey: string | null }
-  | { ok: false; reason: "lock-unavailable" | "lock-timeout" | "lock-error" | "not-found" | "invalid-key" | "protect-original" | "write-failed" | "verify"; message: string };
+  | { ok: false; reason: "lock-unavailable" | "lock-timeout" | "lock-error" | "not-found" | "invalid-key" | "protect-original" | "write-failed" | "verify" | "invalid-backup"; message: string };
 export async function restoreBackup(key: string, storage: StorageLike | null = getBrowserStorage()): Promise<RestoreResult> {
   if (slotFromKey(key) === null) return { ok: false, reason: "invalid-key", message: "Invalid backup key." };
   const locked = await withStorageLock((): RestoreResult => {
@@ -289,15 +291,21 @@ export async function restoreBackup(key: string, storage: StorageLike | null = g
     try { backup = storage.getItem(key); current = storage.getItem(STORAGE_KEY); }
     catch (error) { return { ok: false, reason: "write-failed", message: describeError(error) }; }
     if (backup === null) return { ok: false, reason: "not-found", message: "The selected backup no longer exists." };
+    // Validate the complete backup before creating a snapshot or changing the workspace.
+    const inspection = inspectRaw(backup);
+    if (inspection.kind !== "ok" && inspection.kind !== "empty") {
+      return { ok: false, reason: "invalid-backup", message: "This backup is incomplete or invalid. The current workspace was not changed." };
+    }
+    const normalized = inspection.kind === "empty" ? "[]" : JSON.stringify(inspection.parsed.projects);
     let snapshotKey: string | null = null;
     if (current !== null) {
       const snapshot = backUpRaw(storage, current, "pre-restore");
       if (!snapshot.ok) return { ok: false, reason: "protect-original", message: "The current workspace could not be snapshotted; restore was cancelled." };
       snapshotKey = snapshot.key;
     }
-    try { storage.setItem(STORAGE_KEY, backup); }
+    try { storage.setItem(STORAGE_KEY, normalized); }
     catch (error) { return { ok: false, reason: "write-failed", message: describeError(error) }; }
-    try { if (storage.getItem(STORAGE_KEY) !== backup) return { ok: false, reason: "verify", message: "Restored data could not be verified." }; }
+    try { if (storage.getItem(STORAGE_KEY) !== normalized) return { ok: false, reason: "verify", message: "Restored data could not be verified." }; }
     catch (error) { return { ok: false, reason: "verify", message: describeError(error) }; }
     return { ok: true, snapshotKey };
   });
