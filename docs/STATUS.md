@@ -502,3 +502,6 @@ Run the full Vitest suite, TypeScript/Vite production build, and dependency audi
 
 
 - **Second review follow-up exact CI:** GitHub Actions run #147 (ID 42301856450) passed on code/documentation head `73075eba602b825181369f6f32057eda0718469e`: npm ci installed 155 packages; audit reported 0 vulnerabilities; Vitest passed 4 files / 124 tests (including 9 registry tests); TypeScript check and Vite production build passed. No local or browser/device test is claimed.
+
+
+- **Final documentation-head verification:** GitHub Actions run #149 (ID 42301948481) passed on exact head `12452cf86efac66ab2912426b653e24fdafbb3bb`. The run repeated npm ci, audit (0 vulnerabilities), 4 test files / 124 tests, TypeScript, and Vite production build. The tested code head remains `73075eba602b825181369f6f32057eda0718469e`; #149 verifies the documentation-only commits after it.
