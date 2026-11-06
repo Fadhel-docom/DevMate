@@ -1,12 +1,52 @@
 import { useEffect, useMemo, useState } from "react";
-import type { FormEvent } from "react";
-import { loadProjects, saveProjects, type Project, type Task } from "./storage";
+import type { CSSProperties, FormEvent } from "react";
+import { readProjects, saveProjects, type LoadResult, type Project, type SaveResult, type Task } from "./storage";
 
 type Message = { id: string; role: "user" | "assistant"; text: string };
 
 
+const noticeStyle: CSSProperties = {
+  margin: "16px 0 0",
+  padding: "12px 14px",
+  border: "1px solid #f0d9a8",
+  background: "#fff8e8",
+  color: "#6b4a0a",
+  borderRadius: 12,
+  fontSize: 13,
+  lineHeight: 1.5
+};
+
+const errorStyle: CSSProperties = { ...noticeStyle, border: "1px solid #f1b5b5", background: "#fff1f1", color: "#7a1f1f" };
+
+function loadNotice(result: LoadResult): string | null {
+  switch (result.status) {
+    case "corrupt":
+    case "invalid":
+      return result.backedUp
+        ? "Your saved workspace could not be read, so a new one was started. A copy of the unreadable data was kept in this browser."
+        : "Your saved workspace could not be read, so a new one was started.";
+    case "recovered":
+      return `Some saved items were invalid and were skipped (${result.droppedProjects} projects, ${result.droppedTasks} tasks, ${result.repairedProjects} projects with a missing task list).`;
+    case "unavailable":
+      return "Browser storage is unavailable. Your changes will not be saved after you close this page.";
+    default:
+      return null;
+  }
+}
+
+function saveMessage(failure: Extract<SaveResult, { ok: false }>): string {
+  const detail = failure.reason === "quota"
+    ? "Browser storage is full."
+    : failure.reason === "unavailable"
+      ? "Browser storage is unavailable or blocked."
+      : "The data could not be written.";
+  return `Your latest changes were not saved. ${detail} They are still visible here but may be lost when you close or reload this page.`;
+}
+
 export default function App() {
-  const [projects, setProjects] = useState<Project[]>(loadProjects);
+  const [initial] = useState<LoadResult>(() => readProjects());
+  const [projects, setProjects] = useState<Project[]>(initial.projects);
+  const [saveFailure, setSaveFailure] = useState<Extract<SaveResult, { ok: false }> | null>(null);
   const [activeId, setActiveId] = useState("starter");
   const [newProject, setNewProject] = useState("");
   const [newTask, setNewTask] = useState("");
@@ -16,8 +56,11 @@ export default function App() {
   ]);
 
   useEffect(() => {
-    saveProjects(projects);
-  }, [projects]);
+    // Nothing has changed yet: do not rewrite what is already stored (it may be an unreadable original).
+    if (projects === initial.projects) return;
+    const result = saveProjects(projects);
+    setSaveFailure(result.ok ? null : result);
+  }, [projects, initial]);
 
   const activeProject = useMemo(
     () => projects.find((project) => project.id === activeId) ?? projects[0],
@@ -65,12 +108,17 @@ export default function App() {
     setPrompt("");
   }
 
+  const startupNotice = loadNotice(initial);
+
   return (
     <main className="shell">
       <header className="topbar">
         <a className="brand" href="/" aria-label="DevMate home"><span className="brand-mark">D</span><span>DevMate</span></a>
         <span className="top-note">Your coding workspace</span>
       </header>
+
+      {startupNotice && <p role="status" style={noticeStyle}>{startupNotice}</p>}
+      {saveFailure && <p role="alert" style={errorStyle}>{saveMessage(saveFailure)}</p>}
 
       <section className="intro">
         <p className="eyebrow">BUILD WITH CLARITY</p>
