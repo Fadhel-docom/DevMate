@@ -279,3 +279,12 @@ After this documentation checkpoint is reviewed and merged, perform a read-only 
 - **The earlier CI success (run #89, `42178927687`) applies to `a4c7bbb…` only and does not cover this change.** GitHub Actions on the new head: not verified (the workflow does not start for `fix/**` with base `feature/phase-1-foundation`; nothing was pushed to trigger it). Also not verified: real browsers and a visual check of the changed notices.
 - Review: the author of this change is Claude (fourth assistant); an independent review of `cd52574…adf867c…` is pending (ChatGPT coordinator).
 - PR #10 remains open, Draft and unmerged; it is not declared ready to merge.
+
+
+## PR #10 — independent review of startup-notice fix — 2026-11-06
+
+- Reviewed code commit `adf867ccb220d390a48ec40fed975f946ddc2c0f` (parent `cd525742869147c2802bede53cb397db488569e8`): no blocking code defect found; review is **conditionally accepted**. The helper clears the stale unavailable warning only after successful save, preserves other notices, and reports a backup made during recovery. Eight new tests cover pure logic and React/jsdom flows.
+- Current PR head before this status update: `1d9b53297d2ccb8898936b1d2abfe243445507c1`; PR remains open and Draft, base unchanged. Review and detailed evidence are in OPERATIONS-ROOM entry 34.
+- **CI on the new code is still missing.** Run #89 passed on `a4c7bbb…` only; it does not verify `adf867c…`. Local Node 20 results (78/78, build, audit 0) are reported by Claude and recorded in entry 33, not GitHub Actions.
+- Remaining user-facing wording issue: the corruption notice says the backup was saved “before anything is replaced”, although a later save may already have replaced the stored value. Recommend correcting that wording before release. Existing storage risks remain: multi-tab race, unknown-field stripping, quota/20-slot limit and no restore/delete UI; real-browser notice behaviour not verified.
+- Keep PR #10 Draft and unmerged until CI is run on `adf867c…` (or a later docs-only head), then verify the head contains only reviewed code plus documentation. Do not declare Phase 1 complete.
