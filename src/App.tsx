@@ -61,6 +61,7 @@ export default function App() {
   const baselineRaw = useRef<string | null>(null);
   const [projects, setProjects] = useState<Project[]>([{ id: "starter", name: "My first project", tasks: [] }]);
   const [loaded, setLoaded] = useState(false);
+  const [recoveryRequired, setRecoveryRequired] = useState(false);
   const [startupNotice, setStartupNotice] = useState<string | null>(null);
   const [saveFailure, setSaveFailure] = useState<Extract<SaveResult, { ok: false }> | null>(null);
   const [activeId, setActiveId] = useState("starter");
@@ -112,16 +113,22 @@ export default function App() {
     () => projects.find((project) => project.id === activeId) ?? projects[0],
     [projects, activeId]
   );
-  async function reloadFromStorage() {
+  async function reloadFromStorage(safeToResume = true) {
     setLoaded(false);
     try {
       const result = await readProjectsLocked();
       baselineRaw.current = result.storageRaw;
-      setInitial(result);
+      setRecoveryRequired(!safeToResume);
+      setInitial(safeToResume ? result : { ...result, status: "unavailable" });
       setProjects(result.projects);
       setActiveId(result.projects[0]?.id ?? "starter");
-      setStartupNotice(loadNotice(result));
-      setSaveFailure(null);
+      setStartupNotice(safeToResume
+        ? loadNotice(result)
+        : "Restore rollback could not be verified. Editing is locked; use the retained pre-restore backup in the Backups panel to recover.");
+      setSaveFailure(safeToResume ? null : {
+        ok: false, reason: "verify",
+        message: "Do not edit this workspace until the pre-restore backup has been restored successfully."
+      });
     } catch (error) {
       baselineRaw.current = null;
       setInitial({
@@ -133,7 +140,7 @@ export default function App() {
       setLoaded(true);
     }
   }
-  const canEdit = loaded && initial?.status !== "unavailable" && saveFailure?.reason !== "conflict";
+  const canEdit = loaded && !recoveryRequired && initial?.status !== "unavailable" && saveFailure?.reason !== "conflict";
   function addProject(event: FormEvent) {
     event.preventDefault();
     if (!canEdit) return;
@@ -179,7 +186,8 @@ export default function App() {
       {!loaded && <p role="status" style={noticeStyle}>Loading your workspace safely…</p>}
       {startupNotice && <p role="status" style={noticeStyle}>{startupNotice}</p>}
       {saveFailure && <p role="alert" style={errorStyle}>{saveMessage(saveFailure)}</p>}
-      {loaded && (initial?.status === "unavailable" || saveFailure?.reason === "conflict") && (
+      {recoveryRequired && <p role="alert" style={errorStyle}>Editing is locked. Restore the retained pre-restore backup from the Backups panel before continuing.</p>}
+      {loaded && !recoveryRequired && (initial?.status === "unavailable" || saveFailure?.reason === "conflict") && (
         <button type="button" className="secondary-button" onClick={() => { void reloadFromStorage(); }}>
           Reload saved workspace
         </button>
