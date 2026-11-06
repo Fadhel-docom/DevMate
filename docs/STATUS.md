@@ -271,3 +271,11 @@ After this documentation checkpoint is reviewed and merged, perform a read-only 
 - Exact PR head `a4c7bbb48f99ac2734cafca9b0419863ddcd58d8`: GitHub Actions run #89 (`42178927687`, push) passed on that exact SHA. Job `verify` passed: Node 20.20.2 / npm 10.8.2, `npm ci`, audit (0 vulnerabilities at every severity), Vitest 4.1.12 (70/70), and `npm run build` (TypeScript + Vite). Logs: https://github.com/Fadhel-docom/DevMate/actions/runs/42178927687.
 - Android/Termux local check: Node 26.3.1 / npm 11.17.0, 70/70 tests and build passed. Manual browser smoke verified project/task persistence after reload. Blocked/full storage and Safari were not manually tested.
 - PR #10 remains open, Draft, and unmerged. CI gate is satisfied; independent ChatGPT review of the exact diff and residual risks remains pending. Keep draft until review and owner-reserved gates are resolved. Phase 1 is not complete.
+
+## PR #10 — startup-notice fix after a successful save — 2026-11-06
+
+- New code commit `adf867ccb220d390a48ec40fed975f946ddc2c0f` on `fix/storage-reliability` (parent `cd52574…`): the "Browser storage is unavailable" warning is removed once a later save succeeds; data-corruption and backup notices stay. Changed code files: `src/App.tsx` and the new `src/App.test.tsx` only; `src/storage.ts`, saving behaviour, the backup policy, `package.json`, the lockfile and the workflow are unchanged. Details: OPERATIONS-ROOM entry 33.
+- Tested and passed (local, remote sandbox; not GitHub Actions): Node 20.20.2 / npm 10.8.2: `npm test` 78/78, `npm run build`, `npm audit` 0 vulnerabilities; Node 24.22.1: 78/78 and `tsc --noEmit`.
+- **The earlier CI success (run #89, `42178927687`) applies to `a4c7bbb…` only and does not cover this change.** GitHub Actions on the new head: not verified (the workflow does not start for `fix/**` with base `feature/phase-1-foundation`; nothing was pushed to trigger it). Also not verified: real browsers and a visual check of the changed notices.
+- Review: the author of this change is Claude (fourth assistant); an independent review of `cd52574…adf867c…` is pending (ChatGPT coordinator).
+- PR #10 remains open, Draft and unmerged; it is not declared ready to merge.

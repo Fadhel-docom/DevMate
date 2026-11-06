@@ -958,3 +958,46 @@ No merge, close or delete of any PR or branch; no change to `main`, PR #1, the c
 - The CI gate is now satisfied for exact head `a4c7bbb…`. Independent review by the ChatGPT coordinator remains to be completed against the exact PR diff and the known residual risks, especially multi-tab backup races, unknown-field stripping, backup restore/delete UI, and near-full quota behaviour.
 - Keep PR #10 Draft and unmerged until that independent review and any owner-reserved decision gates are resolved. Do not declare Phase 1 complete.
 - Next exact action: coordinator performs the independent PR #10 review at `a4c7bbb48f99ac2734cafca9b0419863ddcd58d8`, using run #89 as CI evidence; then records a clear accept/request-changes decision. No further Termux push is needed for CI.
+
+## 33. PR #10 — stale "storage unavailable" notice removed after a successful save — 2026-11-06 — Claude (fourth assistant)
+
+**Risk level (§2):** Standard (UI notice logic in `src/App.tsx` plus tests). No change to saving behaviour, backup policy, data format, dependencies, CI or the PR base.
+
+### Task and starting checkpoint
+- Task (owner's work order, from the independent review): when the app starts with "Browser storage is unavailable" and a save later succeeds, remove that stale warning; keep data-corruption and backup notices where they still apply.
+- Starting checkpoint: PR #10 head `cd525742869147c2802bede53cb397db488569e8` (re-fetched live; draft, open; base `feature/phase-1-foundation` @ `39b9c47f1efcca78bd5913719cbb73ce44e9c827`). Compared with `a4c7bbb48f99ac2734cafca9b0419863ddcd58d8`: 2 commits ahead, only `docs/OPERATIONS-ROOM.md` and `docs/STATUS.md` differ. `src/App.tsx` was still blob `ad52cfa5cc505caf84c37d59110b6764a9e55ca9`.
+- Read before working: entries 30-32 and the end of `docs/STATUS.md` at that head.
+
+### Cause (Verified by a failing test on the unchanged code)
+In `App`, the startup notice was updated after a successful save only when the save returned a `backupKey`. When the app started with status `unavailable` (reading failed) and a later save succeeded without a backup, the "unavailable" notice stayed. If the save did make a backup, `loadNotice` was called with the original `unavailable` status and showed the same stale warning again.
+
+### Change (code commit `adf867ccb220d390a48ec40fed975f946ddc2c0f`, parent `cd52574…`)
+- `src/App.tsx` (blob `6a6e5258c023ffaea8c52e5b2bef53e21eea7f02`): the warning text became the constant `UNAVAILABLE_NOTICE` (text unchanged); new exported pure function `noticeAfterSave(current, initial, backupKey?)`; the save effect now calls `setStartupNotice((current) => noticeAfterSave(current, initial, result.backupKey))`.
+  - After a successful save, a current notice equal to `UNAVAILABLE_NOTICE` is removed. Every other notice is left as it was.
+  - If the save returned a `backupKey`, the notice is `loadNotice({...initial, backedUp: true, backupKey})` as before; after an `unavailable` start the status is treated as `corrupt`, so the user sees the data-corruption text with "a copy ... was saved" instead of the stale warning.
+- `src/App.test.tsx` (new, blob `669a950347486045d15e2d8c3efb28e1c3e3c517`): 8 tests, no new dependency. 4 pure tests for `noticeAfterSave`; 4 App-level tests (real React 18 + jsdom, StrictMode, a fake storage whose reads can be switched to throw): the warning disappears after a later save and no alert is shown; the warning and the save alert stay while saving keeps failing; unreadable stored data after an `unavailable` start gives the data-corruption notice, which also survives a second save; a data-corruption notice is kept after a successful save.
+- Unchanged and checked by blob SHA at the code commit: `src/storage.ts` (`5dc4db32…`), `src/storage.test.ts` (`e07c2b87…`), `package.json` (`51b368f0…`), `package-lock.json` (`b26a09e2…`), `.github/workflows/ci.yml` (`d8d2e54e…`).
+
+### Checks run by this contributor (remote sandbox; not GitHub Actions)
+Sources: the archive of the exact code commit; files compared byte for byte with the tested copies.
+- Before the change, the new tests against the unchanged `App.tsx`: 6 of the 8 failed. 4 failed because `noticeAfterSave` did not exist; the 2 App-level tests that reproduce the bug failed with the stale "Browser storage is unavailable" text still shown. The other 2 App-level tests passed (existing behaviour).
+- Node v20.20.2 / npm 10.8.2: `npm ci` passed; `npm test` **78/78 passed** (70 in `storage.test.ts` + 8 in `App.test.tsx`); `npm run build` (`tsc --noEmit && vite build`) passed; `npm audit` 0 vulnerabilities.
+- Node v24.22.1 (using `node_modules` installed under Node 20): `vitest run` 78/78; `tsc --noEmit` passed. `npm ci`, build and audit were not repeated under Node 24.
+
+### Not verified
+- **GitHub Actions on the new head:** none. Run #89 (`42178927687`) passed on `a4c7bbb…` only and does not cover `adf867c…` or later. The workflow triggers on push to `main` and `feature/**` and on PRs to `main`, so a `fix/**` branch with base `feature/phase-1-foundation` does not start it; running it again needs a push to a `feature/**` branch at the new head, a coordinator/owner decision. Nothing was pushed for this.
+- Real browsers (Android, Safari) and a visual/accessibility check of the changed notice behaviour; jsdom only. The earlier Android smoke test (entry 32) was on `a4c7bbb…`.
+- Independent review of this change: the author is this contributor; ChatGPT (coordinator) must review the diff `cd52574…adf867c…`.
+
+### Residual risks
+- The earlier risks stand (multi-tab, unknown extra fields stripped on save, near-full storage, no restore UI, 20 slots).
+- After an `unavailable` start followed by a save that backed up unreadable data, the notice uses the existing text "...a new one was started. A copy of the unreadable data was saved in this browser before anything is replaced." The data is already replaced at that moment; the wording is existing and was not changed.
+- `App.test.tsx` covers the notice flow only; the other `App` wiring (skipped initial save, project and task handling) still has no committed integration test.
+
+### Intentionally not done
+No merge; no change to Draft status, the PR base, CI or the workflow, `main`, PR #1 or any other branch; no change to `src/storage.ts` or saving behaviour; no new dependency; no push to any other branch.
+
+### Last verified checkpoint and next exact action
+- Last verified checkpoint: code commit `adf867ccb220d390a48ec40fed975f946ddc2c0f` (78/78 tests on Node 20.20.2 and 24.22.1, build and audit on Node 20, locally). The PR head after this entry differs from it only in `docs/STATUS.md` and `docs/OPERATIONS-ROOM.md`.
+- Next exact action: ChatGPT coordinator reviews `cd52574…adf867c…` and decides how to obtain a GitHub Actions run on the new head (for example a `feature/**` probe branch at that SHA). PR #10 stays open, Draft and unmerged.
+- Handoff authorship: authored by Claude (fourth assistant); committed through the GitHub connector under the owner's delegation; GitHub shows the owner's account.
