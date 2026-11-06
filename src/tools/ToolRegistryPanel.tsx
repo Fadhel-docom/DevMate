@@ -1,7 +1,7 @@
 import { countToolsByStatus, TOOL_REGISTRY, type ToolStatus } from "./registry";
 
 const statusLabels: Record<ToolStatus, string> = {
-  available: "Available in DevMate",
+  available: "Implemented · runtime-gated",
   "not-connected": "Not connected",
   "not-built": "Not built yet"
 };
@@ -23,8 +23,8 @@ export default function ToolRegistryPanel() {
         <span className="count">{counts.available} available now</span>
       </div>
       <p className="tools-intro">
-        This inventory marks only capabilities already implemented in this app as available. It does not yet
-        route tasks or execute external tools; missing adapters are shown as not built.
+        This internal inventory describes implemented code, not guaranteed runtime success. Workspace operations
+        still depend on browser storage and the workspace safety gates. This panel is not mounted in the public workspace.
       </p>
       <div className="tool-grid">
         {TOOL_REGISTRY.map((tool) => (
@@ -34,11 +34,11 @@ export default function ToolRegistryPanel() {
               <span className={`tool-status tool-status-${tool.status}`}>{statusLabels[tool.status]}</span>
             </div>
             <p className="tool-summary">{tool.summary}</p>
-            <div className="tool-capabilities" aria-label="Capabilities">
+            <ul className="tool-capabilities" aria-label="Tool capabilities">
               {tool.capabilities.map((capability) => (
-                <span className="tool-capability" key={capability}>{capabilityLabel(capability)}</span>
+                <li className="tool-capability" key={capability}>{capabilityLabel(capability)}</li>
               ))}
-            </div>
+            </ul>
             <p className="tool-boundary">{tool.boundary}</p>
           </article>
         ))}
