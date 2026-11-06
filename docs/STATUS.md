@@ -1,5 +1,7 @@
 # DevMate Status
 
+> Current state: see "## Current state — 2026-11-06" at the end of this file. Earlier dated checkpoints, and sections marked "historical snapshot", are preserved as history and do not describe the present.
+
 ## Current milestone
 Phase 1 — foundation and local demo.
 
@@ -18,7 +20,7 @@ Phase 1 — foundation and local demo.
 - [x] Expanded product requirements and architecture for portfolio management, AI coordination, quality governance, competitor research, SEO, and CAO/answer-engine visibility.
 - [x] Created the shared operations room with the strategic mandate and handoff rules.
 
-## Verified CI result
+## Verified CI result (historical snapshot — superseded; current state: see "Current state — 2026-11-06" at the end of this file)
 - Workflow: **DevMate CI**, run #12.
 - Run ID: `42041033569`.
 - Run URL: https://github.com/Fadhel-docom/DevMate/actions/runs/42041033569
@@ -30,7 +32,7 @@ Phase 1 — foundation and local demo.
 - Code commits verified by this run: `d8423b7a9ca9db33cb002d18a784799a462b2f4f` and `f99369740a3c37cab957e46265398070ff06d465`.
 - This verifies CI for the code changes above; it does not verify Android browser behavior or production deployment.
 
-## Security / dependency follow-up
+## Security / dependency follow-up (historical snapshot — superseded; current state: see "Current state — 2026-11-06" at the end of this file)
 - CI run #36 reported **6 dependency vulnerabilities**: 3 moderate, 1 high, and 2 critical.
 - Verified affected packages: `@vitest/mocker` (moderate), `esbuild` (moderate), `tinypool` (critical), `vite` (high), `vite-node` (moderate), and `vitest` (critical).
 - npm's audit output identifies Vitest `4.1.12` as the available remediation target (major upgrade from the current 2.x line).
@@ -40,7 +42,7 @@ Phase 1 — foundation and local demo.
 - No `package-lock.json` is committed. Reproducible lockfile generation and switching CI to `npm ci` remain follow-up work; current CI uses `npm install`.
 
 
-## Not yet verified
+## Not yet verified (historical snapshot — superseded; current state: see "Current state — 2026-11-06" at the end of this file)
 - [ ] Obtain independent review and explicit owner approval for PR #3, then merge the dependency fix and verify the zero-vulnerability audit on the updated base branch.
 - [ ] Commit a valid npm lockfile and move CI to `npm ci` when generated and reviewed.
 - [ ] Verify project/task persistence after reload in an actual browser.
@@ -48,12 +50,12 @@ Phase 1 — foundation and local demo.
 - [ ] Accessibility and broader UI tests.
 - [ ] Deploy to a free static host only after release checks.
 
-## Current branch and PR
+## Current branch and PR (historical snapshot — superseded; current state: see "Current state — 2026-11-06" at the end of this file)
 - Branch: `feature/phase-1-foundation`
 - PR #1: https://github.com/Fadhel-docom/DevMate/pull/1
 - PR remains draft / not merged.
 
-## Latest verified checkpoint — 2026-11-05
+## Latest verified checkpoint — 2026-11-05 (historical snapshot — superseded; current state: see "Current state — 2026-11-06" at the end of this file)
 - PR #2 (constitution v1.1) was merged into `feature/phase-1-foundation` using a merge commit.
 - Merge commit: `af872cf23441e781d64d8d983dad29852690fa8f`.
 - PR #2: https://github.com/Fadhel-docom/DevMate/pull/2 — merged.
@@ -62,7 +64,7 @@ Phase 1 — foundation and local demo.
 - CI run #36 on the PR #2 merge commit passed; its dependency-audit report still showed six findings.
 - CI run #39 for PR #3 passed: audit 0 vulnerabilities; 1 test file / 3 tests passed; TypeScript check and Vite production build passed. Run URL: https://github.com/Fadhel-docom/DevMate/actions/runs/42090223768.
 
-## Next action
+## Next action (historical snapshot — superseded; current state: see "Current state — 2026-11-06" at the end of this file)
 Obtain Claude's independent review of PR #3 and present the verified CI evidence to the owner. Because this is a Sensitive dependency change, do not merge PR #3 without explicit owner approval. After approval and merge, generate and commit a valid lockfile, move CI to `npm ci`, then continue focused UI/persistence tests and Android browser verification. Do not merge PR #1 or deploy.
 
 ## Shared handoff
@@ -90,7 +92,7 @@ Read `docs/OPERATIONS-ROOM.md` for the full mission, operating constitution, roa
 - PR #2: https://github.com/Fadhel-docom/DevMate/pull/2 — merged; merge commit `af872cf23441e781d64d8d983dad29852690fa8f`.
 
 
-## Reproducible-install task — current checkpoint (2026-11-05)
+## Reproducible-install task — current checkpoint (2026-11-05) (historical snapshot — superseded; current state: see "Current state — 2026-11-06" at the end of this file)
 
 - PR #4: https://github.com/Fadhel-docom/DevMate/pull/4 — open, draft, targets feature/phase-1-foundation; do not merge until review gates are complete.
 - Branch: feature/reproducible-install; latest head at this checkpoint: 716cab9cd9d33a169fe936958c76642adb91d2f5.
@@ -207,7 +209,7 @@ Read `docs/OPERATIONS-ROOM.md` for the full mission, operating constitution, roa
 - Documentation correction PR #5 is open (https://github.com/Fadhel-docom/DevMate/pull/5), containing the post-merge history correction in STATUS and OPERATIONS-ROOM. It is documentation-only and intentionally unmerged; owner approval is required before merging PR #5.
 
 
-## Latest current-state checkpoint — 2026-11-05 — PR #5 merged
+## Latest current-state checkpoint — 2026-11-05 — PR #5 merged (historical snapshot — superseded; current state: see "Current state — 2026-11-06" at the end of this file)
 
 - Governing constitution: `docs/CHARTER-AND-QUALITY-RULES.md` version 1.1, owner-approved; version 1.0 remains historical.
 - Current integration branch: `feature/phase-1-foundation`; base SHA recorded as of PR #6 creation: `4dfa423b70302539760d4f4389f9d7168f354d7c` (historical snapshot, not a claim about a later branch head).
@@ -217,39 +219,33 @@ Read `docs/OPERATIONS-ROOM.md` for the full mission, operating constitution, roa
 - PR #1 remains open/draft and unmerged; it targets `main` and remains explicitly owner-controlled. Do not merge it. No deployment is authorized or recorded.
 - No other PR or repository was modified in this checkpoint.
 
-### Next exact Phase 1 task
+### Next exact Phase 1 task (historical snapshot — superseded; current state: see "Current state — 2026-11-06" at the end of this file)
 After this documentation checkpoint is reviewed and merged, perform a read-only inventory of the repository against the constitution's deferred pre-Phase-1 backlog. First check whether `docs/SESSION-START.md` and `docs/DECISIONS.md` already exist and inspect current navigation/status/decision records; do not create duplicates. Then prepare one focused documentation PR that adds the missing session-start navigation/checklist and decision-log structure, preserving the constitution's source-of-truth hierarchy. In that same inventory, record (but do not silently implement) the remaining pre-completion items: archive-policy implementation, CI security baseline, and contributor access/verification limits. No new phase, deployment, `main` merge, paid service, or scope expansion is authorized.
 
-### Current blocker / handoff
+### Current blocker / handoff (historical snapshot — superseded; current state: see "Current state — 2026-11-06" at the end of this file)
 - PR #6 is open and documentation-only. Claude's independent review found no Blocking issue in the pre-correction diff; ChatGPT applied the four non-blocking corrections in PR #6. The corrected head requires Claude's fresh independent review before merge.
 - The owner has explicitly delegated Squash merge of PR #6 only if the corrected diff passes independent review and all applicable constitution 1.1 gates. PR #1 remains separately owner-controlled and must not be merged.
 
 
 ---
 
-## Latest verified checkpoint — 2026-11-06 — PR #6 merged
+## Current state — 2026-11-06 (authoritative snapshot; supersedes the earlier dated checkpoints above)
 
-- Governing constitution: version 1.1, approved by the owner; exact file blob SHA at this checkpoint: `50126a159961b71faf88025a8695cb7e734d63b7`.
-- Integration branch: `feature/phase-1-foundation`; verified head at this checkpoint: `f0b596fd8030f3990ec681e37c99b480dcc18030`.
-- PR #6, `docs: record PR #5 merge and Phase 1 handoff`, is closed and merged. Squash merge commit: `f0b596fd8030f3990ec681e37c99b480dcc18030`. PR: https://github.com/Fadhel-docom/DevMate/pull/6.
-- Post-merge CI run #84 (ID `42136573760`) completed successfully on that exact SHA. It was a `pull_request` event associated with PR #1, whose head was the same commit; it is not a review or CI run specifically for PR #6. Run: https://github.com/Fadhel-docom/DevMate/actions/runs/42136573760.
-- Directly inspected job logs: `npm ci` passed; audit reported 0 vulnerabilities (0 info, low, moderate, high, or critical); `npm test` passed (1 file, 3 tests); `npm run build` passed (TypeScript check and Vite production build). All workflow steps completed successfully.
-- PR #1 remains open, draft, targets `main`, and is unmerged. It remains explicitly owner-controlled; do not merge without a separate explicit owner approval. PR: https://github.com/Fadhel-docom/DevMate/pull/1.
-- PRs #2, #3, #4, #5, and #6 are merged. This statement reflects the GitHub state checked on 2026-11-06; re-check before future actions.
-- The earlier statements in this file saying PR #6 is open or awaiting re-review are historical handoff snapshots and are superseded by this checkpoint. Preserve them as history; do not treat them as current state.
-- Repository inventory on `feature/phase-1-foundation`: `docs/SESSION-START.md` and `docs/DECISIONS.md` did not exist at the start of this session. They are being added in a focused documentation-only PR. Root `CLAUDE.md` and `AGENTS.md` were also not found at the inspected branch head.
-- Remaining deferred pre-Phase-1 items are not claimed complete: archive-policy implementation, CI security baseline, and contributor access/verification limits. These require separate inspection/planning; do not silently implement or mark them complete.
-- No production deployment is recorded or authorized. No change to `main`, PR #1, application source, dependencies, CI workflow, license, or other repository was made in this checkpoint.
+- Governing constitution: version 1.1, approved by the owner; `docs/CHARTER-AND-QUALITY-RULES.md` blob SHA `50126a159961b71faf88025a8695cb7e734d63b7`. No open PR in this reconciliation changes it.
+- Integration branch `feature/phase-1-foundation`: verified head `f0b596fd8030f3990ec681e37c99b480dcc18030` (GitHub reference checked 2026-11-06; re-check before acting).
+- PR #6 (`docs: record PR #5 merge and Phase 1 handoff`) is closed and merged; Squash merge commit `f0b596fd8030f3990ec681e37c99b480dcc18030`. The merge was executed by Claude through the GitHub connector under the owner's explicit delegation (PR #6 only). GitHub shows it under the owner's account because the connector uses the owner's credentials. Details and evidence labels: OPERATIONS-ROOM entry 28. PR: https://github.com/Fadhel-docom/DevMate/pull/6.
+- Post-merge CI on that exact SHA, workflow `DevMate CI`, both successful: run #83 (ID `42136564055`, event `push`, https://github.com/Fadhel-docom/DevMate/actions/runs/42136564055) and run #84 (ID `42136573760`, event `pull_request`, associated with PR #1 whose head is the same commit, https://github.com/Fadhel-docom/DevMate/actions/runs/42136573760). Claude checked the run records and the job logs of both: all steps succeeded; `npm ci` added 155 packages; the audit summary showed 0 vulnerabilities at every severity; `npm test` passed (1 file, 3 tests); `npm run build` passed. Neither run was a CI run on the head of PR #6, #7, or #8.
+- PRs #2, #3, #4, #5, and #6 are merged (GitHub state checked 2026-11-06).
+- Open PRs: #1 (draft, targets `main`, owner-controlled; do not merge), #7 (documentation; superseded by #8, see below; do not merge as is), and #8 (documentation; the single merge path).
+- PR #7 / PR #8 reconciliation: PR #7 (https://github.com/Fadhel-docom/DevMate/pull/7, head `fbfeab696a0af9ad97bc83b772c997bc48c04b28`) adds an operations-room entry also numbered 28 and, in its first draft, listed the events of runs #83 and #84 the wrong way round. Everything accurate in it is folded into PR #8's entry 28, with the event labels corrected. Merging both would duplicate section number 28. PR #7 has not been merged, closed, or modified by this reconciliation; whether to close it as superseded is the owner's decision.
+- PR #8 (https://github.com/Fadhel-docom/DevMate/pull/8, branch `docs/session-start-decisions-and-pr6-closeout`): adds `docs/SESSION-START.md` and `docs/DECISIONS.md`, updates this file, and appends operations-room entry 28. Claude reviewed head `15727dd41a2dbad8a9669ea8b8d696487f92c95c` (reported in chat, no formal GitHub review object) and requested corrections; Claude then revised the PR. Because Claude authored the revision, Claude is not its independent reviewer (constitution §8). Re-fetch the live PR head before any review or merge decision.
+- Not verified / still open: archive-policy implementation, CI security baseline, and contributor access/verification limits (deferred pre-Phase-1 items, not claimed complete). Browser persistence, Android responsive behavior, accessibility tests, and static-host deployment remain unverified; this reconciliation adds no evidence for them.
+- Repository inventory: `docs/SESSION-START.md` and `docs/DECISIONS.md` did not exist on `feature/phase-1-foundation` at the start of this session; root `CLAUDE.md` and `AGENTS.md` were not found at the inspected head.
+- No production deployment, cost, workflow change, constitution change, or change to `main` or PR #1 is recorded or authorized.
 
 ### Current next action
 
-Independently review the documentation-only PR that adds `docs/SESSION-START.md` and `docs/DECISIONS.md` and reconciles this status/operations handoff. Confirm it preserves constitution 1.1 and does not change policy or approval boundaries. Do not declare Phase 1 complete until every deferred pre-completion item is either implemented and verified through its own approved work or explicitly resolved by the owner.
-
-
-### Documentation PR in review — 2026-11-06
-
-- PR #8: https://github.com/Fadhel-docom/DevMate/pull/8 — open, unmerged; documentation-only.
-- Branch: `docs/session-start-decisions-and-pr6-closeout`; base: `feature/phase-1-foundation`; PR head at creation: `85599297fc672c7abe656699aad8b99bfd2a63cf`. Re-fetch the live PR head before review or merge because subsequent documentation bookkeeping commits may advance it.
-- Scope: add `docs/SESSION-START.md` and `docs/DECISIONS.md`; reconcile STATUS and append the PR #6/Claude/CI closeout in OPERATIONS-ROOM. Exactly four documentation files; no code or workflow changes.
-- No CI run is configured for this PR branch/base combination under the current workflow triggers. This is not represented as a passed check; apply the Small documentation gates and obtain independent review of the shared instructions.
-- Next: independent review of PR #8 against constitution 1.1. Do not merge until the live diff is reviewed and all applicable gates pass. PR #1 remains separately owner-controlled.
+1. A contributor other than Claude (the ChatGPT coordinator, or the owner) independently reviews the Claude revision of PR #8, meaning every commit after `15727dd41a2dbad8a9669ea8b8d696487f92c95c`, against constitution 1.1 and re-fetches the live head. Claude's review of `15727dd…` plus that review cover the whole PR without either contributor reviewing their own work.
+2. The owner decides whether to close PR #7 as superseded.
+3. If the review finds no blocking issue and no owner decision remains, merging PR #8 follows the constitution's §7 routine delegation and the owner's current instructions. Claude has not merged and will not merge PR #7 or PR #8 under the owner's instruction for this task.
+4. Afterwards, resume the pre-Phase-1 governance backlog as separate, focused, documentation-only work. Do not declare Phase 1 complete until every deferred item is implemented and verified or explicitly resolved by the owner. PR #1 stays owner-controlled.
