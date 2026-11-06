@@ -772,6 +772,22 @@ describe("safe extra fields", () => {
   });
 });
 
+describe("stale-write protection", () => {
+  it("rejects a tab save when storage no longer matches its loaded baseline", async () => {
+    installFakeLocks();
+    const storage = memoryStorage();
+    const baseline = JSON.stringify([{ id: "a", name: "Original", tasks: [] }]);
+    const newer = JSON.stringify([{ id: "b", name: "Saved by another tab", tasks: [] }]);
+    storage.setItem(STORAGE_KEY, baseline);
+    storage.setItem(STORAGE_KEY, newer);
+    const result = await saveProjectsLocked([{ id: "a", name: "Stale tab edit", tasks: [] }], storage, baseline);
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.reason).toBe("conflict");
+    expect(storage.getItem(STORAGE_KEY)).toBe(newer);
+    uninstallLocks();
+  });
+});
+
 describe("backup management", () => {
   it("rejects the non-canonical first-slot alias", () => {
     expect(isBackupKeyName(BACKUP_KEY + ".1")).toBe(false);
@@ -814,6 +830,38 @@ describe("backup management", () => {
     expect(storage.getItem(backupKey(2))).toBeNull();
     uninstallLocks();
   });
+  it("rolls the previous workspace back when restore read-back verification fails", async () => {
+    installFakeLocks();
+    const base = memoryStorage();
+    const backup = JSON.stringify([{ id: "backup", name: "Backup", tasks: [] }]);
+    const current = JSON.stringify([{ id: "current", name: "Current", tasks: [] }]);
+    base.setItem(BACKUP_KEY, backup);
+    base.setItem(STORAGE_KEY, current);
+    let failNextWorkspaceRead = false;
+    const storage = {
+      getItem(key: string) {
+        if (key === STORAGE_KEY && failNextWorkspaceRead) {
+          failNextWorkspaceRead = false;
+          return "unexpected read-back value";
+        }
+        return base.getItem(key);
+      },
+      setItem(key: string, value: string) {
+        base.setItem(key, value);
+        if (key === STORAGE_KEY && value === backup) failNextWorkspaceRead = true;
+      },
+      removeItem: base.removeItem
+    };
+    const result = await restoreBackup(BACKUP_KEY, storage);
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.reason).toBe("verify");
+      expect(result.snapshotKey).toBeTruthy();
+    }
+    expect(base.getItem(STORAGE_KEY)).toBe(current);
+    uninstallLocks();
+  });
+
   it("accepts an intentionally empty backup", async () => {
     installFakeLocks();
     const storage = memoryStorage();
