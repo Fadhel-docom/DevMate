@@ -44,7 +44,6 @@ describe("tool registry", () => {
 
   it("marks a request satisfied only when every requested capability is available", () => {
     const selection = selectAvailableTools(["workspace.read", "workspace.write"]);
-    expect(selection.satisfied).toBe(true);
     expect(selection.unavailableCapabilities).toEqual([]);
     expect(selection.satisfied).toBe(true);
   });
@@ -74,5 +73,6 @@ describe("tool registry", () => {
     const selection = selectAvailableTools(["code.test"], [testTool]);
     expect(selection.tools).toEqual([testTool]);
     expect(selection.unavailableCapabilities).toEqual([]);
+    expect(selection.satisfied).toBe(true);
   });
 });
