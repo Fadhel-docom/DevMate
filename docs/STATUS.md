@@ -483,3 +483,6 @@ Run the full Vitest suite, TypeScript/Vite production build, and dependency audi
 - **Verification:** changes are committed to the follow-up branch. Exact-head CI is pending. No local test run, browser/device test, or accessibility audit is claimed.
 - No providers, connectors, API keys, network calls, dependencies, permissions, costs, workflow changes, deployment, merge, `main`, PR #10, PR #1, PR #12, or other repositories were changed.
 - PR #13 remains open/Draft and stacked on PR #10. Next: inspect exact diff, verify CI on the exact follow-up head, then obtain independent review of that exact head. PR #10's separate review/owner decision remains unresolved.
+
+
+- CI trigger note: the existing workflow only runs pull-request checks when the base is `main`, and push checks on `main` or `feature/**`. The original `fix/tool-registry-review-followup` branch therefore did not trigger CI. A `feature/tool-registry-review-followup` branch now carries the same reviewed code plus this documentation-only trigger note so the existing push workflow can verify the exact resulting head. No workflow change was made.
