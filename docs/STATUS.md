@@ -472,3 +472,14 @@ Run the full Vitest suite, TypeScript/Vite production build, and dependency audi
 - PR #13 remains open/Draft, based on fix/storage-reliability at 3b7efe6f4c6085d62c5fa3e5761fee23bab246ca. It is stacked on PR #10 and has not been merged.
 - Real browser/mobile rendering, accessibility, and live tool integrations remain unverified/not built.
 - The subsequent operations-room-only update creates a newer documentation head; its push CI run is checked in this session. No application code changes follow the verified code head.
+
+## Tool registry review follow-up — 2026-11-06
+
+- Owner decision: the tool inventory is for owner/internal operations, not a public product panel.
+- Security correction: DevMate currently has no authentication or authorization layer. Therefore the Tool Registry panel has been removed from the general workspace UI; it must not be described as owner-only until a real authenticated admin surface exists. The registry code remains internal and is not an active orchestrator.
+- Review follow-up in progress on branch `fix/tool-registry-review-followup`, created from PR #13 head `62003acbc9b6eb7166b4fa8eeadf86a45c6ed673`.
+- Implemented in this follow-up: explicit `satisfied` result so a non-empty partial tool selection cannot be mistaken for full task coverage; readonly tool definitions and runtime freezing of the registry and nested capability arrays; tests for full coverage, unique IDs, non-empty capabilities, and runtime immutability; corrected test naming; panel semantics and typography/contrast adjustments; removed public mounting of the internal panel.
+- Documentation corrections: clarified that `available` means implemented, not guaranteed success under every runtime condition; fixed readiness wording and removed a reference to a governance document absent from this branch.
+- **Verification:** changes are committed to the follow-up branch. Exact-head CI is pending. No local test run, browser/device test, or accessibility audit is claimed.
+- No providers, connectors, API keys, network calls, dependencies, permissions, costs, workflow changes, deployment, merge, `main`, PR #10, PR #1, PR #12, or other repositories were changed.
+- PR #13 remains open/Draft and stacked on PR #10. Next: inspect exact diff, verify CI on the exact follow-up head, then obtain independent review of that exact head. PR #10's separate review/owner decision remains unresolved.
