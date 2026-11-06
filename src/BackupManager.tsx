@@ -58,7 +58,7 @@ export default function BackupManager({ onRestoreStart, onRestored, refreshKey =
       else { setPending(null); refresh(); }
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Delete failed unexpectedly.");
-    } finally { setBusy(false); }
+    } finally { setBusy(false); refresh(); }
   }
   return (
     <section className="panel backups-panel" aria-labelledby="backups-heading">
