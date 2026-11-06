@@ -1100,3 +1100,16 @@ No merge; no change to Draft status, the PR base, CI or the workflow, `main`, PR
 - **Boundaries maintained:** PR #11 remains Draft and based on PR #10; no merge, deployment, main-branch change, dependency change, or paid service.
 - **Next exact action:** fetch the updated PR #11 branch into Termux, run `npm test` and `npm run build` locally, then create an empty verification commit and push it to the same PR branch to trigger the repository's push workflow. Inspect the run against the exact resulting SHA, fix any failures, then obtain independent review. Do not merge.
 - **Actor attribution:** code and documentation commits were authored through the connected GitHub integration under the user's explicit instruction to continue implementation; local validation and workflow triggering remain pending.
+
+
+## 39. Storage conflict and restore safety follow-up — 2026-11-06 — ChatGPT coordinator
+
+- **Starting checkpoint:** PR #11 branch fix/storage-reliability-hardening, exact prior head 6be918871c3d6190833887b744a1f15894cea629; PR #11 remains open/Draft and stacked on PR #10.
+- **Changes made:** storage reads now retain the exact raw workspace baseline. App saves compare that baseline with the current stored value while holding the exclusive Web Lock; stale saves return conflict and do not write. Editing is disabled after an unavailable startup read or a detected conflict until a successful reload. Reload failures preserve the unavailable lockout.
+- **Restore changes:** workspace editing is disabled before a restore attempt and the app reloads storage after success or failure. If post-write restore verification fails, storage attempts to restore the pre-restore raw workspace and verifies that rollback; the error includes the retained pre-restore snapshot key and distinguishes verified from unverified rollback.
+- **Tests added/changed:** stale-tab baseline conflict preserves newer stored data; failed restore verification restores the previous workspace; unavailable startup cannot be edited until a successful reload.
+- **Risk assessment:** these changes protect against stale sequential writes and the identified unavailable-read overwrite path. They do not yet prove actual browser Web Locks behaviour, nor resolve all lower-priority review findings (backup-slot identity/reuse, raw export of invalid backups, backup-list refresh timing, slot pruning, sanitization loss, non-Web-Locks compatibility).
+- **Recovery plan:** every restore of an existing workspace snapshots the current raw value first. A failed verification triggers automatic rollback and read-back verification. If rollback cannot be verified, the UI remains locked from editing and the snapshot key is surfaced in the error; user must recover from that snapshot before continuing.
+- **Verification:** exact-head CI pending at this entry. No browser E2E, Android Chrome/Safari smoke, or independent review is claimed.
+- **Boundaries:** no dependency or workflow changes; no PR #10, PR #1, main, base-branch, merge, or deployment changes. PR #11 remains Draft.
+- **Next action:** exact-head CI, then independent review of the updated code and tests. Do not merge without the review gate and explicit owner decision.
