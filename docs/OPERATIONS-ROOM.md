@@ -1177,3 +1177,39 @@ No merge; no change to Draft status, the PR base, CI or the workflow, `main`, PR
 - **Unverified release checks:** real browser two-tab Web Locks contention, Android Chrome, native dialog focus/keyboard/accessibility, download behavior, and Safari. These remain required before the stacked work reaches `main`. No browser E2E result is claimed.
 - **Merge boundary:** PR #11 is stacked on PR #10. Any merge of #11 is strictly into `fix/storage-reliability` (PR #10's branch), not `main`. PR #10, PR #1, and `main` remain untouched; no deployment.
 - **Next exact action:** update PR #11's verification summary, mark it ready, and merge only into its existing base if GitHub confirms the head is unchanged and the PR remains mergeable. Then report the merge SHA and keep PR #10 open for its own independent review and owner decision.
+
+
+---
+
+## 43. Tool registry foundation — 2026-11-06 — ChatGPT coordinator
+
+### Starting checkpoint and authorization
+
+- User instruction: begin adding tools that will help build DevMate to the best standard. Scope is DevMate only; the purpose is to reduce the owner's coordination burden, not create another burden.
+- Read the approved constitution v1.1, current architecture, session-start guidance, decision log, and the project-governance model. The latter is a design document, not an authorization to connect providers or expand permissions.
+- Re-fetched GitHub PR metadata. PR #10 was open/Draft at head `3b7efe6f4c6085d62c5fa3e5761fee23bab246ca`, based on `feature/phase-1-foundation`; PR #12 was also open/Draft. PR #1 remains open/Draft and owner-controlled.
+- PR #11's storage changes are included in PR #10's branch. The new work is therefore stacked on `fix/storage-reliability`; it must not bypass PR #10 or target `main`.
+- Created `feature/tool-registry-foundation` from the exact PR #10 head. The GitHub connector actions were executed by the ChatGPT coordinator through the owner's connected GitHub integration; GitHub displays the owner's account. No claim is made that GitHub's actor record independently identifies the operator.
+
+### Work performed
+
+- Added `src/tools/registry.ts`: typed tool/capability definitions, explicit readiness states, a deterministic selector that returns only tools marked available, and status counts.
+- Added `src/tools/registry.test.ts`: six unit tests covering status counts, available-only selection, unavailable capabilities, registry immutability, and dependency injection for tests.
+- Added `src/tools/ToolRegistryPanel.tsx`, integrated it into `src/App.tsx`, and added responsive styles in `src/styles.css`.
+- Added `docs/TOOL-REGISTRY.md` defining the inventory, state semantics, security boundaries, acceptance checks, and staged integration sequence.
+- The first inventory has one in-app capability (browser-local workspace storage); GitHub read-only and research are marked **Not connected**; test/build runner, code review, and browser testing are **Not built yet**; the AI provider is **Not connected** and remains intentionally disabled.
+- Explicit limitation: the GitHub connector available to an external assistant is not a GitHub integration inside the DevMate app. The new registry is descriptive and deterministic; it does not make network calls, execute code, invoke models, or grant permissions.
+
+### Verification and boundaries
+
+- Automated CI for the exact feature-branch head is pending. The six new unit tests have been authored but are **not yet reported as run**. No test/build success is claimed.
+- Browser, mobile, keyboard/focus, and accessibility checks are not run.
+- No API keys, SDKs, provider calls, costs, new permissions, workflow changes, external project connections, deployment, merge, `main`, PR #1, or other repository changes.
+- PR #10 and PR #12 remain open/Draft; no merge decision was made.
+
+### Last checkpoint and next exact action
+
+- Branch: `feature/tool-registry-foundation`, stacked on `fix/storage-reliability`.
+- Last documentation commit at time of this entry: `39a653a48eb414ded5bd183e67d323a799c5ecdc`. The feature branch has a series of focused commits recorded in STATUS.
+- Next: re-fetch the branch head and full diff; confirm the PR base is `fix/storage-reliability`; inspect the GitHub Actions run triggered by the feature-branch push and verify it is attached to the exact head. If CI passes, request an independent review of that exact head. Keep the PR draft/unmerged until all applicable gates and the PR #10 dependency path are satisfied.
+- Handoff owner: ChatGPT coordinator for diff/CI evidence and preparation of independent review; owner retains all §14 decisions.
