@@ -114,7 +114,12 @@ export function selectAvailableTools(
   const unavailableCapabilities = required.filter(
     (capability) => !tools.some((tool) => tool.capabilities.includes(capability))
   );
-  return { tools, unavailableCapabilities, satisfied: unavailableCapabilities.length === 0 };
+  return Object.freeze({
+    tools: Object.freeze(tools),
+    unavailableCapabilities: Object.freeze(unavailableCapabilities),
+    // An empty request is not executable work: do not let vacuous truth satisfy it.
+    satisfied: required.length > 0 && unavailableCapabilities.length === 0
+  });
 }
 
 export function countToolsByStatus(registry: readonly ToolDefinition[] = TOOL_REGISTRY): Record<ToolStatus, number> {
