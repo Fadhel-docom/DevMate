@@ -53,3 +53,14 @@
 .tool-boundary{border-top:1px solid #eceef3;padding-top:9px;margin:10px 0 0;color:#7b8495;font-size:10px;line-height:1.55}
 .tools-footnote{margin:14px 0 0;color:#8a93a2;font-size:10px;line-height:1.6}
 @media(max-width:600px){.tool-grid{grid-template-columns:1fr}.tool-card{padding:12px}}
+
+
+/* Tool registry accessibility follow-up: readable text and WCAG AA contrast. */
+.tool-status{font-size:12px;letter-spacing:0}
+.tool-status-available{color:#1d5d3a}
+.tool-status-not-connected{color:#76500b}
+.tool-status-not-built{color:#525b6b}
+.tool-capabilities{list-style:none;padding:0;margin:0;display:flex;gap:6px;flex-wrap:wrap}
+.tool-capability{font-size:12px;color:#4436a8}
+.tool-boundary{font-size:12px;color:#596273;line-height:1.6}
+.tools-footnote{font-size:12px;color:#596273;line-height:1.6}
