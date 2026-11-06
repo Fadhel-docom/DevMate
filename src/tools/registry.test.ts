@@ -48,6 +48,13 @@ describe("tool registry", () => {
     expect(selection.satisfied).toBe(true);
   });
 
+  it("does not treat an empty capability request as executable work", () => {
+    const selection = selectAvailableTools([]);
+    expect(selection.tools).toEqual([]);
+    expect(selection.unavailableCapabilities).toEqual([]);
+    expect(selection.satisfied).toBe(false);
+  });
+
   it("keeps production tool identifiers unique and capability lists non-empty", () => {
     const ids = TOOL_REGISTRY.map((tool) => tool.id);
     expect(new Set(ids).size).toBe(ids.length);
