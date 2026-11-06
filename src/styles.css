@@ -27,3 +27,10 @@
   .backup-actions{flex-direction:column}
   .backup-actions button{width:100%}
 }
+
+/* Native confirmation dialog: browser-managed focus and modal semantics. */
+.confirm-dialog{border:0;margin:auto;position:fixed;inset:0;height:fit-content;max-height:85vh;overflow:auto}
+.confirm-dialog::backdrop{background:rgba(15,23,42,.45)}
+@media(max-width:600px){
+  .confirm-dialog{margin:auto 0 0;max-width:none;width:100%;border-radius:14px 14px 0 0}
+}
