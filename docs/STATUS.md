@@ -499,3 +499,6 @@ Run the full Vitest suite, TypeScript/Vite production build, and dependency audi
 - Updated readiness terminology to “Implemented (runtime-gated)” consistently and marked the original registry status section as a historical checkpoint.
 - **Verification:** pending exact-head GitHub Actions. No browser or assistive-technology test is claimed.
 - PR #15 remains Draft/unmerged, stacked on PR #13; PR #13 remains stacked on PR #10. No merge, workflow change, external integration, provider, key, permission, dependency, cost, deployment, or main change.
+
+
+- **Second review follow-up exact CI:** GitHub Actions run #147 (ID 42301856450) passed on code/documentation head `73075eba602b825181369f6f32057eda0718469e`: npm ci installed 155 packages; audit reported 0 vulnerabilities; Vitest passed 4 files / 124 tests (including 9 registry tests); TypeScript check and Vite production build passed. No local or browser/device test is claimed.
