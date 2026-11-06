@@ -368,3 +368,14 @@ Run the full Vitest suite, TypeScript/Vite production build, and dependency audi
 - Restore reports whether rollback was verified. If rollback cannot be verified, the app remains locked and directs the user to restore the retained pre-restore snapshot; a normal reload cannot clear that lockout.
 - Slot-full errors now expose the underlying reason and state that restore was cancelled without changing the current workspace. No automatic pruning is used because deleting old recovery copies without user consent could destroy recoverable data.
 - Exact-head CI for the final code after these additions is pending. Earlier run #100 passed on an earlier code head only and is not evidence for the latest changes.
+
+
+## Storage safety exact-head CI — 2026-11-06
+
+- **Tested code SHA:** `5f86e83107268b2bfdfe67525cf843b3da09bb77`, exactly the current PR #11 head at verification time.
+- **GitHub Actions run #106:** https://github.com/Fadhel-docom/DevMate/actions/runs/42241700694 — job verify completed successfully.
+- **Environment:** Node v20.20.2, npm 10.8.2. `npm ci` installed 155 packages; audit reported 0 vulnerabilities.
+- **Tests:** 3 files, 107/107 tests passed: storage 88, BackupManager 9, App 10.
+- **Build:** `npm run build` passed (`tsc --noEmit` and Vite production build).
+- **Not verified:** real browser two-tab Web Locks contention, Android Chrome/Safari smoke, native dialog focus/accessibility, and independent review. The fake-lock tests do not substitute for browser E2E.
+- PR #11 remains open, Draft, stacked on PR #10, and unmerged. Run #106 verifies the current code SHA; subsequent documentation-only updates do not change application code.
