@@ -818,6 +818,28 @@ describe("backup slot identity", () => {
   });
 });
 
+describe("backup deletion metadata failures", () => {
+  it("reports success when the backup is deleted but metadata cleanup throws", async () => {
+    installFakeLocks();
+    const base = memoryStorage();
+    base.setItem(BACKUP_KEY, "raw backup");
+    base.setItem(backupMetaKey(1), JSON.stringify({ createdAt: 1, reason: "corrupt" }));
+    const storage = {
+      getItem: base.getItem,
+      setItem: base.setItem,
+      removeItem: (key: string) => {
+        if (key === backupMetaKey(1)) throw domError("SecurityError");
+        base.removeItem(key);
+      }
+    };
+    const result = await deleteBackup(BACKUP_KEY, storage);
+    expect(result).toEqual({ ok: true });
+    expect(base.getItem(BACKUP_KEY)).toBeNull();
+    expect(base.getItem(backupMetaKey(1))).not.toBeNull();
+    uninstallLocks();
+  });
+});
+
 describe("backup management", () => {
   it("rejects the non-canonical first-slot alias", () => {
     expect(isBackupKeyName(BACKUP_KEY + ".1")).toBe(false);
