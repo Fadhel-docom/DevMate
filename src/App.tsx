@@ -104,7 +104,7 @@ export default function App() {
     void saveProjectsLocked(projects, undefined, baselineRaw.current).then((result) => {
       if (!active) return;
       if (result.ok) {
-        baselineRaw.current = JSON.stringify(projects);
+        baselineRaw.current = result.raw;
         if (result.backupKey) setBackupRefreshKey((value) => value + 1);
         setSaveFailure(null);
         setStartupNotice((current) => noticeAfterSave(current, initial, result.backupKey));
@@ -211,7 +211,7 @@ export default function App() {
           <div className="section-heading"><div><p className="eyebrow">WORKSPACE</p><h2>Projects</h2></div><span className="count">{projects.length}</span></div>
           <form className="inline-form" onSubmit={addProject}>
             <input aria-label="New project name" disabled={!canEdit} value={newProject} onChange={(event) => setNewProject(event.target.value)} placeholder="New project name" />
-            <button className="icon-button" type="submit" aria-label="Add project" disabled={!loaded}>+</button>
+            <button className="icon-button" type="submit" aria-label="Add project" disabled={!canEdit}>+</button>
           </form>
           <nav className="project-list" aria-label="Projects">
             {projects.map((project) => (
@@ -224,13 +224,13 @@ export default function App() {
         <section className="panel tasks-panel">
           <div className="section-heading"><div><p className="eyebrow">PLAN THE WORK</p><h2>{activeProject?.name ?? "Tasks"}</h2></div><span className="count">{activeProject?.tasks.filter((task) => !task.done).length ?? 0} open</span></div>
           <form className="task-form" onSubmit={addTask}>
-            <input aria-label="New task" disabled={!loaded} value={newTask} onChange={(event) => setNewTask(event.target.value)} placeholder="Add a coding task…" />
-            <button type="submit" className="primary-button" disabled={!loaded}>Add task</button>
+            <input aria-label="New task" disabled={!canEdit} value={newTask} onChange={(event) => setNewTask(event.target.value)} placeholder="Add a coding task…" />
+            <button type="submit" className="primary-button" disabled={!canEdit}>Add task</button>
           </form>
           <div className="task-list">
             {activeProject?.tasks.length ? activeProject.tasks.map((task) => (
               <label className={task.done ? "task done" : "task"} key={task.id}>
-                <input type="checkbox" disabled={!loaded} checked={task.done} onChange={() => toggleTask(task.id)} /><span>{task.title}</span>
+                <input type="checkbox" disabled={!canEdit} checked={task.done} onChange={() => toggleTask(task.id)} /><span>{task.title}</span>
               </label>
             )) : <div className="empty-state"><span className="empty-icon">✓</span><strong>A clear space to start</strong><p>Add your first task. Your project data stays in this browser.</p></div>}
           </div>
