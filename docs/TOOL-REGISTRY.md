@@ -8,8 +8,8 @@ Give DevMate an honest, inspectable inventory of tools before building orchestra
 
 ## Readiness states
 
-- **Available in DevMate:** implemented in the current app and safe to use within its stated boundary.
-- **Not connected:** the capability is identified, but the adapter exists but no authorized connection is configured.
+- **Available in DevMate:** an adapter is implemented in the current app. This does not guarantee every operation will succeed at runtime; callers must still handle browser, storage, lock, and safety-gate failures.
+- **Not connected:** an adapter exists, but no authorized connection is configured.
 - **Not built yet:** the adapter or execution environment does not exist.
 
 A status must not be upgraded because a plan exists, a service is available in another application, or a contributor says it should work. Update a status only with implementation and verification evidence.
@@ -31,11 +31,12 @@ A status must not be upgraded because a plan exists, a service is available in a
 src/tools/registry.ts defines the typed registry and selectAvailableTools:
 
 1. A task declares the capabilities it requires.
-2. The selector returns only entries whose state is available.
-3. Disconnected or unbuilt capabilities are returned as unavailable; they are never silently selected.
-4. The registry is descriptive and deterministic. It does not make network calls, execute code, invoke an AI model, or grant permissions.
+2. The selector returns only entries whose state is available and that cover at least one requested capability.
+3. Every missing capability is returned as unavailable.
+4. The result's `satisfied` flag is true only when **all** requested capabilities are available. Callers must check this flag and must not treat a non-empty tool list as proof that a multi-capability task is executable.
+5. The registry is descriptive and deterministic. It does not make network calls, execute code, invoke an AI model, or grant permissions.
 
-The current selector is a foundation for future routing, not an orchestrator. The workspace-storage entry describes existing in-browser project/task persistence; it does not expose a new privileged execution interface.
+The current selector is a foundation for future routing, not an orchestrator. It is not yet used to dispatch work. The workspace-storage entry describes existing in-browser project/task persistence; it does not expose a new privileged execution interface.
 
 ## Security and governance boundaries
 
@@ -48,11 +49,12 @@ The current selector is a foundation for future routing, not an orchestrator. Th
 
 ## Acceptance checks for this foundation
 
-- Every tool has a stable ID, capability list, readiness state, and explicit boundary.
-- Selection returns only tools marked available.
+- Every tool has a unique stable ID, a non-empty capability list, a readiness state, and an explicit boundary.
+- Registry entries and nested capability lists are frozen at runtime.
+- Selection returns only tools marked available and reports `satisfied: true` only when all required capabilities are covered.
 - Missing capabilities are surfaced rather than guessed or routed to a disconnected tool.
-- Registry counts and selection behavior have unit tests.
-- The registry panel is readable on desktop and narrow mobile screens.
+- Registry counts, selection behavior, invariants, and immutability have unit tests.
+- The internal registry panel uses semantic list markup and readable text contrast; visual/browser accessibility still requires manual verification.
 - No external API calls or AI provider calls occur.
 
 ## Next implementation sequence
@@ -62,6 +64,6 @@ The current selector is a foundation for future routing, not an orchestrator. Th
 3. Add a safe test/build runner only after its isolation, quotas, timeout, and artifact handling are designed.
 4. Add independent review and browser-test adapters with evidence outputs.
 5. Add research/SEO/CAO integrations only after source, terms, rate limits, and data classification are established.
-6. Consider AI provider adapters only after the provider-entry gate in docs/PROJECT-GOVERNANCE-MODEL.md is satisfied and the owner approves the separate connection/data-handling decision.
+6. Consider AI provider adapters only after the provider-entry gate in the current constitution's data-classification, security, and owner-approval requirements (§§5–6 and 14) are met and the owner approves the separate connection/data-handling decision.
 
 Do not call Phase 1 complete because this inventory exists. It is one small foundation slice.
