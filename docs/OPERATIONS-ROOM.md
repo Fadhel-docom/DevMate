@@ -1031,3 +1031,27 @@ No merge; no change to Draft status, the PR base, CI or the workflow, `main`, PR
 - Last verified checkpoint: source review accepted conditionally at code SHA `adf867ccb220d390a48ec40fed975f946ddc2c0f`; current PR head `1d9b53297d2ccb8898936b1d2abfe243445507c1`; no CI run on this new code.
 - Next exact action: obtain an official CI run for the new code SHA by pushing that same commit to a temporary `feature/**` branch (no code changes) through an authorized Git push; alternatively, the owner may explicitly authorize a narrowly scoped workflow-trigger change. After CI, recheck that the PR head contains no code changes beyond the reviewed SHA, then decide merge readiness under constitution §7.
 - Authorship: independent review and this handoff authored by ChatGPT coordinator; recorded through the GitHub connector.
+
+
+---
+
+## 35. PR #10 — independent review CI verification completed — 2026-11-06 — ChatGPT coordinator
+
+### Exact-head CI evidence
+- To trigger the existing `push` workflow without changing PR #10, created scratch branch `feature/ci-probe-pr10-final-adf867c` at the exact reviewed code commit `adf867ccb220d390a48ec40fed975f946ddc2c0f`, then added a temporary documentation-only marker `docs/CI-PROBE-PR10.md`. This produced a push event; no code, dependency, workflow, PR base, or PR state was changed.
+- GitHub Actions run **#90**, ID `42185770042`: https://github.com/Fadhel-docom/DevMate/actions/runs/42185770042
+- Run head SHA is exactly `adf867ccb220d390a48ec40fed975f946ddc2c0f` (the same code commit reviewed above); the marker is the only additional file on the scratch branch. Job `verify`, ID `127785613843`, completed **success**.
+- Full job log inspected: checkout at exact SHA; Node `v20.20.2`, npm `10.8.2`; `npm ci` installed 155 packages and reported 0 vulnerabilities; audit summary all severities and total = 0; Vitest 4.1.12: **2 files, 78/78 tests passed** (`src/storage.test.ts` 70 and `src/App.test.tsx` 8); `npm run build` passed TypeScript and Vite (28 modules transformed). All workflow steps, including post-job cleanup, completed successfully.
+- This is official GitHub Actions evidence for the exact reviewed code commit `adf867c…`. The docs marker does not alter the application source or dependency tree.
+
+### Final review decision
+- The code change remains **conditionally accepted with no blocking defect found**.
+- Required verification is now satisfied: run #90 is successful on the exact code SHA. The review gate and CI gate for the startup-notice fix are complete.
+- Remaining non-blocking release-quality note: the existing corruption notice phrase “before anything is replaced” can be temporally misleading when the backup is created during a later save. Existing storage residual risks remain as recorded in entries 30–34. No real-browser verification of this notice transition has been performed.
+- PR #10 was not merged and remains subject to the owner's merge authority/§7. This entry does not declare Phase 1 complete.
+
+### Current state and next exact action
+- PR #10 head at time of this entry: `3114b3eacbe895d510caa44514b2701b1ce8b0fa`; base `39b9c47f1efcca78bd5913719cbb73ce44e9c827`; open and Draft. The commits after `adf867c…` are documentation-only; no code changed after the CI-tested SHA.
+- The scratch branch `feature/ci-probe-pr10-final-adf867c` and its `docs/CI-PROBE-PR10.md` marker are isolated from PR #10 and `main`; left in place to preserve the CI evidence and avoid creating a second cleanup-triggered run.
+- Next exact action: owner/coordinator may now make the PR #10 merge decision under constitution §7, considering the residual risks and owner-reserved authority. Keep PR #10 Draft until the owner explicitly decides whether to authorize the merge. PR #1 remains untouched.
+- Authorship: CI orchestration, independent review, and this handoff by ChatGPT coordinator.
