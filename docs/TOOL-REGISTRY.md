@@ -31,7 +31,7 @@ A status must not be upgraded because a plan exists, a service is available in a
 src/tools/registry.ts defines the typed registry and selectAvailableTools. Its optional registry argument is a test seam for deterministic fixtures; production callers must use the default frozen registry, not pass caller-controlled tool definitions:
 
 1. A task declares the capabilities it requires.
-2. The selector returns only entries whose state is available and that cover at least one requested capability.
+2. The selector returns only entries whose state is available and that cover at least one requested capability. Coverage is evaluated across the **union** of those available tools: a request is satisfied when every requested capability is provided by at least one available tool. A single tool is not required to cover all requested capabilities.
 3. Every missing capability is returned as unavailable.
 4. The result's `satisfied` flag is true only when the request contains at least one capability and **all** requested capabilities are available. An empty request returns `satisfied: false` (no work was specified). Callers must check this flag and must not treat a non-empty tool list as proof that a multi-capability task is executable.
 5. The registry is descriptive and deterministic. It does not make network calls, execute code, invoke an AI model, or grant permissions.
@@ -51,9 +51,10 @@ The current selector is a foundation for future routing, not an orchestrator. It
 
 - Every tool has a unique stable ID, a non-empty capability list, a readiness state, and an explicit boundary.
 - Registry entries and nested capability lists are frozen at runtime.
+- Selection results are frozen at runtime: the result object, its `tools` array, and its `unavailableCapabilities` array. In production the entries in `tools` are the frozen registry entries; entries supplied through the injected test seam are returned as given and are not frozen by the selector.
 - Selection returns only tools marked available and reports `satisfied: true` only when all required capabilities are covered.
 - Missing capabilities are surfaced rather than guessed or routed to a disconnected tool.
-- Registry counts, selection behavior, invariants, and immutability have unit tests.
+- Registry counts, selection behavior, and invariants have unit tests. The immutability tests assert `Object.isFrozen` on the registry, on each entry, and on each nested capability list; for a selection result they assert it on the result object, on its `tools` and `unavailableCapabilities` arrays, and on the returned production entries, and check that pushing to either array throws. They do not cover entries injected through the test seam.
 - The registry is not exposed in the public workspace. An owner-only dashboard is deferred until real authentication and authorization exist; no UI component or styling is shipped for it in this slice.
 - No external API calls or AI provider calls occur.
 

@@ -1353,3 +1353,39 @@ No merge; no change to Draft status, the PR base, CI or the workflow, `main`, PR
 
 
 - **Documentation-head CI:** run #149 (ID `42301948481`) completed successfully on exact head `12452cf86efac66ab2912426b653e24fdafbb3bb`. Logs confirm 155 packages installed, 0 vulnerabilities, 4 test files / 124 tests passed (90 storage, 11 backup manager, 14 App, 9 registry), TypeScript check and Vite production build passed. This verifies the documentation commits after tested code head `73075eba602b825181369f6f32057eda0718469e`; no source code changed after that code head.
+
+
+---
+
+## 52. PR #15 small follow-ups — 2026-11-06 — Claude (implemented at the owner's request)
+
+### Starting checkpoint and scope
+- Starting head: `feature/tool-registry-review-followup` at `2cbbffe3b5da7159301a034a63a350a34ad48acf` (read live from the GitHub API immediately before editing). PR #15 targets `feature/tool-registry-foundation`; PR #15, PR #13 and PR #10 are Draft and unmerged.
+- Task (owner's work order, reported in the chat session): implement the seven small follow-ups listed in Claude's independent review (APPROVE WITH FOLLOW-UP, no blocking findings), inside PR #15 only. Excluded by the order: constitution, selector behaviour or permissions, project structure, new PRs, merges.
+
+### Verified before changing
+- Tree at `2cbbffe…` (GitHub API): `src/tools/` holds only `registry.ts` and `registry.test.ts`; there is no `ToolRegistryPanel.tsx`. `src/App.tsx` does not reference it. Remaining mentions are in historical entries of this file and STATUS (43, 45 and 51 here).
+- `src/styles.css` still contained `.tools-panel`, `.tools-intro` and two `.tools-footnote` rules with their comments. Entry 51 and the PR text said all related CSS was removed; the earlier removal matched `.tool-*`, not `.tools-*`. That statement became true only with this change.
+- CI run #151 (ID `42302026868`, event `push`, job `128181924089`) succeeded on `2cbbffe…`. Claude read the job log through the GitHub API: 155 packages, audit 0 at every severity, 4 files / 124 tests, TypeScript and Vite build passed. The PR description had attributed #149 to `2cbbffe…`; #149 (ID `42301948481`) ran on `12452cf86efac66ab2912426b653e24fdafbb3bb`, as entry 51 records.
+
+### Changes
+- `src/styles.css`: removed the four unused `.tools-*` rules and their two comments.
+- `src/tools/registry.test.ts`: added "freezes selection results and the arrays they return" (result object, `tools`, `unavailableCapabilities`, returned production entries; pushing to either array throws `TypeError`). Added a type-only import of `ToolCapability`. No change to `src/tools/registry.ts`.
+- `docs/TOOL-REGISTRY.md`: selection contract item 2 states that coverage is evaluated across the union of available tools and no single tool must cover everything; acceptance checks now state that selection results are frozen and list exactly what the immutability tests assert, including that entries injected through the test seam are not covered.
+- `docs/STATUS.md`: the earlier "Tool registry review follow-up" section is headed as a historical checkpoint with a pointer to the PR #15 entries; a new "PR #15 small follow-ups" entry was added.
+- This file: this entry. PR #15 description: corrected CI references (#149 → `12452cf…`, #151 → `2cbbffe…`).
+
+### Checks run (observed; not GitHub Actions)
+Remote sandbox, Node v24.22.1, npm 10.8.2 (CI uses Node 20.20.2), files fetched by blob from `2cbbffe…`.
+- Before the change: `npm test` 4 files / 124 tests passed.
+- After the change: `npm test` 4 files / 125 tests passed (storage 90, App 14, BackupManager 11, registry 10); `npm run build` passed (`tsc --noEmit`, Vite, 29 modules); `npm audit` 0 vulnerabilities.
+- Mutation check on a throwaway edit, reverted afterwards: removing the freeze of the result object, of `tools`, or of `unavailableCapabilities` each made the new test fail (1 failed / 9 passed).
+
+### Not verified / not done
+- GitHub Actions on the new head: not yet observed; none is claimed. Real browsers, keyboard and screen-reader behaviour, Node 20 locally: not verified.
+- Not done: merge or retarget of any PR, new PR, workflow or constitution change, dependency or `package*.json` change, any change to `src/tools/registry.ts` or the selector's behaviour.
+- Remaining follow-ups: STATUS top pointer and its stale "Current state" section; older entries that mention the removed panel are not all marked historical (for example entries 43, 45 and 48 here).
+
+### Independence and handoff
+- Authored by Claude, who also reviewed the previous head; the delta needs review by another contributor (ChatGPT coordinator or the owner). Committed through the GitHub connector under the owner's delegation; GitHub shows the owner's account.
+- Next exact action: verify GitHub Actions on the new PR #15 head (the push to this `feature/**` branch triggers the existing workflow), then have a contributor other than Claude review the delta. Keep all stacked PRs Draft and unmerged.

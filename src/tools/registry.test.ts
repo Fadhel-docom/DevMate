@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { countToolsByStatus, selectAvailableTools, TOOL_REGISTRY, type ToolDefinition } from "./registry";
+import { countToolsByStatus, selectAvailableTools, TOOL_REGISTRY, type ToolCapability, type ToolDefinition } from "./registry";
 
 describe("tool registry", () => {
   it("distinguishes available, disconnected, and not-built tools", () => {
@@ -65,6 +65,19 @@ describe("tool registry", () => {
     expect(Object.isFrozen(TOOL_REGISTRY)).toBe(true);
     expect(TOOL_REGISTRY.every((tool) => Object.isFrozen(tool))).toBe(true);
     expect(TOOL_REGISTRY.every((tool) => Object.isFrozen(tool.capabilities))).toBe(true);
+  });
+
+  it("freezes selection results and the arrays they return", () => {
+    const selection = selectAvailableTools(["workspace.read", "repository.read"]);
+
+    expect(selection.tools.map((tool) => tool.id)).toEqual(["workspace-storage"]);
+    expect(selection.unavailableCapabilities).toEqual(["repository.read"]);
+    expect(Object.isFrozen(selection)).toBe(true);
+    expect(Object.isFrozen(selection.tools)).toBe(true);
+    expect(Object.isFrozen(selection.unavailableCapabilities)).toBe(true);
+    expect(selection.tools.every((tool) => Object.isFrozen(tool))).toBe(true);
+    expect(() => (selection.tools as ToolDefinition[]).push(TOOL_REGISTRY[0])).toThrow(TypeError);
+    expect(() => (selection.unavailableCapabilities as ToolCapability[]).push("code.test")).toThrow(TypeError);
   });
 
   it("can select an injected test tool without changing production registry state", () => {
