@@ -344,14 +344,24 @@ export async function deleteBackup(key: string, storage: StorageLike | null = ge
   if (slot === null) return { ok: false, reason: "invalid-key", message: "Invalid backup key." };
   const locked = await withStorageLock((): DeleteBackupResult => {
     if (!storage?.removeItem) return { ok: false, reason: "delete-failed", message: "Browser storage cannot delete backups." };
+    let currentBackup: string | null;
+    try { currentBackup = storage.getItem(key); }
+    catch (error) { return { ok: false, reason: "delete-failed", message: describeError(error) }; }
+    if (currentBackup === null) return { ok: false, reason: "not-found", message: "Backup not found." };
+    if (expectedRaw !== undefined && currentBackup !== expectedRaw) return { ok: false, reason: "stale-backup", message: "This backup slot changed after the list was loaded. Refresh the list and select the intended copy again." };
+    try { storage.removeItem(key); }
+    catch (error) {
+      try {
+        if (storage.getItem(key) !== null) return { ok: false, reason: "delete-failed", message: describeError(error) };
+      } catch (readError) { return { ok: false, reason: "delete-failed", message: describeError(readError) }; }
+    }
     try {
-      const currentBackup = storage.getItem(key);
-      if (currentBackup === null) return { ok: false, reason: "not-found", message: "Backup not found." };
-      if (expectedRaw !== undefined && currentBackup !== expectedRaw) return { ok: false, reason: "stale-backup", message: "This backup slot changed after the list was loaded. Refresh the list and select the intended copy again." };
-      storage.removeItem(key);
-      storage.removeItem(backupMetaKey(slot));
-      return storage.getItem(key) === null ? { ok: true } : { ok: false, reason: "delete-failed", message: "Backup could not be removed." };
+      if (storage.getItem(key) !== null) return { ok: false, reason: "delete-failed", message: "Backup could not be removed." };
     } catch (error) { return { ok: false, reason: "delete-failed", message: describeError(error) }; }
+    // The backup itself is gone. Metadata is advisory and must not turn a
+    // completed deletion into a false failure.
+    try { storage.removeItem(backupMetaKey(slot)); } catch { /* best effort */ }
+    return { ok: true };
   });
   return locked.ok ? locked.value : { ok: false, reason: locked.reason, message: locked.message };
 }
