@@ -16,15 +16,15 @@ export type ToolCapability =
   | "model.generate";
 
 export interface ToolDefinition {
-  id: string;
-  name: string;
-  summary: string;
-  status: ToolStatus;
-  capabilities: readonly ToolCapability[];
-  boundary: string;
+  readonly id: string;
+  readonly name: string;
+  readonly summary: string;
+  readonly status: ToolStatus;
+  readonly capabilities: readonly ToolCapability[];
+  readonly boundary: string;
 }
 
-export const TOOL_REGISTRY: readonly ToolDefinition[] = [
+const toolDefinitions = [
   {
     id: "workspace-storage",
     name: "Workspace storage",
@@ -81,11 +81,23 @@ export const TOOL_REGISTRY: readonly ToolDefinition[] = [
     capabilities: ["model.generate", "code.review"],
     boundary: "Intentionally disabled. Provider terms, privacy, server-side secrets, quotas, and the owner approval gate must be satisfied first."
   }
-] as const;
+] as const satisfies readonly ToolDefinition[];
+
+/** Freeze both the registry entries and their nested capability arrays at runtime. */
+export const TOOL_REGISTRY: readonly ToolDefinition[] = Object.freeze(
+  toolDefinitions.map((tool) =>
+    Object.freeze({
+      ...tool,
+      capabilities: Object.freeze([...tool.capabilities])
+    })
+  )
+);
 
 export interface ToolSelection {
-  tools: readonly ToolDefinition[];
-  unavailableCapabilities: readonly ToolCapability[];
+  readonly tools: readonly ToolDefinition[];
+  readonly unavailableCapabilities: readonly ToolCapability[];
+  /** True only when every requested capability is backed by an available tool. */
+  readonly satisfied: boolean;
 }
 
 /**
@@ -102,7 +114,7 @@ export function selectAvailableTools(
   const unavailableCapabilities = required.filter(
     (capability) => !tools.some((tool) => tool.capabilities.includes(capability))
   );
-  return { tools, unavailableCapabilities };
+  return { tools, unavailableCapabilities, satisfied: unavailableCapabilities.length === 0 };
 }
 
 export function countToolsByStatus(registry: readonly ToolDefinition[] = TOOL_REGISTRY): Record<ToolStatus, number> {
