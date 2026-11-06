@@ -37,7 +37,7 @@ export const TOOL_REGISTRY: readonly ToolDefinition[] = [
     id: "github-reader",
     name: "GitHub read-only",
     summary: "Inspect repositories, files, pull requests, and check results.",
-    status: "not-connected",
+    status: "not-built",
     capabilities: ["repository.read", "pull-request.read", "checks.read"],
     boundary: "No GitHub API connection exists inside the DevMate app. A connector available to an external assistant is separate and is not inherited by this app."
   },
@@ -69,7 +69,7 @@ export const TOOL_REGISTRY: readonly ToolDefinition[] = [
     id: "research",
     name: "Research and SEO/CAO",
     summary: "Research user intent, competitors, search visibility, and answer-engine opportunities.",
-    status: "not-connected",
+    status: "not-built",
     capabilities: ["web.research", "seo.research", "answer-engine.research"],
     boundary: "No research connector is connected to the app. Findings will require dated sources and must not be fabricated."
   },
@@ -77,7 +77,7 @@ export const TOOL_REGISTRY: readonly ToolDefinition[] = [
     id: "ai-provider",
     name: "AI model provider",
     summary: "Delegate bounded research, coding, and review tasks to approved models.",
-    status: "not-connected",
+    status: "not-built",
     capabilities: ["model.generate", "code.review"],
     boundary: "Intentionally disabled. Provider terms, privacy, server-side secrets, quotas, and the owner approval gate must be satisfied first."
   }
