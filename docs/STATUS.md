@@ -379,3 +379,13 @@ Run the full Vitest suite, TypeScript/Vite production build, and dependency audi
 - **Build:** `npm run build` passed (`tsc --noEmit` and Vite production build).
 - **Not verified:** real browser two-tab Web Locks contention, Android Chrome/Safari smoke, native dialog focus/accessibility, and independent review. The fake-lock tests do not substitute for browser E2E.
 - PR #11 remains open, Draft, stacked on PR #10, and unmerged. Run #106 verifies the current code SHA; subsequent documentation-only updates do not change application code.
+
+
+## PR #11 — final storage safety corrections from independent review — 2026-11-06 — ChatGPT coordinator
+
+- **Authorized scope:** address only H1, H2, and H3 from the independent review; no work on PR #10, PR #1, or `main`.
+- **H1:** workspace edit gate now blocks both `conflict` and `verify` save failures. Added direct regression coverage for verify lockout and the other existing lockout conditions.
+- **H2:** backup deletion now determines success from the backup key itself. Metadata cleanup is best-effort and cannot report a false failure after the backup has actually been removed. Added a regression test where removing the metadata key throws after the backup key is removed.
+- **H3:** restore resume safety defaults to false. It becomes true only for a confirmed restore or an explicit `rollbackVerified: true` result. Unexpected thrown errors therefore keep editing locked. Added regression coverage for confirmed restore, verified rollback, unverified rollback, and indeterminate failures.
+- **Not included:** M1–M6 and L1–L3 remain deferred; no scope expansion, dependency changes, workflow changes, merge, or deployment.
+- **Verification:** pending exact-head GitHub Actions; do not infer test/build success from source changes alone. Independent review of this correction set is still required before any merge decision.
