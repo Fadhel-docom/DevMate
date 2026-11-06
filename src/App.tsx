@@ -35,6 +35,9 @@ export function loadNotice(result: LoadResult): string | null {
     default: return null;
   }
 }
+export function canEditWorkspace(loaded: boolean, recoveryRequired: boolean, initialStatus: LoadResult["status"] | undefined, saveFailureReason?: string): boolean {
+  return loaded && !recoveryRequired && initialStatus !== "unavailable" && saveFailureReason !== "conflict" && saveFailureReason !== "verify";
+}
 export function noticeAfterSave(current: string | null, initial: LoadResult, backupKey?: string): string | null {
   if (backupKey) {
     const status = initial.status === "unavailable" ? "corrupt" : initial.status;
@@ -145,7 +148,7 @@ export default function App() {
       setLoaded(true);
     }
   }
-  const canEdit = loaded && !recoveryRequired && initial?.status !== "unavailable" && saveFailure?.reason !== "conflict";
+  const canEdit = canEditWorkspace(loaded, recoveryRequired, initial?.status, saveFailure?.reason);
   function addProject(event: FormEvent) {
     event.preventDefault();
     if (!canEdit) return;
