@@ -1320,3 +1320,30 @@ No merge; no change to Draft status, the PR base, CI or the workflow, `main`, PR
 - No application source changes were made after the tested head. This entry is documentation-only and its resulting head must receive its own CI verification.
 - PR #15 remains Draft and unmerged; PR #13 remains Draft and unmerged; PR #10 remains open/Draft and unresolved. No provider, connector, API key, permission, dependency, cost, deployment, main change, or other-repository change.
 - Next: verify CI on the new documentation head, then request independent review of PR #15's exact final head. Keep the stacked PRs unmerged pending applicable gates and the PR #10 dependency path.
+
+
+---
+
+## 51. PR #15 second independent-review follow-up — 2026-11-06 — ChatGPT coordinator
+
+### Review outcome
+- Claude independently reviewed exact PR #15 head `fa96f0a7b092244f1ae342c67a5434b5ee66849f` and reported no blocking findings. Follow-ups were low-risk: define empty-request semantics, clarify the injected-registry seam, remove unused panel code/styles and stale copy, align readiness terminology, preserve list semantics if a panel is ever reintroduced, and correct historical SHA/status wording.
+- The reviewer confirmed run #139 on the exact reviewed head: 4 test files / 123 tests passed, 0 dependency vulnerabilities, TypeScript and Vite build passed.
+
+### Changes made after that review
+- `selectAvailableTools([])` now returns `satisfied: false`; an empty capability request is explicitly not executable work. Added a regression test.
+- Selection result containers and their arrays are frozen. The optional registry argument is documented as a deterministic test seam; production code must use the default frozen registry.
+- Removed `src/tools/ToolRegistryPanel.tsx` and all `.tool-*` CSS. The owner-only dashboard is deferred until real authentication and authorization exist; no owner-only claim is made.
+- Aligned readiness wording to “Implemented (runtime-gated)” in the registry documentation and corrected the historical status wording.
+- The historical section 43 inventory is superseded by sections 45–46; the authoritative current inventory remains 1 implemented runtime-gated browser-local storage capability, 0 built-but-disconnected adapters, and 6 not-built adapters.
+
+### Verification and boundary
+- New exact-head CI is pending. The prior run #139 does not verify these new code/test changes.
+- No local test, browser, keyboard, screen-reader, or real-device verification is claimed.
+- PR #15 remains Draft and unmerged, based on PR #13's head branch. PR #13 remains Draft and unmerged, based on PR #10's branch. PR #10 remains open/Draft and separately unresolved.
+- No workflow, package, dependency, provider, external connector, API key, permission, cost, deployment, `main`, or other repository was changed.
+
+### Next checkpoint
+- Branch: `feature/tool-registry-review-followup`.
+- Verify GitHub Actions against the exact latest branch SHA; inspect logs for tests, audit, TypeScript, and Vite build.
+- If successful, request independent review only if the final diff materially changes the reviewed scope; otherwise preserve the existing independent review as applying to its exact reviewed SHA and clearly record the narrow follow-up delta.
