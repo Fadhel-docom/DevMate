@@ -4,7 +4,8 @@ import { createRoot, type Root } from "react-dom/client";
 import App, { loadNotice, noticeAfterSave } from "./App";
 import { BACKUP_KEY, STORAGE_KEY, type LoadResult } from "./storage";
 
-(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;\n
+(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+
 function installFakeLocks() {
   const chains = new Map<string, Promise<unknown>>();
   Object.defineProperty(navigator, "locks", {
@@ -87,7 +88,8 @@ describe("App notices when storage comes back", () => {
   let host: HTMLElement;
   let root: Root;
 
-  beforeEach(() => { installFakeLocks(); });\n  function useStorage(storage: FakeStorage) {
+  beforeEach(() => { installFakeLocks(); });
+  function useStorage(storage: FakeStorage) {
     Object.defineProperty(window, "localStorage", { configurable: true, get: () => storage });
   }
 
@@ -186,7 +188,7 @@ describe("App notices when storage comes back", () => {
 describe("App cross-tab lock behaviour", () => {
   const ownDescriptor = Object.getOwnPropertyDescriptor(window, "localStorage");
   let host: HTMLElement;
-  let root: Root;
+  let root: Root | null = null;
   function useStorage(storage: FakeStorage) {
     Object.defineProperty(window, "localStorage", { configurable: true, get: () => storage });
   }
@@ -198,7 +200,8 @@ describe("App cross-tab lock behaviour", () => {
   }
   afterEach(async () => {
     uninstallLocks();
-    if (root) await act(async () => root.unmount());
+    if (root) await act(async () => root!.unmount());
+    root = null;
     host?.remove();
     if (ownDescriptor) Object.defineProperty(window, "localStorage", ownDescriptor);
     else delete (window as { localStorage?: unknown }).localStorage;

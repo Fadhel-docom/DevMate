@@ -217,7 +217,7 @@ export function hasStorageLock(): boolean {
   try { return typeof navigator !== "undefined" && typeof navigator.locks?.request === "function"; } catch { return false; }
 }
 export async function withStorageLock<T>(callback: () => T | Promise<T>, options: { timeoutMs?: number } = {}): Promise<LockResult<T>> {
-  if (!hasStorageLock()) return { ok: false, reason: "lock-unavailable", message: "Web Locks are not available in this browser." };
+  if (!hasStorageLock()) return { ok: false, reason: "lock-unavailable", message: "The cross-tab lock (Web Locks) is not available in this browser." };
   const timeoutMs = options.timeoutMs ?? DEFAULT_LOCK_TIMEOUT_MS;
   const controller = new AbortController();
   let timer: ReturnType<typeof setTimeout> | undefined;
