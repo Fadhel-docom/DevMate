@@ -1294,3 +1294,14 @@ No merge; no change to Draft status, the PR base, CI or the workflow, `main`, PR
 - Follow-up branch: `fix/tool-registry-review-followup`; source parent: PR #13 head `62003acbc9b6eb7166b4fa8eeadf86a45c6ed673`.
 - Next: inspect the complete diff and resulting commit; run/inspect CI for the exact head; correct any failures; then request an independent review of the follow-up head.
 - Handoff owner: ChatGPT coordinator for verification and review preparation; owner retains merge and other reserved decisions.
+
+
+---
+
+## 49. CI trigger-path correction for PR #13 follow-up — 2026-11-06 — ChatGPT coordinator
+
+- The repository workflow was inspected directly at `feature/tool-registry-foundation/.github/workflows/ci.yml`: pull-request checks target only `main`; push checks target only `main` and `feature/**`.
+- The initial follow-up branch `fix/tool-registry-review-followup` did not match either trigger, so no CI run was created for it. No success is claimed.
+- Created `feature/tool-registry-review-followup` from the exact follow-up code head `011d54cdd668936c9a946e9c05670e30e7bc2d7e`; added this documentation-only note to trigger the existing feature-branch push workflow without changing workflow configuration or application code.
+- The follow-up PR will target `feature/tool-registry-foundation` (PR #13's head branch), preserving the stack. The initial PR #14 used the fix-prefixed head and is to be closed as superseded by the feature-prefixed equivalent; no code changes are discarded.
+- Next: verify GitHub Actions on the exact feature-branch head, inspect job logs, then obtain independent review of that exact head. Keep the PR draft/unmerged; PR #13 and PR #10 remain separate dependencies.
