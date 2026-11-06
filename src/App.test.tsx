@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { StrictMode, act } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import App, { loadNotice, noticeAfterSave } from "./App";
+import App, { canEditWorkspace, loadNotice, noticeAfterSave } from "./App";
 import { BACKUP_KEY, STORAGE_KEY, type LoadResult } from "./storage";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -250,5 +250,20 @@ describe("App cross-tab lock behaviour", () => {
     });
     expect(host.querySelector('[role="alert"]')?.textContent).toContain("cross-tab lock");
     expect(storage.values.has(STORAGE_KEY)).toBe(false);
+  });
+});
+
+
+describe("workspace edit safety gate", () => {
+  it("blocks edits after an unverified storage write", () => {
+    expect(canEditWorkspace(true, false, "ok", "verify")).toBe(false);
+  });
+  it("allows edits after a healthy load with no save failure", () => {
+    expect(canEditWorkspace(true, false, "ok", undefined)).toBe(true);
+  });
+  it("continues blocking conflicts, unavailable storage, and recovery lockouts", () => {
+    expect(canEditWorkspace(true, false, "ok", "conflict")).toBe(false);
+    expect(canEditWorkspace(true, false, "unavailable", undefined)).toBe(false);
+    expect(canEditWorkspace(true, true, "ok", undefined)).toBe(false);
   });
 });
