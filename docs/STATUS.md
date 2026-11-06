@@ -455,3 +455,13 @@ Run the full Vitest suite, TypeScript/Vite production build, and dependency audi
 - Current inventory count: 1 available (browser-local workspace storage), 0 not connected, 6 not built.
 - Updated the panel copy to state explicitly that the registry does not yet route tasks or execute external tools. This is a descriptive registry and selection-function foundation, not an orchestrator.
 - This is a classification/documentation correction, not a new integration or permission grant.
+## Corrected tool registry code verification — 2026-11-06
+
+- GitHub Actions run #130 (ID 42297529540) completed successfully on exact code head b8cff401a090c703e709c004cd234d19ceca88d6.
+- All verify steps succeeded: npm ci, dependency audit report, npm test, and npm run build.
+- Audit: 0 vulnerabilities at every severity.
+- Tests: 4 test files passed; 121/121 tests passed, including all 6 tool-registry tests.
+- Build: TypeScript check and Vite production build passed.
+- The corrected registry semantics are verified: one available capability, zero built-but-disconnected adapters, and six adapters not built yet. A test fixture explicitly confirms that a disconnected adapter is not selected.
+- Not verified: real browser/mobile rendering, keyboard/focus and accessibility checks, and live external integrations.
+- Documentation-only status/operations-room commits follow this code head; CI for the final documentation head is checked separately. Do not attribute run #130 to a later SHA.
