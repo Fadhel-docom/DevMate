@@ -62,6 +62,7 @@ export function saveMessage(failure: Extract<SaveResult, { ok: false }>): string
 export default function App() {
   const [initial, setInitial] = useState<LoadResult | null>(null);
   const baselineRaw = useRef<string | null>(null);
+  const saveQueue = useRef<Promise<void>>(Promise.resolve());
   const [projects, setProjects] = useState<Project[]>([{ id: "starter", name: "My first project", tasks: [] }]);
   const [loaded, setLoaded] = useState(false);
   const [recoveryRequired, setRecoveryRequired] = useState(false);
@@ -101,10 +102,16 @@ export default function App() {
   useEffect(() => {
     if (!loaded || !initial || projects === initial.projects) return;
     let active = true;
-    void saveProjectsLocked(projects, undefined, baselineRaw.current).then((result) => {
+    const snapshot = projects;
+    // Serialize this tab's saves and read the latest baseline only when this
+    // save reaches the front of the queue. A prior effect may have been
+    // cleaned up by a newer render, but its successful write must still
+    // advance the baseline used by the next queued save.
+    const save = saveQueue.current.then(async () => {
+      const result = await saveProjectsLocked(snapshot, undefined, baselineRaw.current);
+      if (result.ok) baselineRaw.current = result.raw;
       if (!active) return;
       if (result.ok) {
-        baselineRaw.current = result.raw;
         if (result.backupKey) setBackupRefreshKey((value) => value + 1);
         setSaveFailure(null);
         setStartupNotice((current) => noticeAfterSave(current, initial, result.backupKey));
@@ -112,6 +119,7 @@ export default function App() {
     }).catch((error: unknown) => {
       if (active) setSaveFailure({ ok: false, reason: "unknown", message: error instanceof Error ? error.message : String(error) });
     });
+    saveQueue.current = save.then(() => undefined, () => undefined);
     return () => { active = false; };
   }, [projects, initial, loaded]);
 
