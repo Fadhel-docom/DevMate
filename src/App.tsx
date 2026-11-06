@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { CSSProperties, FormEvent } from "react";
-import { readProjects, saveProjectsLocked, type LoadResult, type Project, type SaveResult } from "./storage";
+import { readProjectsLocked, saveProjectsLocked, type LoadResult, type Project, type SaveResult } from "./storage";
 import BackupManager from "./BackupManager";
 
 type Message = { id: string; role: "user" | "assistant"; text: string };
@@ -56,22 +56,41 @@ export function saveMessage(failure: Extract<SaveResult, { ok: false }>): string
   return `Your latest changes were not saved. ${detail} They are still visible here but may be lost when you close or reload this page.`;
 }
 export default function App() {
-  const [initial] = useState<LoadResult>(() => readProjects());
-  const [projects, setProjects] = useState<Project[]>(initial.projects);
-  const [startupNotice, setStartupNotice] = useState<string | null>(() => loadNotice(initial));
+  const [initial, setInitial] = useState<LoadResult | null>(null);
+  const [projects, setProjects] = useState<Project[]>([{ id: "starter", name: "My first project", tasks: [] }]);
+  const [loaded, setLoaded] = useState(false);
+  const [startupNotice, setStartupNotice] = useState<string | null>(null);
   const [saveFailure, setSaveFailure] = useState<Extract<SaveResult, { ok: false }> | null>(null);
   const [activeId, setActiveId] = useState("starter");
   const [newProject, setNewProject] = useState("");
   const [newTask, setNewTask] = useState("");
   const [prompt, setPrompt] = useState("");
-  const skipNextSave = useRef(false);
   const [messages, setMessages] = useState<Message[]>([
     { id: "welcome", role: "assistant", text: "Hi! I’m DevMate. Tell me what you want to build, fix, or understand. This preview uses a local demo assistant and does not call an AI service." }
   ]);
 
   useEffect(() => {
-    if (projects === initial.projects) return;
-    if (skipNextSave.current) { skipNextSave.current = false; return; }
+    let active = true;
+    void readProjectsLocked().then((result) => {
+      if (!active) return;
+      setInitial(result);
+      setProjects(result.projects);
+      setActiveId(result.projects[0]?.id ?? "starter");
+      setStartupNotice(loadNotice(result));
+      setLoaded(true);
+    }).catch((error: unknown) => {
+      if (!active) return;
+      const fallback: LoadResult = { projects: [{ id: "starter", name: "My first project", tasks: [] }], status: "unavailable", droppedProjects: 0, droppedTasks: 0, repairedProjects: 0, backedUp: false, backupKey: null };
+      setInitial(fallback);
+      setStartupNotice(loadNotice(fallback));
+      setSaveFailure({ ok: false, reason: "unknown", message: error instanceof Error ? error.message : String(error) });
+      setLoaded(true);
+    });
+    return () => { active = false; };
+  }, []);
+
+  useEffect(() => {
+    if (!loaded || !initial || projects === initial.projects) return;
     let active = true;
     void saveProjectsLocked(projects).then((result) => {
       if (!active) return;
@@ -83,22 +102,30 @@ export default function App() {
       if (active) setSaveFailure({ ok: false, reason: "unknown", message: error instanceof Error ? error.message : String(error) });
     });
     return () => { active = false; };
-  }, [projects, initial]);
+  }, [projects, initial, loaded]);
 
   const activeProject = useMemo(
     () => projects.find((project) => project.id === activeId) ?? projects[0],
     [projects, activeId]
   );
-  function reloadFromStorage() {
-    const result = readProjects();
-    skipNextSave.current = true;
-    setProjects(result.projects);
-    setActiveId(result.projects[0]?.id ?? "starter");
-    setStartupNotice(loadNotice(result));
-    setSaveFailure(null);
+  async function reloadFromStorage() {
+    setLoaded(false);
+    try {
+      const result = await readProjectsLocked();
+      setInitial(result);
+      setProjects(result.projects);
+      setActiveId(result.projects[0]?.id ?? "starter");
+      setStartupNotice(loadNotice(result));
+      setSaveFailure(null);
+    } catch (error) {
+      setSaveFailure({ ok: false, reason: "unknown", message: error instanceof Error ? error.message : String(error) });
+    } finally {
+      setLoaded(true);
+    }
   }
   function addProject(event: FormEvent) {
     event.preventDefault();
+    if (!loaded) return;
     const name = newProject.trim();
     if (!name) return;
     const project = { id: crypto.randomUUID(), name, tasks: [] };
@@ -108,6 +135,7 @@ export default function App() {
   }
   function addTask(event: FormEvent) {
     event.preventDefault();
+    if (!loaded) return;
     const title = newTask.trim();
     if (!title || !activeProject) return;
     const task = { id: crypto.randomUUID(), title, done: false, createdAt: Date.now() };
@@ -117,6 +145,7 @@ export default function App() {
     setNewTask("");
   }
   function toggleTask(taskId: string) {
+    if (!loaded) return;
     setProjects((current) => current.map((project) => project.id === activeProject.id
       ? { ...project, tasks: project.tasks.map((task) => task.id === taskId ? { ...task, done: !task.done } : task) }
       : project
@@ -136,6 +165,7 @@ export default function App() {
         <a className="brand" href="/" aria-label="DevMate home"><span className="brand-mark">D</span><span>DevMate</span></a>
         <span className="top-note">Your coding workspace</span>
       </header>
+      {!loaded && <p role="status" style={noticeStyle}>Loading your workspace safely…</p>}
       {startupNotice && <p role="status" style={noticeStyle}>{startupNotice}</p>}
       {saveFailure && <p role="alert" style={errorStyle}>{saveMessage(saveFailure)}</p>}
       <section className="intro">
@@ -148,12 +178,12 @@ export default function App() {
         <aside className="panel project-panel">
           <div className="section-heading"><div><p className="eyebrow">WORKSPACE</p><h2>Projects</h2></div><span className="count">{projects.length}</span></div>
           <form className="inline-form" onSubmit={addProject}>
-            <input aria-label="New project name" value={newProject} onChange={(event) => setNewProject(event.target.value)} placeholder="New project name" />
-            <button className="icon-button" type="submit" aria-label="Add project">+</button>
+            <input aria-label="New project name" disabled={!loaded} value={newProject} onChange={(event) => setNewProject(event.target.value)} placeholder="New project name" />
+            <button className="icon-button" type="submit" aria-label="Add project" disabled={!loaded}>+</button>
           </form>
           <nav className="project-list" aria-label="Projects">
             {projects.map((project) => (
-              <button key={project.id} className={project.id === activeProject?.id ? "project-link active" : "project-link"} onClick={() => setActiveId(project.id)}>
+              <button key={project.id} disabled={!loaded} className={project.id === activeProject?.id ? "project-link active" : "project-link"} onClick={() => setActiveId(project.id)}>
                 <span className="project-symbol">▦</span><span>{project.name}</span>
               </button>
             ))}
@@ -162,13 +192,13 @@ export default function App() {
         <section className="panel tasks-panel">
           <div className="section-heading"><div><p className="eyebrow">PLAN THE WORK</p><h2>{activeProject?.name ?? "Tasks"}</h2></div><span className="count">{activeProject?.tasks.filter((task) => !task.done).length ?? 0} open</span></div>
           <form className="task-form" onSubmit={addTask}>
-            <input aria-label="New task" value={newTask} onChange={(event) => setNewTask(event.target.value)} placeholder="Add a coding task…" />
-            <button type="submit" className="primary-button">Add task</button>
+            <input aria-label="New task" disabled={!loaded} value={newTask} onChange={(event) => setNewTask(event.target.value)} placeholder="Add a coding task…" />
+            <button type="submit" className="primary-button" disabled={!loaded}>Add task</button>
           </form>
           <div className="task-list">
             {activeProject?.tasks.length ? activeProject.tasks.map((task) => (
               <label className={task.done ? "task done" : "task"} key={task.id}>
-                <input type="checkbox" checked={task.done} onChange={() => toggleTask(task.id)} /><span>{task.title}</span>
+                <input type="checkbox" disabled={!loaded} checked={task.done} onChange={() => toggleTask(task.id)} /><span>{task.title}</span>
               </label>
             )) : <div className="empty-state"><span className="empty-icon">✓</span><strong>A clear space to start</strong><p>Add your first task. Your project data stays in this browser.</p></div>}
           </div>
@@ -179,8 +209,8 @@ export default function App() {
             {messages.map((message) => <div key={message.id} className={message.role === "user" ? "message user-message" : "message assistant-message"}><span className="message-role">{message.role === "user" ? "YOU" : "DEVMATE"}</span><p>{message.text}</p></div>)}
           </div>
           <form className="chat-form" onSubmit={sendMessage}>
-            <input aria-label="Message DevMate" value={prompt} onChange={(event) => setPrompt(event.target.value)} placeholder="Describe what you want to work on…" />
-            <button type="submit" className="send-button" aria-label="Send message">↑</button>
+            <input aria-label="Message DevMate" disabled={!loaded} value={prompt} onChange={(event) => setPrompt(event.target.value)} placeholder="Describe what you want to work on…" />
+            <button type="submit" className="send-button" aria-label="Send message" disabled={!loaded}>↑</button>
           </form>
           <p className="privacy-note">Demo mode · Messages are not sent to an AI provider.</p>
         </section>
