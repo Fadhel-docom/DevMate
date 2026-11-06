@@ -35,8 +35,9 @@ export default function BackupManager({ onRestoreStart, onRestored, refreshKey =
     const anchor = document.createElement("a");
     anchor.href = url;
     anchor.download = `devmate-backup-slot-${backup.slot}.txt`;
-    anchor.addEventListener("click", () => URL.revokeObjectURL(url), { once: true });
     anchor.click();
+    // Keep the object URL alive long enough for Safari and other browsers to start the download.
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
   async function confirmRestore() {
     if (!pending || pending.action !== "restore" || !pending.backup.restorable) return;
