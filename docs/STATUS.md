@@ -400,3 +400,11 @@ Run the full Vitest suite, TypeScript/Vite production build, and dependency audi
 - M4: raw-backup export object URLs are revoked after a short delay rather than in the download click handler.
 - M5: successful saves return the exact serialized string that was written and read-back verified; App stores that returned value as its next compare-and-swap baseline. Added a regression test for this contract.
 - CI and browser-level multi-tab verification are still required on the resulting head. No merge, deployment, PR #10/PR #1 changes, or main changes.
+
+
+### CI evidence — 2026-11-06
+
+- GitHub Actions run #108, `DevMate CI`, completed successfully: https://github.com/Fadhel-docom/DevMate/actions/runs/42256217928
+- The run checked out commit `f8e2436d86189c101151932bfe60174aedbc2c98`, which is the current PR #11 head and includes the same source tree as the verification trigger commit.
+- `npm ci`, dependency audit reporting, `npm test` (114 tests across 3 files), and `npm run build` all completed successfully.
+- This establishes CI success for the current PR head. It does not substitute for real-browser multi-tab/Web Locks testing or Android Chrome/Safari dialog and download testing; those remain explicitly outstanding.
