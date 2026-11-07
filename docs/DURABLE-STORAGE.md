@@ -83,3 +83,12 @@ PR-B adds `src/profileStore.ts` as the only profile-facing adapter over the gene
 **Migration timing gate:** PR-B exposes a migration operation but does not call it from the current App. The App still writes `devmate-workspace-v1`; running migration while that legacy writer remains active would cause the source fingerprint to change and correctly produce a conflict. PR-D must coordinate the one-time migration with the App persistence cutover, stop legacy writes before the migration is marked complete, and preserve a verified rollback/export path. No automatic migration or UI integration is claimed by PR-B.
 
 **Known availability limitation retained:** the durable envelope currently validates all existing records before a write. One invalid record can therefore block writes to otherwise valid projects. PR-B does not silently delete or quarantine invalid data; a separately reviewed, non-destructive per-project quarantine/recovery design is required before relaxing this fail-closed behavior.
+
+
+### PR-B review follow-ups — restore and migration safety
+
+- The profile adapter rejects null, arrays, and other non-object runtime payloads with an `invalid-data` result; it does not throw synchronously for a null profile.
+- Restore requires the caller's expected durable-store revision. The durable layer checks it while holding the shared lock, before changing any record; stale restore attempts return `conflict`.
+- Restore remains subject to the profile update guard. A snapshot that would roll back profile revision or approval/revocation history is intentionally refused; restoring older approved state must never erase newer approval or revocation evidence. A forward-compatible profile recovery workflow that preserves this history is a PR-D prerequisite and is not claimed by this adapter.
+- The generic migration validates every transformed record and the store update guard before allocating a pre-migration snapshot slot. Repeated rejected attempts therefore do not consume the bounded snapshot slots. The snapshot is still persisted and verified before the durable data commit.
+- The generic durable envelope revision is a store-level compare-and-swap counter. The profile validator currently receives synthetic store revisions (1 then 2) solely to satisfy its monotonic-store contract; these values are not the durable envelope revision and must not be treated as an audit or concurrency signal. The envelope revision and `expectedRevision` provide the actual durable compare-and-swap protection.
