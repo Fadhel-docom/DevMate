@@ -165,10 +165,12 @@ export function createDurableStore<T>(options: DurableStoreOptions<T>) {
     }
     if (journal.phase === "indeterminate") return { ok: false, reason: "indeterminate", message: "A previous write could not be safely reconciled; writes remain locked." };
     if (journal.phase === "committed" && (typeof journal.afterRaw !== "string" || currentRaw !== journal.afterRaw)) {
+      try { if (currentRaw !== null) snapshotRaw(currentRaw, "corrupt"); } catch { /* preserve the source even if snapshot storage is unavailable */ }
       try { writeJournal({ ...(journal as TransactionJournal), phase: "indeterminate" }); } catch { /* fail closed even if journal cannot be updated */ }
       return { ok: false, reason: "indeterminate", message: "The committed transaction no longer matches stored bytes; writes are locked pending recovery." };
     }
     if (journal.phase === "rolled-back" && currentRaw !== journal.beforeRaw) {
+      try { if (currentRaw !== null) snapshotRaw(currentRaw, "corrupt"); } catch { /* preserve the source even if snapshot storage is unavailable */ }
       try { writeJournal({ ...(journal as TransactionJournal), phase: "indeterminate" }); } catch { /* fail closed even if journal cannot be updated */ }
       return { ok: false, reason: "indeterminate", message: "The rolled-back transaction no longer matches stored bytes; writes are locked pending recovery." };
     }
@@ -183,6 +185,7 @@ export function createDurableStore<T>(options: DurableStoreOptions<T>) {
         writeRaw(beforeRaw);
         if (readRaw() !== beforeRaw) throw new Error("Recovery rollback could not be verified.");
       } else if (currentRaw !== beforeRaw) {
+        try { if (currentRaw !== null) snapshotRaw(currentRaw, "corrupt"); } catch { /* preserve the source even if snapshot storage is unavailable */ }
         const pending = { ...journal, phase: "indeterminate" as const };
         writeJournal(pending as TransactionJournal);
         return { ok: false, reason: "indeterminate", message: "Stored data matches neither side of the pending transaction; automatic recovery was refused." };
