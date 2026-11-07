@@ -138,6 +138,7 @@ describe("durable store foundation", () => {
     expect(await store.recover()).toMatchObject({ ok: false, reason: "indeterminate" });
     expect(await store.writeProject("p1", { projectId: "p1", value: "new" })).toMatchObject({ ok: false, reason: "indeterminate" });
     expect(storage.getItem(durableStoreKey("project-profiles"))).toBe(before);
+    expect(storage.getItem(durableBackupKey("project-profiles", 1))).toBe(before);
   });
 
   it("snapshots only into the separate bounded backup namespace and refuses a sixth copy", async () => {
