@@ -243,3 +243,149 @@ The system must eventually demonstrate these scenarios:
 - No autonomous merge, deployment, public publishing, destructive action, or sensitive permission expansion.
 - No weakening of the approved constitution or project-specific rules.
 - No assumption that every project uses the same tools, technology, release process, or growth strategy.
+
+
+## 13. Project-profile data contract — proposal, not yet approved
+
+This section makes the loader prerequisites explicit. It is a proposed contract for review; it is not an implementation and does not make any project profile trusted.
+
+### 13.1 Versioned envelope
+
+Every persisted profile collection must use an explicit envelope rather than an unversioned array:
+
+```ts
+type VersionedStore<T> = {
+  schemaVersion: 1;
+  revision: number;
+  updatedAt: number;
+  records: T[];
+};
+```
+
+- `schemaVersion` identifies the data shape and is independent of the app release version.
+- `revision` is a monotonically increasing store revision used for optimistic conflict detection.
+- `updatedAt` is a Unix timestamp in milliseconds.
+- A future schema version must not be silently interpreted as version 1. Unknown future versions are read-only/unsupported until an explicit migration exists.
+- Profiles and task records use separate namespaced storage keys. A failure in one store must not overwrite or reset the other.
+
+### 13.2 Profile identity and approval metadata
+
+A project profile must have a stable `projectId` and an explicit revision. Minimum logical fields:
+
+- `projectId`, `profileRevision`, `createdAt`, `updatedAt`.
+- `identity`: project name and purpose.
+- `lifecycle`: `draft | active | archived`.
+- `repositories`: canonical repository identifiers and the exact allowed repository scope; unknown values remain unknown, never inferred.
+- `websites`, `technology`, `goals`, `governanceReferences`, `workflow`, `dataClassification`, `allowedTools`, `forbiddenActions`, `releaseRules`, `risks`, and `recoveryPlan`.
+- `unknownFields` or equivalent explicit unknown markers for information not yet verified. Missing values must not be silently replaced with guesses.
+
+Approval is separate from lifecycle. Proposed metadata:
+
+```ts
+type ProfileApproval = {
+  status: "unapproved" | "approved" | "revoked";
+  approvedRevision: number | null;
+  evidence: {
+    kind: "owner-decision" | "approved-pull-request";
+    reference: string;
+    commitSha: string | null;
+  } | null;
+  approvedAt: number | null;
+};
+```
+
+Rules:
+- Imported repository content, profile text, an agent, or a local checkbox cannot approve a profile.
+- Approval must point to a verifiable owner decision or approved PR and the exact profile revision it covers.
+- Any material profile edit increments `profileRevision`; if it no longer matches `approvedRevision`, approval becomes stale and the profile returns to an unapproved state until reviewed again.
+- The current app has no authentication/authorization. Therefore this metadata is an auditable record only; it must not be treated as a secure authorization mechanism. No sensitive repository action may rely on a client-side approval flag.
+- Until a real authenticated owner identity and policy enforcement exist, unapproved profiles may be drafted and inspected, but must not authorize external writes, permission expansion, spending, publishing, or access to another project's private context.
+
+### 13.3 Validation and unknown-field policy
+
+- Validate the complete envelope and every known field at the storage boundary; never trust TypeScript types as runtime validation.
+- Reject malformed identity, duplicate project IDs, invalid enum values, invalid timestamps, duplicate repository identifiers, and impossible approval combinations.
+- Distinguish invalid records from unknown optional information. Unknown business facts are represented explicitly; malformed structural data is not silently accepted.
+- Preserve forward-compatible extension data only inside a namespaced `extensions` object after safe recursive sanitization. Reject dangerous object keys and non-JSON values.
+- Do not silently discard unknown fields that may belong to a newer schema. If the store schema is newer than the app understands, preserve the original raw payload in a backup and refuse writes until a compatible migration is available.
+- Validation returns structured errors with field paths and does not mutate the source record.
+
+### 13.4 Migration policy
+
+- Keep the existing `devmate-workspace-v1` project-array format readable during the transition.
+- First migration is additive: create project-profile records from legacy project IDs/names only, mark all imported profiles `draft` and `unapproved`, and leave legacy project/task data unchanged.
+- Do not infer repository URLs, permissions, charters, goals, data classifications, or approval from legacy project names or task contents.
+- Migration must be deterministic and idempotent: running it twice produces the same profile IDs and no duplicate records.
+- Before any write, preserve the exact pre-migration payload using the existing backup/recovery mechanism. Write the new envelope to its own key, read it back, validate it, and only then record migration completion.
+- On quota, lock, verification, or parse failure, retain the original legacy data and report a recoverable failure. Never mark migration complete on an indeterminate write.
+- Migrations are one-way only after the new representation has been read back and verified. Do not delete the legacy source in this phase.
+- Add fixture tests for empty, valid, partially malformed, corrupt, future-version, duplicate-ID, interrupted, repeated, and quota-failure migration scenarios.
+
+## 14. Durable task-ledger contract — proposal, not yet approved
+
+The ledger is a separate, project-scoped record system. "Durable" in the pre-backend phase means recoverable across reloads in the same browser profile; it does not mean cloud-synced, cross-device, or server-backed storage.
+
+### 14.1 Task record
+
+Every task record must contain:
+
+- Stable `taskId` and required `projectId`.
+- Objective, bounded scope, acceptance criteria, risk classification, priority, and optional due date.
+- One accountable coordinator; optional specialist assignments with non-overlapping deliverables.
+- Dependencies expressed as task IDs in the same project unless a separately approved cross-project dependency exists.
+- Explicit allowed tools, files/resources, and actions; unknown permissions remain denied.
+- Policy snapshot: constitution version, project-profile revision, approval status, and applicable decision references at task start.
+- State, created/updated timestamps, attempt count, checkpoint, result/evidence references, and next exact action.
+- Failure/blocked reason and recovery instructions where applicable.
+- Append-only event history for material state transitions and actions. Never store secrets or raw credentials.
+
+### 14.2 State machine
+
+Initial states:
+
+`queued → ready → in_progress → review → completed`
+
+Other permitted transitions:
+- `ready | in_progress | review → blocked`
+- `blocked → ready` only after the blocking condition is resolved and recorded.
+- `ready | in_progress | review → awaiting_owner` for a genuinely owner-reserved decision.
+- `awaiting_owner → ready` only after the exact decision is recorded.
+- `queued | ready | blocked → cancelled` with a reason.
+- `in_progress → failed` only after a bounded attempt ends without a safe recovery.
+- `in_progress → indeterminate` when an external operation may have succeeded but evidence is insufficient.
+
+Terminal states are `completed`, `cancelled`, and `failed`; `indeterminate` is a hold state requiring reconciliation before retry. A task cannot become completed merely because an agent reports success: acceptance criteria and evidence must be checked.
+
+### 14.3 Checkpoints, events, and recovery
+
+- Each task has a current checkpoint with a monotonic sequence number, timestamp, concise summary, completed criteria, remaining work, and references to immutable artifacts/commits.
+- Every consequential action records intent before execution and observed outcome afterward.
+- Action outcomes are `planned | started | succeeded | failed | indeterminate`; retries require an idempotency key or an explicit reconciliation step.
+- A failed write must not erase the last known-good checkpoint.
+- Recovery restores the last verified checkpoint and preserves the failed attempt/event history.
+- The task snapshot may be compacted for performance, but the append-only event history must retain the audit facts needed to explain decisions and actions.
+
+### 14.4 Project isolation and queries
+
+- Every task, event, checkpoint, artifact reference, and decision link is scoped by `projectId`.
+- All reads and writes require an explicit project context; there is no implicit global task query.
+- Cross-project task references and context sharing are denied by default. Generic reusable methods may be shared without copying private project data.
+- Tests must prove that a task query for one project cannot return another project's tasks, events, files, or private context.
+- A missing or unapproved project profile cannot silently inherit another project's permissions or rules.
+
+### 14.5 Storage and concurrency
+
+- Use a separate versioned task-ledger store and the existing lock/backup/verify patterns; do not overload the legacy project array with the event ledger.
+- Validate before writes, serialize same-store writes, compare the expected revision, read back and validate the new value, and retain a recoverable backup.
+- A storage lock unavailable, revision conflict, quota error, or failed read-back must leave the task in a recoverable non-completed state.
+- The current browser-local implementation must disclose its limits: clearing browser data can remove the ledger, and no cross-device sync exists.
+
+## 15. Implementation gates derived from this proposal
+
+Before a profile loader or task ledger is implemented:
+1. Owner reviews and accepts the architecture proposal; this document alone does not grant that acceptance.
+2. The profile and task schema definitions are converted into runtime validators and versioned fixtures.
+3. Approval metadata is treated as evidence, not authorization, until authentication and policy enforcement exist.
+4. Migration and recovery tests pass, including interrupted writes and future schema versions.
+5. Project-isolation tests prove that no private task context crosses project boundaries.
+6. The implementation uses only local deterministic operations and existing dependencies; no providers, external connectors, paid services, API keys, or new permissions are introduced.
