@@ -325,20 +325,38 @@ export function validateAppendOnlyLedgerUpdate(previous: TaskLedgerStore, next: 
   for (const priorTask of previous.records) {
     const updatedTask = nextTasks.get(priorTask.taskId);
     if (!updatedTask || updatedTask.state === priorTask.state) continue;
+    if (JSON.stringify(priorTask) !== JSON.stringify(updatedTask) && updatedTask.updatedAt <= priorTask.updatedAt) return false;
     const matchingEvents = appendedEvents.filter((item) => item.taskId === priorTask.taskId && item.projectId === priorTask.projectId);
     const event = matchingEvents[matchingEvents.length - 1];
     let context: TaskTransitionContext | undefined;
-    if (priorTask.state === "indeterminate" && event) {
-      const reconciliationLedger: TaskLedgerStore = {
-        ...next,
-        records: next.records.map((item) => item.taskId === priorTask.taskId ? priorTask : item)
-      };
-      context = { eventId: event.eventId, taskId: priorTask.taskId, projectId: priorTask.projectId, ledger: reconciliationLedger };
-    } else if (event) {
-      context = { task: priorTask, event };
+    if (priorTask.state !== updatedTask.state) {
+      if (!event || event.actor !== priorTask.accountableCoordinator || event.createdAt < priorTask.updatedAt ||
+        updatedTask.updatedAt < event.createdAt) return false;
+      if (priorTask.state === "indeterminate") {
+        if (event.type !== "task.reconciled" || updatedTask.updatedAt <= event.createdAt) return false;
+        const reconciliationLedger: TaskLedgerStore = {
+          ...next,
+          records: next.records.map((item) => item.taskId === priorTask.taskId ? priorTask : item)
+        };
+        context = { eventId: event.eventId, taskId: priorTask.taskId, projectId: priorTask.projectId, ledger: reconciliationLedger };
+      } else if (updatedTask.state === "completed") {
+        if (event.type !== "task.acceptance-verified") return false;
+        context = { task: priorTask, event };
+      } else if (priorTask.state === "blocked" && updatedTask.state === "ready") {
+        if (event.type !== "task.blocker-resolved") return false;
+        context = { task: priorTask, event };
+      } else if (priorTask.state === "awaiting_owner" && updatedTask.state === "ready") {
+        if (event.type !== "task.owner-decision-recorded") return false;
+        context = { task: priorTask, event };
+      } else if (priorTask.state === "review" && updatedTask.state === "ready") {
+        if (event.type !== "task.review-rework-recorded") return false;
+        context = { task: priorTask, event };
+      } else if (event.type !== "task.state-changed" ||
+        event.details.fromState !== priorTask.state || event.details.toState !== updatedTask.state) {
+        return false;
+      }
     }
     if (!canTransitionTaskState(priorTask.state, updatedTask.state, context)) return false;
-    if (priorTask.state === "indeterminate" && event && updatedTask.updatedAt <= event.createdAt) return false;
   }
   return true;
 }
