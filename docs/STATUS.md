@@ -623,6 +623,7 @@ Run the full Vitest suite, TypeScript/Vite production build, and dependency audi
 - Corrected both blockers: §17 now states v1.2 becomes current only after merge; added `docs/CHARTER-AND-QUALITY-RULES-v1.1.md`, copied byte-for-byte from the approved v1.1 source at approved commit `371da3325f3b5a8e9e8d9c794c3e1829cce8c818`. Verified exact content equality against that source.
 - Also clarified that constitution/approval-boundary changes remain owner-reserved, uncertainty requires asking the owner, and D-002 says "may merge" rather than "must merge". The owner's standing instruction is recorded verbatim in D-002.
 - New PR #23 head is pending final verification and a second independent review. The docs-only branch/PR workflow does not trigger the repository's configured CI for this base/branch combination; CI is **Not verified**, not claimed as passed. Diff review and exact content comparison are the applicable checks here.
+- Historical checkpoint: this pending-second-review statement was accurate when recorded; the later review and subsequent corrective review are documented in the newer dated checkpoint below. Do not treat this historical paragraph as the current PR #23 status.
 - The owner has explicitly approved the standing instruction not to ask again for routine merges that satisfy all conditions. The constitution amendment itself remains subject to its own explicit owner approval and independent review.
 
 ### PR #24 — profile persistence
