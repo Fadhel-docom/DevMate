@@ -171,8 +171,8 @@ export function validateTaskLedgerStore(input: unknown, profiles?: ProjectProfil
   if (Array.isArray(input.records)) input.records.forEach((task, index) => {
     const path = `records[${index}]`;
     if (!isRecord(task)) { addError(errors, path, "Expected a plain task object."); return; }
+    if (!isJson(task)) { addError(errors, path, "Task contains unsafe, accessor, sparse, cyclic, non-JSON, or over-deep values."); return; }
     if (!exactKeys(task, taskKeys)) addError(errors, path, "Unexpected or missing task fields.");
-    if (!isJson(task)) addError(errors, path, "Task contains unsafe, accessor, sparse, cyclic, non-JSON, or over-deep values.");
     const check = (condition: boolean, field: string, message: string) => { if (!condition) addError(errors, `${path}.${field}`, message); };
     check(safeId(task.taskId), "taskId", "Expected a safe, trimmed task ID of at most 128 characters.");
     check(safeId(task.projectId), "projectId", "Every task must belong to a safe, trimmed project ID.");
@@ -266,8 +266,8 @@ export function validateTaskLedgerStore(input: unknown, profiles?: ProjectProfil
   if (Array.isArray(input.events)) input.events.forEach((event, index) => {
     const path = `events[${index}]`;
     if (!isRecord(event)) { addError(errors, path, "Expected a plain event object."); return; }
+    if (!isJson(event)) { addError(errors, path, "Event contains unsafe, accessor, sparse, cyclic, non-JSON, or over-deep values."); return; }
     if (!exactKeys(event, ["eventId", "taskId", "projectId", "type", "actor", "createdAt", "details"], ["outcome", "idempotencyKey"])) addError(errors, path, "Unexpected or missing event fields.");
-    if (!isJson(event)) addError(errors, path, "Event contains unsafe, accessor, sparse, cyclic, non-JSON, or over-deep values.");
     if (!safeId(event.eventId) || !safeId(event.taskId) || !safeId(event.projectId) ||
       !requiredString(event.type) || !requiredString(event.actor) || !isTimestamp(event.createdAt) ||
       (event.outcome !== undefined && !actionOutcomes.has(event.outcome as TaskActionOutcome)) ||
