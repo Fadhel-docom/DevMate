@@ -168,7 +168,6 @@ export function validateTaskLedgerStore(input: unknown, profiles?: ProjectProfil
   if (Array.isArray(input.records) && input.records.length > 2000) addError(errors, "records", "Task ledger exceeds the 2,000-task validation limit.");
   if (Array.isArray(input.events) && input.events.length > 10000) addError(errors, "events", "Task ledger exceeds the 10,000-event validation limit.");
   const taskById = new Map<string, Record<string, unknown>>();
-  if (isTimestamp(input.updatedAt) && input.updatedAt < latestLedgerTimestamp) addError(errors, "updatedAt", "Ledger timestamp cannot precede a task or event update.");
   if (Array.isArray(input.records)) input.records.forEach((task, index) => {
     const path = `records[${index}]`;
     if (!isRecord(task)) { addError(errors, path, "Expected a plain task object."); return; }
@@ -287,6 +286,7 @@ export function validateTaskLedgerStore(input: unknown, profiles?: ProjectProfil
     const task = taskById.get(String(event.taskId));
     if (!task || task.projectId !== event.projectId) addError(errors, path, "Event must reference an existing task in the same project.");
   });
+  if (isTimestamp(input.updatedAt) && input.updatedAt < latestLedgerTimestamp) addError(errors, "updatedAt", "Ledger timestamp cannot precede a task or event update.");
   if (Array.isArray(input.records)) input.records.forEach((task, index) => {
     if (!isRecord(task) || task.state !== "completed") return;
     const verified = Array.isArray(input.events) && input.events.some((event) =>
