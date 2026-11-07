@@ -1,3 +1,5 @@
+import type { ProjectProfilesStore } from "./projectProfiles";
+
 export const TASK_LEDGER_STORAGE_KEY = "devmate-task-ledger-v1";
 export const TASK_LEDGER_SCHEMA_VERSION = 1 as const;
 
