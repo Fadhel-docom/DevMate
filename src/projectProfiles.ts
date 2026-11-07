@@ -1,0 +1,284 @@
+export const PROJECT_PROFILES_STORAGE_KEY = "devmate-project-profiles-v1";
+export const PROJECT_PROFILE_SCHEMA_VERSION = 1 as const;
+
+export type ProfileApprovalEvidence = {
+  kind: "owner-decision" | "approved-pull-request";
+  reference: string;
+  commitSha: string | null;
+};
+export type ProfileApproval = {
+  status: "unapproved" | "approved" | "revoked";
+  approvedRevision: number | null;
+  evidence: ProfileApprovalEvidence | null;
+  approvedAt: number | null;
+  approvedContentHash: string | null;
+  revokedAt: number | null;
+  revokedRevision: number | null;
+  revocationReason: string | null;
+};
+export type ProjectProfile = {
+  projectId: string;
+  profileRevision: number;
+  createdAt: number;
+  updatedAt: number;
+  identity: { name: string; purpose: string };
+  lifecycle: "draft" | "active" | "archived";
+  repositories: string[];
+  websites: string[];
+  technology: string[];
+  goals: string[];
+  governanceReferences: string[];
+  workflow: string[];
+  dataClassification: string;
+  allowedTools: string[];
+  forbiddenActions: string[];
+  releaseRules: string[];
+  risks: string[];
+  recoveryPlan: string[];
+  unknownFields: string[];
+  approval: ProfileApproval;
+  extensions?: Record<string, JsonValue>;
+};
+export type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue };
+export type ProjectProfilesStore = {
+  schemaVersion: typeof PROJECT_PROFILE_SCHEMA_VERSION;
+  revision: number;
+  updatedAt: number;
+  records: ProjectProfile[];
+};
+export type ProfileValidationError = { path: string; message: string };
+export type ProfileValidationResult =
+  | { ok: true; value: ProjectProfilesStore }
+  | { ok: false; errors: ProfileValidationError[] };
+export type LegacyMigrationRejection = { index: number; reason: string };
+export type LegacyMigrationResult = { store: ProjectProfilesStore; rejected: LegacyMigrationRejection[] };
+
+const dangerousKeys = new Set(["__proto__", "prototype", "constructor"]);
+const listFields = [
+  "repositories", "websites", "technology", "goals", "governanceReferences",
+  "workflow", "allowedTools", "forbiddenActions", "releaseRules", "risks",
+  "recoveryPlan", "unknownFields"
+] as const;
+const profileKeys = [
+  "projectId", "profileRevision", "createdAt", "updatedAt", "identity", "lifecycle",
+  ...listFields, "dataClassification", "approval", "extensions"
+];
+const approvalKeys = [
+  "status", "approvedRevision", "evidence", "approvedAt", "approvedContentHash",
+  "revokedAt", "revokedRevision", "revocationReason"
+];
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) return false;
+  const prototype = Object.getPrototypeOf(value);
+  return prototype === Object.prototype || prototype === null;
+}
+function hasExactKeys(value: Record<string, unknown>, required: readonly string[], optional: readonly string[] = []): boolean {
+  const allowed = new Set([...required, ...optional]);
+  return required.every((key) => Object.prototype.hasOwnProperty.call(value, key)) &&
+    Object.keys(value).every((key) => allowed.has(key));
+}
+function isSafeJson(value: unknown, seen = new WeakSet<object>(), budget = { nodes: 0 }): value is JsonValue {
+  budget.nodes += 1;
+  if (budget.nodes > 10000) return false;
+  if (value === null || typeof value === "string" || typeof value === "boolean") return true;
+  if (typeof value === "number") return Number.isFinite(value);
+  if (typeof value !== "object") return false;
+  if (seen.has(value)) return false;
+  seen.add(value);
+  let valid = true;
+  if (Array.isArray(value)) {
+    for (let i = 0; i < value.length; i += 1) {
+      if (!Object.prototype.hasOwnProperty.call(value, i) || !isSafeJson(value[i], seen, budget)) { valid = false; break; }
+    }
+  } else if (isRecord(value)) {
+    for (const key of Object.keys(value)) {
+      if (dangerousKeys.has(key) || !isSafeJson(value[key], seen, budget)) { valid = false; break; }
+    }
+  } else {
+    valid = false;
+  }
+  seen.delete(value);
+  return valid;
+}
+function isNonNegativeInteger(value: unknown): value is number {
+  return typeof value === "number" && Number.isSafeInteger(value) && value >= 0;
+}
+function isPositiveInteger(value: unknown): value is number {
+  return isNonNegativeInteger(value) && value >= 1;
+}
+function addError(errors: ProfileValidationError[], path: string, message: string) {
+  errors.push({ path, message });
+}
+function hashText(text: string, seed: number): string {
+  let hash = seed >>> 0;
+  for (let i = 0; i < text.length; i += 1) {
+    hash ^= text.charCodeAt(i);
+    hash = Math.imul(hash, 16777619) >>> 0;
+  }
+  return hash.toString(16).padStart(8, "0");
+}
+function stableJson(value: unknown): string {
+  if (value === null || typeof value !== "object") return JSON.stringify(value);
+  if (Array.isArray(value)) return "[" + value.map(stableJson).join(",") + "]";
+  if (!isRecord(value)) throw new TypeError("Profile content must be plain JSON.");
+  return "{" + Object.keys(value).sort().map((key) => JSON.stringify(key) + ":" + stableJson(value[key])).join(",") + "}";
+}
+/**
+ * Deterministic non-cryptographic content fingerprint. It detects accidental or
+ * unversioned edits; it is NOT an authentication or authorization primitive.
+ */
+export function computeProfileContentHash(profile: ProjectProfile): string {
+  const { approval: _approval, updatedAt: _updatedAt, ...controlledContent } = profile;
+  const canonical = stableJson(controlledContent);
+  return hashText(canonical, 2166136261) + hashText(canonical, 2246822519);
+}
+function validateEvidence(value: unknown): value is ProfileApprovalEvidence {
+  if (!isRecord(value) || !hasExactKeys(value, ["kind", "reference", "commitSha"])) return false;
+  if (value.kind !== "owner-decision" && value.kind !== "approved-pull-request") return false;
+  if (typeof value.reference !== "string" || value.reference.trim().length === 0) return false;
+  if (value.kind === "approved-pull-request") return typeof value.commitSha === "string" && /^[0-9a-f]{40}$/i.test(value.commitSha);
+  return value.commitSha === null || (typeof value.commitSha === "string" && /^[0-9a-f]{40}$/i.test(value.commitSha));
+}
+function validateProfile(value: unknown, index: number, errors: ProfileValidationError[]): value is ProjectProfile {
+  const root = `records[${index}]`;
+  if (!isRecord(value)) { addError(errors, root, "Expected a plain object."); return false; }
+  let valid = true;
+  const check = (condition: boolean, path: string, message: string) => {
+    if (!condition) { addError(errors, path ? `${root}.${path}` : root, message); valid = false; }
+  };
+  check(hasExactKeys(value, profileKeys.filter((key) => key !== "extensions"), ["extensions"]), "", "Unexpected or missing profile fields.");
+  check(typeof value.projectId === "string" && value.projectId.length > 0 && value.projectId.trim() === value.projectId && !dangerousKeys.has(value.projectId), "projectId", "Expected a safe, trimmed stable project ID.");
+  check(isPositiveInteger(value.profileRevision), "profileRevision", "Expected a positive integer.");
+  check(isNonNegativeInteger(value.createdAt), "createdAt", "Expected a non-negative timestamp.");
+  check(isNonNegativeInteger(value.updatedAt) && isNonNegativeInteger(value.createdAt) && (value.updatedAt as number) >= (value.createdAt as number), "updatedAt", "Expected updatedAt >= createdAt.");
+  check(isRecord(value.identity) && hasExactKeys(value.identity, ["name", "purpose"]) &&
+    typeof value.identity.name === "string" && value.identity.name.trim().length > 0 &&
+    typeof value.identity.purpose === "string", "identity", "Expected exactly name and purpose strings.");
+  check(value.lifecycle === "draft" || value.lifecycle === "active" || value.lifecycle === "archived", "lifecycle", "Invalid lifecycle value.");
+  for (const field of listFields) {
+    const list = value[field];
+    check(Array.isArray(list) && list.every((item) => typeof item === "string"), field, "Expected an array of strings.");
+  }
+  check(typeof value.dataClassification === "string" && value.dataClassification.trim().length > 0, "dataClassification", "Expected an explicit classification or 'unknown'.");
+  check(isRecord(value.approval) && hasExactKeys(value.approval, approvalKeys), "approval", "Expected exact approval metadata fields.");
+  if (isRecord(value.approval)) {
+    const a = value.approval;
+    check(a.status === "unapproved" || a.status === "approved" || a.status === "revoked", "approval.status", "Invalid approval status.");
+    check(a.approvedRevision === null || isPositiveInteger(a.approvedRevision), "approval.approvedRevision", "Expected null or a positive revision.");
+    check(a.approvedAt === null || isNonNegativeInteger(a.approvedAt), "approval.approvedAt", "Expected null or a non-negative timestamp.");
+    check(a.evidence === null || validateEvidence(a.evidence), "approval.evidence", "Invalid approval evidence; approved PR evidence requires a 40-character commit SHA.");
+    check(a.approvedContentHash === null || (typeof a.approvedContentHash === "string" && /^[0-9a-f]{16}$/i.test(a.approvedContentHash)), "approval.approvedContentHash", "Expected null or a 16-character content fingerprint.");
+    check(a.revokedAt === null || isNonNegativeInteger(a.revokedAt), "approval.revokedAt", "Expected null or a non-negative timestamp.");
+    check(a.revokedRevision === null || isPositiveInteger(a.revokedRevision), "approval.revokedRevision", "Expected null or a positive revision.");
+    check(a.revocationReason === null || (typeof a.revocationReason === "string" && a.revocationReason.trim().length > 0), "approval.revocationReason", "Expected null or a non-empty revocation reason.");
+    if (a.status === "unapproved") {
+      check(a.approvedRevision === null && a.evidence === null && a.approvedAt === null && a.approvedContentHash === null &&
+        a.revokedAt === null && a.revokedRevision === null && a.revocationReason === null,
+      "approval", "Unapproved profiles cannot retain approval or revocation metadata.");
+    } else if (a.status === "approved") {
+      check(a.approvedRevision === value.profileRevision && a.evidence !== null && a.approvedAt !== null &&
+        a.approvedContentHash === computeProfileContentHash(value as unknown as ProjectProfile) &&
+        a.revokedAt === null && a.revokedRevision === null && a.revocationReason === null,
+      "approval", "Approved status must match the current profile revision and content fingerprint, with valid evidence and no revocation metadata.");
+    } else {
+      check(a.approvedRevision !== null && a.evidence !== null && a.approvedAt !== null &&
+        a.approvedContentHash !== null && a.revokedAt !== null && a.revokedRevision === a.approvedRevision &&
+        a.revocationReason !== null && (a.revokedAt as number) >= (a.approvedAt as number),
+      "approval", "Revoked status must preserve the prior approval evidence and record when, which revision, and why it was revoked.");
+    }
+  }
+  if (value.extensions !== undefined) {
+    check(isRecord(value.extensions) && isSafeJson(value.extensions), "extensions", "Extensions must contain safe plain JSON values only.");
+  }
+  check(isSafeJson(value), "", "Profile contains unsafe keys, prototypes, sparse arrays, cycles, or non-JSON values.");
+  return valid;
+}
+
+export function validateProjectProfilesStore(input: unknown): ProfileValidationResult {
+  const errors: ProfileValidationError[] = [];
+  if (!isRecord(input)) return { ok: false, errors: [{ path: "", message: "Expected a versioned store envelope." }] };
+  if (!hasExactKeys(input, ["schemaVersion", "revision", "updatedAt", "records"])) addError(errors, "", "Unexpected or missing store fields.");
+  if (input.schemaVersion !== PROJECT_PROFILE_SCHEMA_VERSION) return { ok: false, errors: [{ path: "schemaVersion", message: `Unsupported schema version: ${String(input.schemaVersion)}.` }] };
+  if (!isPositiveInteger(input.revision)) addError(errors, "revision", "Expected a positive integer.");
+  if (!isNonNegativeInteger(input.updatedAt)) addError(errors, "updatedAt", "Expected a non-negative timestamp.");
+  if (!Array.isArray(input.records)) addError(errors, "records", "Expected an array of project profiles.");
+  const ids = new Set<string>();
+  let latestProfileUpdate = 0;
+  if (Array.isArray(input.records)) {
+    input.records.forEach((record, index) => {
+      if (validateProfile(record, index, errors)) {
+        if (ids.has(record.projectId)) addError(errors, `records[${index}].projectId`, "Duplicate project ID.");
+        ids.add(record.projectId);
+        latestProfileUpdate = Math.max(latestProfileUpdate, record.updatedAt);
+      }
+    });
+  }
+  if (isNonNegativeInteger(input.updatedAt) && input.updatedAt < latestProfileUpdate) addError(errors, "updatedAt", "Store timestamp cannot precede a profile update.");
+  if (!isSafeJson(input)) addError(errors, "", "Store contains unsafe keys or non-JSON values.");
+  return errors.length ? { ok: false, errors } : { ok: true, value: input as unknown as ProjectProfilesStore };
+}
+
+/**
+ * Additive, pure migration. Existing profiles are never replaced. Invalid
+ * legacy entries are reported individually; the legacy source is untouched.
+ * The caller must use a stable migration timestamp and persist/read-back safely.
+ */
+export function migrateLegacyProjectsToProfiles(
+  legacyProjects: readonly unknown[],
+  migratedAt: number,
+  existingStore?: ProjectProfilesStore
+): LegacyMigrationResult {
+  if (!isNonNegativeInteger(migratedAt)) throw new RangeError("Migration timestamp must be a non-negative integer.");
+  let base: ProjectProfilesStore;
+  if (existingStore) {
+    const checked = validateProjectProfilesStore(existingStore);
+    if (!checked.ok) throw new TypeError("Existing profile store is invalid; refusing to overwrite it.");
+    base = checked.value;
+  } else {
+    base = { schemaVersion: PROJECT_PROFILE_SCHEMA_VERSION, revision: 1, updatedAt: migratedAt, records: [] };
+  }
+  const ids = new Set(base.records.map((record) => record.projectId));
+  const rejected: LegacyMigrationRejection[] = [];
+  const additions: ProjectProfile[] = [];
+  legacyProjects.forEach((candidate, index) => {
+    if (!isRecord(candidate) || typeof candidate.id !== "string" || candidate.id.trim().length === 0 ||
+      candidate.id.trim() !== candidate.id || dangerousKeys.has(candidate.id)) {
+      rejected.push({ index, reason: "Legacy project must have a safe, non-empty string ID." });
+      return;
+    }
+    const id = candidate.id;
+    if (ids.has(id)) return;
+    let name: string;
+    let nameUnknown = false;
+    if (typeof candidate.name === "string" && candidate.name.trim().length > 0) name = candidate.name.trim();
+    else { name = `Legacy project ${id}`; nameUnknown = true; }
+    ids.add(id);
+    additions.push({
+      projectId: id, profileRevision: 1, createdAt: migratedAt, updatedAt: migratedAt,
+      identity: { name, purpose: "" }, lifecycle: "draft",
+      repositories: [], websites: [], technology: [], goals: [], governanceReferences: [], workflow: [],
+      dataClassification: "unknown", allowedTools: [], forbiddenActions: [], releaseRules: [], risks: [],
+      recoveryPlan: [],
+      unknownFields: [
+        ...(nameUnknown ? ["identity.name"] : []), "purpose", "repositories", "websites", "technology",
+        "goals", "governanceReferences", "workflow", "dataClassification", "allowedTools",
+        "forbiddenActions", "releaseRules", "risks", "recoveryPlan"
+      ],
+      approval: {
+        status: "unapproved", approvedRevision: null, evidence: null, approvedAt: null,
+        approvedContentHash: null, revokedAt: null, revokedRevision: null, revocationReason: null
+      }
+    });
+  });
+  if (additions.length === 0) return { store: base, rejected };
+  const store: ProjectProfilesStore = {
+    schemaVersion: PROJECT_PROFILE_SCHEMA_VERSION,
+    revision: base.revision + 1,
+    updatedAt: Math.max(migratedAt, base.updatedAt),
+    records: [...base.records, ...additions]
+  };
+  const checked = validateProjectProfilesStore(store);
+  if (!checked.ok) throw new TypeError(`Generated profile migration failed validation: ${checked.errors.map((item) => item.path).join(", ")}`);
+  return { store: checked.value, rejected };
+}
