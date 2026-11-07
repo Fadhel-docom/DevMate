@@ -33,6 +33,9 @@ describe("task ledger schema v1", () => {
         approval: { status: "unapproved" as const, approvedRevision: null, evidence: null, approvedAt: null,
           approvedContentHash: null, revokedAt: null, revokedRevision: null, revocationReason: null, revocationHistory: [] } }] };
     expect(validateTaskLedgerStore(storeWith([baseTask]), profiles).ok).toBe(true);
+    const changedCurrentProfile = { ...profiles, revision: 2, updatedAt: 200,
+      records: [{ ...profiles.records[0], profileRevision: 2, updatedAt: 200 }] };
+    expect(validateTaskLedgerStore(storeWith([baseTask]), changedCurrentProfile).ok).toBe(true);
     expect(validateTaskLedgerStore(storeWith([{ ...baseTask, projectId: "missing" }]), profiles).ok).toBe(false);
     expect(validateTaskLedgerStore(storeWith([{ ...baseTask, policySnapshot: { ...baseTask.policySnapshot, profileApprovalStatus: "approved" as const } }]), profiles).ok).toBe(false);
   });
@@ -74,7 +77,7 @@ describe("task ledger schema v1", () => {
     expect(validateAppendOnlyLedgerUpdate(previous, storeWith([baseTask], [{ ...previous.events[0], type: "task.deleted" }]))).toBe(false);
   });
   it("requires a linked reconciliation event with evidence to leave indeterminate", () => {
-    const ledger = storeWith([{ ...baseTask, state: "indeterminate" as const, failureReason: "Outcome unknown" }], [{
+    const ledger = storeWith([{ ...baseTask, state: "indeterminate" as const, failureReason: "Outcome unknown", evidenceReferences: ["audit:123"] }], [{
       eventId: "e1", taskId: "t1", projectId: "p1", type: "task.reconciled", actor: "coordinator",
       createdAt: 102, outcome: "succeeded", details: { resolution: "not-applied", evidenceReference: "audit:123" }
     }]);
@@ -88,4 +91,79 @@ describe("task ledger schema v1", () => {
     })).toBe(false);
     expect(canTransitionTaskState("indeterminate", "failed", { eventId: "e1", taskId: "t1", projectId: "p1", ledger })).toBe(false);
   });
+
+  it("rejects stale, unlinked, wrong-actor, and reused reconciliation events", () => {
+    const task = { ...baseTask, state: "indeterminate" as const, failureReason: "Unknown outcome", evidenceReferences: ["audit:123"] };
+    const event = { eventId: "e1", taskId: "t1", projectId: "p1", type: "task.reconciled", actor: "coordinator",
+      createdAt: 102, outcome: "succeeded" as const, details: { resolution: "not-applied", evidenceReference: "audit:123" } };
+    const valid = storeWith([task], [event]);
+    expect(canTransitionTaskState("indeterminate", "ready", { eventId: "e1", taskId: "t1", projectId: "p1", ledger: valid })).toBe(true);
+    expect(canTransitionTaskState("indeterminate", "ready", { eventId: "e1", taskId: "t1", projectId: "p1",
+      ledger: storeWith([{ ...task, updatedAt: 103 }], [event]) })).toBe(false);
+    expect(canTransitionTaskState("indeterminate", "ready", { eventId: "e1", taskId: "t1", projectId: "p1",
+      ledger: storeWith([{ ...task, evidenceReferences: [] }], [event]) })).toBe(false);
+    expect(canTransitionTaskState("indeterminate", "ready", { eventId: "e1", taskId: "t1", projectId: "p1",
+      ledger: storeWith([task], [{ ...event, actor: "unrelated-agent" }]) })).toBe(false);
+    expect(canTransitionTaskState("indeterminate", "ready", { eventId: "e1", taskId: "t1", projectId: "p1",
+      ledger: storeWith([task], [{ ...event, type: "task.started" }]) })).toBe(false);
+    expect(canTransitionTaskState("indeterminate", "ready", { eventId: "e1", taskId: "t1", projectId: "p1",
+      ledger: storeWith([task], [{ ...event, outcome: "failed" }]) })).toBe(false);
+    expect(canTransitionTaskState("indeterminate", "ready", { eventId: "e1", taskId: "t1", projectId: "p1",
+      ledger: { ...valid, revision: 0 } })).toBe(false);
+  });
+  it("requires verifiable acceptance evidence before a task can be completed", () => {
+    const reviewTask = { ...baseTask, state: "review" as const, updatedAt: 101, evidenceReferences: ["artifact:1"] };
+    const verification = { eventId: "verify-1", taskId: "t1", projectId: "p1", type: "task.acceptance-verified",
+      actor: "coordinator", createdAt: 102, outcome: "succeeded" as const,
+      details: { evidenceReference: "artifact:1", verifiedCriteria: [...baseTask.acceptanceCriteria] } };
+    expect(canTransitionTaskState("review", "completed", { task: reviewTask, event: verification })).toBe(true);
+    expect(canTransitionTaskState("review", "completed")).toBe(false);
+    const completed = { ...reviewTask, state: "completed" as const, updatedAt: 103 };
+    expect(validateTaskLedgerStore(storeWith([completed], [verification])).ok).toBe(true);
+    expect(validateTaskLedgerStore(storeWith([completed], [])).ok).toBe(false);
+    expect(validateTaskLedgerStore(storeWith([{ ...completed, evidenceReferences: [] }], [verification])).ok).toBe(false);
+    expect(validateTaskLedgerStore(storeWith([completed], [{ ...verification, details: { evidenceReference: "artifact:1", verifiedCriteria: ["one"] } }])).ok).toBe(false);
+  });
+  it("enforces documented transition gates for queued, blocked, and owner states", () => {
+    expect(canTransitionTaskState("queued", "blocked")).toBe(false);
+    expect(canTransitionTaskState("draft", "cancelled")).toBe(false);
+    expect(canTransitionTaskState("awaiting_owner", "cancelled")).toBe(false);
+    const blocked = { ...baseTask, state: "blocked" as const, updatedAt: 101, evidenceReferences: ["fix:1"] };
+    const resolved = { eventId: "resolve-1", taskId: "t1", projectId: "p1", type: "task.blocker-resolved",
+      actor: "coordinator", createdAt: 102, outcome: "succeeded" as const, details: { evidenceReference: "fix:1" } };
+    expect(canTransitionTaskState("blocked", "ready", { task: blocked, event: resolved })).toBe(true);
+    expect(canTransitionTaskState("blocked", "ready")).toBe(false);
+  });
+  it("supports the documented collection limits without an aggregate JSON budget", () => {
+    const tasks = Array.from({ length: 300 }, (_, index) => ({ ...baseTask, taskId: `t${index}` }));
+    const events = Array.from({ length: 1300 }, (_, index) => ({
+      eventId: `e${index}`, taskId: "t0", projectId: "p1", type: "task.note",
+      actor: "coordinator", createdAt: 101 + index, details: {}
+    }));
+    expect(validateTaskLedgerStore({ schemaVersion: 1, revision: 1, updatedAt: 2000, records: tasks, events }).ok).toBe(true);
+  });
+  it("rejects accessors, sparse arrays, cycles, non-finite values, and deep JSON", () => {
+    const getterTask = { ...baseTask } as Record<string, unknown>;
+    Object.defineProperty(getterTask, "objective", { enumerable: true, get: () => "Create the profile schema" });
+    expect(validateTaskLedgerStore(storeWith([getterTask as never])).ok).toBe(false);
+    const sparseTask = { ...baseTask, acceptanceCriteria: new Array(1) };
+    expect(validateTaskLedgerStore(storeWith([sparseTask as never])).ok).toBe(false);
+    const cyclic: Record<string, unknown> = {};
+    cyclic.self = cyclic;
+    const event = { eventId: "e1", taskId: "t1", projectId: "p1", type: "task.note", actor: "coordinator", createdAt: 101, details: { cyclic } };
+    expect(validateTaskLedgerStore(storeWith([baseTask], [event as never])).ok).toBe(false);
+    expect(validateTaskLedgerStore(storeWith([{ ...baseTask, priority: Number.POSITIVE_INFINITY }])).ok).toBe(false);
+    let deep: unknown = "leaf";
+    for (let index = 0; index < 120; index += 1) deep = { child: deep };
+    expect(validateTaskLedgerStore(storeWith([baseTask], [{ ...event, details: { deep } } as never])).ok).toBe(false);
+  });
+  it("accepts per-project idempotency keys and rejects unsafe task and project IDs", () => {
+    const task2 = { ...baseTask, taskId: "t2", projectId: "p2" };
+    const event1 = { eventId: "e1", taskId: "t1", projectId: "p1", type: "task.note", actor: "coordinator", createdAt: 101, idempotencyKey: "same", details: {} };
+    const event2 = { eventId: "e2", taskId: "t2", projectId: "p2", type: "task.note", actor: "coordinator", createdAt: 102, idempotencyKey: "same", details: {} };
+    expect(validateTaskLedgerStore(storeWith([baseTask, task2], [event1, event2])).ok).toBe(true);
+    expect(validateTaskLedgerStore(storeWith([{ ...baseTask, taskId: "__proto__" }])).ok).toBe(false);
+    expect(validateTaskLedgerStore(storeWith([{ ...baseTask, projectId: " p1 " }])).ok).toBe(false);
+  });
+
 });
