@@ -1,6 +1,6 @@
 # DevMate Status
 
-> Current state: see "## Current state — 2026-11-07 (PR-B follow-up implemented; exact-head CI passed)" at the end of this file. Earlier dated checkpoints are historical snapshots and do not describe the present.
+> Current state: see "## Current state — 2026-11-07 (PR-B consolidated review package prepared)" at the end of this file. Earlier dated checkpoints are historical snapshots and do not describe the present.
 
 ## Current milestone
 Phase 1 — foundation and local demo.
@@ -622,7 +622,7 @@ Run the full Vitest suite, TypeScript/Vite production build, and dependency audi
 - PR #22 (PR-A durable-store foundation) merged by squash into the foundation branch at `f3b2e4f4fe748ae75aba0095c837b30c9635f692`, after independent **APPROVE WITH FOLLOW-UP** review and exact-head CI success.
 - PR-A exact reviewed head: `f35d8692e402368a7deb71e8276ed6008793019d`; run #311 passed. Reviewer-reported 186 tests and zero vulnerabilities were independently checked from the CI job logs by the coordinator.
 - Owner's 2026-11-07 standing instruction: do not ask for per-PR merge permission when every applicable gate and independent review passes. A proposed v1.2 constitution amendment and decision D-002 are in PR #23; it remains Draft pending independent review because it changes governance/approval boundaries.
-- PR #23: https://github.com/Fadhel-docom/DevMate/pull/23 — owner-approved documentation amendment; no merge yet.
+- PR #23: https://github.com/Fadhel-docom/DevMate/pull/23 — proposed v1.2 governance amendment only; separate explicit owner approval has not been given, no merge has occurred, and v1.1 remains effective.
 
 ### PR-B — profile persistence
 - PR #24: https://github.com/Fadhel-docom/DevMate/pull/24 — Draft, targets `feature/phase-1-foundation`.
@@ -656,3 +656,26 @@ Run the full Vitest suite, TypeScript/Vite production build, and dependency audi
 - Restore remains fail-closed when a snapshot would decrease profileRevision or erase approval/revocation history. A forward-only recovery workflow or explicit owner-governed recovery procedure remains a prerequisite before PR-D.
 - PR #23 remains Draft and untouched while awaiting the owner's independent Claude review. No constitution amendment is effective from this follow-up.
 - No App/UI cutover, migration invocation, provider integration, new dependency, cost, secret, permission, deployment, `main` write, or RateNest change occurred.
+
+
+## Current state — 2026-11-07 (PR-B consolidated review package prepared)
+
+### Verified PR-B stack
+- PR #24 remains Draft and unmerged, targeting `feature/phase-1-foundation`; exact head: `5e0eaffc68fee2cae58e2fba73b3925bde56a165`.
+- PR #24 exact-head Actions run #324 (ID `42366615512`) completed successfully on that SHA: npm ci installed 155 packages; audit summary 0 vulnerabilities; 8 test files / 194 tests passed; `tsc --noEmit`; Vite production build passed. Run: https://github.com/Fadhel-docom/DevMate/actions/runs/42366615512.
+- PR #26 is the stacked follow-up, targeting PR #24's branch; exact current head: `462b95e55b44fbf71da78a437dfab6c7e6396cf5`.
+- PR #26 exact-head Actions run #327 (ID `42370079190`) completed successfully on that SHA: Node 20.20.2; npm ci installed 155 packages; audit summary 0 vulnerabilities; 8 test files / 201 tests passed; `tsc --noEmit`; Vite production build passed. Run: https://github.com/Fadhel-docom/DevMate/actions/runs/42370079190.
+- The prior independent review of the PR #24 baseline returned **APPROVE WITH FOLLOW-UP**, with no blockers. The technical follow-ups are implemented in PR #26; PR #26's final exact head still awaits the consolidated independent review.
+- Review scope is consolidated: assess PR #24 plus PR #26 as one stacked implementation, including the cumulative tree from foundation commit `f3b2e4f4fe748ae75aba0095c837b30c9635f692` through PR #26 head above. Do not require separate full reviews of each PR unless a concrete blocker requires it.
+
+### Recovery and migration boundary
+- Restore remains fail-closed when it would decrease `profileRevision` or erase approval/revocation history. The current API's compare-and-swap guard does not implement forward-only recovery.
+- Before PR-D, define and review a non-destructive forward-only recovery workflow that preserves approval evidence and append-only revocation history, or a separately owner-governed recovery procedure.
+- Migration is not invoked. PR-D must coordinate App cutover, stop the legacy writer, preserve verified raw export/rollback, and test browser restart/quota and failure handling before any migration.
+
+### Governance and isolation
+- PR #23 remains separate and untouched. Its v1.2 proposal is not approved or effective; v1.1 remains the governing constitution.
+- No App/UI cutover, migration invocation, provider integration, new dependency, cost, secret, permission change, deployment, `main` write, or RateNest modification occurred.
+
+### Next action
+- One consolidated independent Claude review of PR #24 + PR #26 and the forward-only recovery design. After approval, fold PR #26 into PR #24, reconcile the final PR #24 head, rerun exact-head CI, and proceed under the existing routine-merge delegation if all applicable gates pass.
