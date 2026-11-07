@@ -1510,6 +1510,6 @@ Remote sandbox, Node v24.22.1, npm 10.8.2 (CI uses Node 20.20.2), files fetched 
 - Not verified: real browser multi-tab lock contention, browser process termination at each write boundary, real quota exhaustion, Android/Safari, and accessibility.
 
 ### Current PR and next action
-- PR-A has not yet been opened. The implementation remains on `feature/durable-store-foundation` while documentation and exact-head CI are completed.
-- Next: verify CI on the final documentation head, open PR-A as Draft against `feature/phase-1-foundation`, and request an independent review of that exact head. Do not merge before review.
+- PR #22 is open as Draft: https://github.com/Fadhel-docom/DevMate/pull/22. It targets `feature/phase-1-foundation`; current PR head at opening was `eec639d97b970a9e8a8d8f35dd9a08d18c09e10c`. The implementation remains on `feature/durable-store-foundation`.
+- Next: finish the documentation-head CI check after this handoff update, then request an independent review of the exact PR #22 head. Do not merge before review.
 - PR-B profile persistence, PR-C ledger persistence, and PR-D App integration remain separate bounded changes. No provider integration or owner-reserved permission/cost decision is implied.
