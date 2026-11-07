@@ -1608,3 +1608,58 @@ Remote sandbox, Node v24.22.1, npm 10.8.2 (CI uses Node 20.20.2), files fetched 
 ### Current boundary
 - PR #23 remains Draft and unmerged. Constitution v1.1 remains the sole effective version until the owner explicitly approves the exact amendment and the approved PR is merged.
 - The routine merge delegation does not apply to this constitutional amendment. Once its separate approval gate is satisfied, resume the already-planned PR #24 then PR #26 reconciliation without reopening routine merge permissions for each qualifying PR.
+
+
+---
+
+## 62. PR #23 owner-approved merge; PR-B rebase and regression fixes — 2026-11-07 — ChatGPT coordinator
+
+### Owner approval and governance
+- The owner explicitly approved the exact v1.2 amendment and authorized PR #23 merge with this message in the ChatGPT conversation: «40ba47082ea663a2076951f9756d7cf967a3cccb
+نعم قم بدمج 23 بتفويض مني».
+- The owner merged [PR #23](https://github.com/Fadhel-docom/DevMate/pull/23). GitHub reports merge commit `2f7f9c69e80863b3720c269cc33a36b33a841209`; PR head was `40ba47082ea663a2076951f9756d7cf967a3cccb`.
+- The final PR #23 head did not have a fresh independent review or exact-head CI result observed before merge. The previous independent review was on `2f6e9c4edd2814a064339b08ebfb525eab5a8912`, and CI on `40ba470...` was Not verified. This is recorded transparently; no CI pass or final-head review is claimed.
+- Constitution v1.2 is recorded as the current owner-approved governing version; v1.1 remains preserved historically.
+
+### PR-B review findings fixed
+- PR #24's profile persistence implementation and stacked PR #26's hardening were reviewed together previously. Two concrete gaps were addressed on the stacked branch:
+  1. Empty/missing legacy source could write the migration marker without materializing the empty durable data envelope; retry then failed closed as “durable data is missing”. The unchanged check now forces an initial envelope write when the durable data key is absent.
+  2. Added actual `restoreSnapshot` regression tests proving an older draft snapshot cannot roll back profile revision and an older approved snapshot cannot restore approval after revocation.
+- The original stacked branch's exact head `5af764c7f3a7ad702c110b09abc81ab011cd720e` passed Actions run #336 (`42377882586`): npm ci, audit summary 0 vulnerabilities, 8 test files / 205 tests, `tsc --noEmit`, and Vite build. Job logs were inspected.
+- PR #23 advanced the foundation and made PR #24 dirty against its old base due overlapping documentation updates. No force merge or direct foundation write was attempted.
+- Created `feature/project-profile-durable-integration-rebased` from the current foundation and reapplied the cumulative PR-B source/doc changes while preserving the merged governance history. New rebased PR CI remains pending until the PR is opened.
+- Rebased source files: `src/durableStore.ts`, `src/durableStore.test.ts`, `src/profileStore.ts`, `src/profileStore.test.ts`, `docs/DURABLE-STORAGE.md`. They include the F1/F2 fixes above.
+
+### Boundaries and next checkpoint
+- No legacy migration has been invoked. No App/UI persistence cutover, PR-D recovery workflow implementation, provider connection, external data transfer, cost, permission expansion, deployment, or change to `main`/RateNest occurred.
+- Next: open one cumulative PR from the rebased branch to `feature/phase-1-foundation`; run exact-head CI; obtain one focused independent review of the cumulative tree and forward-only PR-D design. After approval and all applicable gates pass, merge under the standing delegation and proceed to PR-C durable task-ledger integration.
+
+
+---
+
+## 63. PR-B rebased cumulative PR #27 exact-head CI — 2026-11-07 — ChatGPT coordinator
+
+- Opened [PR #27](https://github.com/Fadhel-docom/DevMate/pull/27), a cumulative replacement for the stale stacked PRs #24/#26, based directly on the current foundation merge commit `2f7f9c69e80863b3720c269cc33a36b33a841209`.
+- Exact PR #27 head: `ac54cfda217489867e058a06f85d350e1e921306`; GitHub reports mergeable and the PR is ready for review.
+- Exact-head Actions run #347 (ID `42378120896`) completed successfully. Inspected job logs: npm ci installed 155 packages; audit summary 0 vulnerabilities; 8 test files / 205 tests passed; `tsc --noEmit`; Vite production build succeeded.
+- The cumulative PR includes the F1 empty-source migration-envelope fix and F2 actual restore guard tests for older draft and approved-after-revocation snapshots. No migration was invoked and no App/UI cutover was attempted.
+- One independent review remains. Request review of exact SHA `ac54cfda217489867e058a06f85d350e1e921306`, with one overall verdict, concrete blockers only, and a concise forward-only PR-D recovery design assessment. Do not reopen multiple review cycles for non-blocking style or documentation nits.
+- After review, if no blockers and exact-head checks remain green, merge PR #27 under the standing delegation. Then start PR-C durable task-ledger integration. PR #24 and #26 are superseded and must not be merged.
+
+
+---
+
+## 64. PR-B exact-head CI evidence — 2026-11-07 — ChatGPT coordinator
+
+- PR #27 exact head `d35c60979fd1a4b587a8817ebd76db9d19ea7be2` passed Actions run #349 (ID `42378198287`). Inspected job logs: npm ci installed 155 packages; audit summary 0 vulnerabilities; 8 test files / 205 tests passed; `tsc --noEmit`; Vite production build succeeded.
+- This operations/status evidence update itself is documentation-only and advances the branch head. Run #349 remains evidence for `d35c609...`, not for the new head created by this entry. Verify the live PR head and exact-head CI again before merge.
+- PR #27 remains open and ready for the one consolidated independent review requested in its PR discussion. PR #24 and #26 have been closed as superseded. No merge of PR-B has occurred.
+
+
+---
+
+## 65. PR-B latest exact-head CI and review handoff — 2026-11-07 — ChatGPT coordinator
+
+- Verified PR #27 live head `6811da259b4bdf2b743d3d3f3ad75a914096383f` against Actions run #351 (`42378286215`). Job logs inspected: npm ci installed 155 packages; audit summary 0 vulnerabilities; 8 test files / 205 tests passed; TypeScript check and Vite production build succeeded.
+- PR #27 remains open, mergeable, and awaiting one independent review. The review request is in the PR discussion and requires the reviewer to confirm the exact live SHA.
+- This evidence/handoff entry is the final docs update in this sequence; it advances the branch head, so run CI once more on the resulting exact head. Do not add further commits merely to restate the same evidence. Then complete the one independent review and merge if all applicable gates pass.

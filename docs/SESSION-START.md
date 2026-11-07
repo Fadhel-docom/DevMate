@@ -7,7 +7,7 @@ This file is a navigation and checklist aid. It does not create rules, change au
 1. Read this file and verify that its links resolve and that any commit SHA cited here or in the handoff you rely on matches the commit you are actually working from. This file currently cites no commit SHA.
 2. Read [STATUS](./STATUS.md) for the current snapshot, blockers, and next task.
 3. Read the latest relevant entries in [OPERATIONS-ROOM](./OPERATIONS-ROOM.md); use earlier entries as chronological history, not as a competing current-state source.
-4. Read [the approved constitution](./CHARTER-AND-QUALITY-RULES.md) in full when joining for the first time, when its version changes, or when the task concerns governance. Otherwise consult the applicable sections. Version 1.0 is historical; version 1.1 is the approved governing version at the time this file was added.
+4. Read [the approved constitution](./CHARTER-AND-QUALITY-RULES.md) in full when joining for the first time, when its version changes, or when the task concerns governance. Otherwise consult the applicable sections. Version 1.0 is historical; version 1.2 is the current approved governing version following PR #23 merge commit `2f7f9c69e80863b3720c269cc33a36b33a841209`; version 1.1 remains preserved historically.
 5. Read [DECISIONS](./DECISIONS.md) when the task depends on a prior decision.
 6. Inspect the live repository state: current branch and exact commit, relevant open/recent PRs, changed files, and CI results for the exact commit being relied on.
 7. Identify the last independently verified checkpoint and the next exact action before editing.
