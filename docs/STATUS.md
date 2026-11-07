@@ -420,3 +420,55 @@ Run the full Vitest suite, TypeScript/Vite production build, and dependency audi
 - **Diff since Claude's independent review head `1446c1de...`:** exactly two files, `src/App.tsx` and `src/App.test.tsx`; no dependency, workflow, storage format, or backup implementation changes. The new two-file follow-up was authored by ChatGPT and verified by CI; Claude's prior independent report remains anchored to the preceding head.
 - **Not verified:** real-browser two-tab Web Locks contention, Android Chrome, native dialog keyboard/focus/accessibility, download behavior, and Safari. These remain release checks before the stacked work reaches `main`; fake-lock tests are not represented as browser E2E.
 - **Merge boundary:** PR #11 remains stacked on PR #10 and may only be merged into its base branch, never independently to `main`. PR #10, PR #1, and `main` are untouched. No deployment.
+
+
+## Tool registry foundation — 2026-11-06 — in progress
+
+- Starting checkpoint: PR #10 branch `fix/storage-reliability` at `3b7efe6f4c6085d62c5fa3e5761fee23bab246ca`; PR #10 remains open and Draft. PR #11's work is already present in that branch; no claim is made that PR #10 has passed its own independent review or merge gate.
+- Created stacked branch `feature/tool-registry-foundation` from the exact PR #10 head. This branch and its PR must target `fix/storage-reliability` until PR #10 is resolved; do not merge it directly to `main` or bypass the dependency.
+- Added `src/tools/registry.ts`: typed capability inventory, readiness states, deterministic selection of available tools only, and status counts.
+- Added `src/tools/registry.test.ts`: six unit tests for readiness counts, fail-closed selection, unavailable capabilities, immutability, and injected test tools.
+- Added `src/tools/ToolRegistryPanel.tsx` and responsive styles; integrated the panel into `src/App.tsx`.
+- Added `docs/TOOL-REGISTRY.md` to define readiness semantics, boundaries, and the staged integration path.
+- Important distinction: the GitHub connector available to an external assistant is not an integration inside the DevMate app. DevMate itself still has no GitHub API, code runner, browser automation, review engine, research connector, or AI provider. The panel reports these as disconnected or not built.
+- No API keys, provider SDKs, new permissions, network calls, costs, workflow changes, other repositories, `main`, PR #1, or deployments were changed.
+- **Verification at this checkpoint:** source and tests were committed through GitHub file operations. Automated CI for the exact branch head is pending; no test/build success is claimed yet. Browser/mobile accessibility and visual checks are also not run.
+- Branch commits: `44f3918c8933ee7f695007628708200fa15f0401` (registry), `0012959cd0a115c34b1fdd576dcef9c1d7b026a7` (tests), `d0cfbfac4b604391bf05a776a2c5b2347e4ec62d` (correct readiness-count assertions), `e809a723ad3eb753c17f35e47239ed5d3688e716` (panel), `69f26dbc39f9048bccf025b6dd994cbee1228097` (App integration), `7663b233786062d9c1eeeed8d135521ee5cefa8a` (styles), `f18c4bbf97bc96866288d54d02d78ba01645b34f` (tool registry documentation).
+- Next: inspect the exact branch diff, confirm the branch head and PR base, then rely on GitHub Actions triggered by the feature-branch push. If CI passes, request independent review of this exact head. Do not merge until PR #10's dependency path and the applicable review gates are satisfied.
+
+## Tool registry CI checkpoint — 2026-11-06
+
+- GitHub Actions run #121 (42297196424) completed successfully on exact branch head 273fc8170637aead31fdb988db505599773240c1.
+- Observed steps all succeeded: npm ci, dependency audit report, npm test, and npm run build.
+- Audit log: 0 vulnerabilities at every severity.
+- Tests: 4 test files passed; 121 tests passed, including all 6 tool-registry tests.
+- Build: tsc --noEmit and Vite production build passed.
+- The earlier run #114 failed on an incorrect expected-count assertion; the assertion was corrected in commit d0cfbfac4b604391bf05a776a2c5b2347e4ec62d. The later run #121 on the complete code-bearing head passed.
+- Still not verified: real browser/mobile rendering, keyboard/focus behavior, accessibility, and any external tool integration.
+- PR #13 is open and Draft, stacked on PR #10 branch fix/storage-reliability; it is not merged. PR #10 and PR #12 remain open/Draft; PR #1 remains owner-controlled.
+
+- Note: this status update itself is documentation-only and creates a newer branch head; CI for the resulting head must be checked separately.
+## Tool readiness classification correction — 2026-11-06
+
+- Clarified the state contract: Not connected means an adapter exists but has no authorized connection configured; Not built yet means the adapter itself does not exist.
+- GitHub read-only, research/SEO/CAO, and AI-provider adapters do not yet exist inside DevMate. They are now correctly marked Not built yet, alongside the test/build runner, code review, and browser testing.
+- Current inventory count: 1 available (browser-local workspace storage), 0 not connected, 6 not built.
+- Updated the panel copy to state explicitly that the registry does not yet route tasks or execute external tools. This is a descriptive registry and selection-function foundation, not an orchestrator.
+- This is a classification/documentation correction, not a new integration or permission grant.
+## Corrected tool registry code verification — 2026-11-06
+
+- GitHub Actions run #130 (ID 42297529540) completed successfully on exact code head b8cff401a090c703e709c004cd234d19ceca88d6.
+- All verify steps succeeded: npm ci, dependency audit report, npm test, and npm run build.
+- Audit: 0 vulnerabilities at every severity.
+- Tests: 4 test files passed; 121/121 tests passed, including all 6 tool-registry tests.
+- Build: TypeScript check and Vite production build passed.
+- The corrected registry semantics are verified: one available capability, zero built-but-disconnected adapters, and six adapters not built yet. A test fixture explicitly confirms that a disconnected adapter is not selected.
+- Not verified: real browser/mobile rendering, keyboard/focus and accessibility checks, and live external integrations.
+- Documentation-only status/operations-room commits follow this code head; CI for the final documentation head is checked separately. Do not attribute run #130 to a later SHA.
+## Final PR #13 head verification — 2026-11-06
+
+- GitHub Actions run #132 (ID 42297632316) completed successfully on exact PR head 5af88c6fcce2e96473b47f1168bf556bd3627461.
+- npm ci, dependency audit, npm test, and npm run build all passed. Audit reported 0 vulnerabilities; Vitest reported 4 test files and 121/121 tests passed; TypeScript and Vite production build passed.
+- PR #13 remains open/Draft, based on fix/storage-reliability at 3b7efe6f4c6085d62c5fa3e5761fee23bab246ca. It is stacked on PR #10 and has not been merged.
+- Real browser/mobile rendering, accessibility, and live tool integrations remain unverified/not built.
+- The subsequent operations-room-only update creates a newer documentation head; its push CI run is checked in this session. No application code changes follow the verified code head.
