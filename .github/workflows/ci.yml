@@ -1,0 +1,25 @@
+name: DevMate CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main, "feature/**"]
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - run: npm ci
+      - name: Report dependency audit findings
+        run: |
+          npm audit --json > npm-audit.json || true
+          node -e 'const a=require("./npm-audit.json"); console.log("Dependency audit summary:", JSON.stringify(a.metadata?.vulnerabilities ?? {})); for (const [name,v] of Object.entries(a.vulnerabilities ?? {})) { const via=(v.via ?? []).map(x => typeof x === "string" ? x : `${x.title} (${x.url ?? "no advisory URL"})`).join("; "); console.log(`${name}: severity=${v.severity}; direct=${v.isDirect}; range=${v.range}; fixAvailable=${JSON.stringify(v.fixAvailable)}; via=${via}`); }'
+      - run: npm test
+      - run: npm run build
