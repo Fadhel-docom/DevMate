@@ -848,3 +848,9 @@ This section supersedes the PR-D "not started" statements above.
 
 ### Next exact action
 Independent review of the exact final PR #32 head by ChatGPT (not merged by the implementer). Merging does not authorize a live cutover.
+
+
+### Independent review follow-up — stale pre-barrier application instances (2026-11-07)
+- Review of PR #32 exact head `68207a4d776b06b7f986fb52b1f4b2c42daf25e8` found that a tab running the pre-barrier bundle can continue invoking old storage mutators; Web Locks do not retrofit marker checks into already-loaded code. Existing R1 tests mutated storage directly and did not execute the old-bundle writer path.
+- A fail-closed guard is being added: `begin()` requires a host-supplied `confirmLegacyWritersQuiesced()` proof and otherwise refuses before writing the intent marker. No production verifier currently exists, so cutover remains unavailable by default. Tests injecting `true` cover controller flow only, not actual browser-wide quiescence.
+- R1 remains partial until a genuine host-level stale-tab/version fence and real-browser two-tab regression are implemented. No live migration/cutover is authorized or run.
