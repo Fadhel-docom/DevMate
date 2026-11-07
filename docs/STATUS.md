@@ -854,3 +854,10 @@ Independent review of the exact final PR #32 head by ChatGPT (not merged by the 
 - Review of PR #32 exact head `68207a4d776b06b7f986fb52b1f4b2c42daf25e8` found that a tab running the pre-barrier bundle can continue invoking old storage mutators; Web Locks do not retrofit marker checks into already-loaded code. Existing R1 tests mutated storage directly and did not execute the old-bundle writer path.
 - A fail-closed guard is being added: `begin()` requires a host-supplied `confirmLegacyWritersQuiesced()` proof and otherwise refuses before writing the intent marker. No production verifier currently exists, so cutover remains unavailable by default. Tests injecting `true` cover controller flow only, not actual browser-wide quiescence.
 - R1 remains partial until a genuine host-level stale-tab/version fence and real-browser two-tab regression are implemented. No live migration/cutover is authorized or run.
+
+
+## PR-D staged review ledger — 2026-11-07
+- Added `docs/PR-D-REVIEW-LEDGER.md` as the append-only stage register for PR #32.
+- Each bounded stage must retain its own exact SHA, evidence, reviewer verdict, fixes and residual risks. A new head invalidates prior exact-head CI/review evidence unless explicitly revalidated.
+- Current live checkpoint when the ledger was created: `269e0a8daf3c504070cf411e7353a1c32af62771`. R1 remains partial; no independent review approves the current head; exact-head CI evidence still requires confirmation.
+- Do not merge or run real cutover until all gates and stage reviews are complete.
