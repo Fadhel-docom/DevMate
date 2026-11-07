@@ -23,7 +23,7 @@ The envelope is schema version 1 and stores a monotonically increasing revision,
 
 All durable stores use the existing shared Web Lock name exported by `src/storage.ts`. There is one lock boundary rather than nested per-store locks, avoiding lock-order inversions with the legacy workspace layer.
 
-A write performs the complete read-modify-write while holding that lock:
+A write performs the complete read-modify-write while holding that lock. The update guard receives a read-only storage view, so a ledger validator can read the current profile-store bytes under the same shared lock rather than validating against a stale copy loaded before the write.
 
 1. Reconcile any pending transaction journal.
 2. Read and validate the current envelope and all existing project records.
@@ -44,15 +44,15 @@ Snapshots are created only for explicit recovery boundaries: pre-migration, pre-
 
 No automatic pruning occurs. If all five slots are occupied, snapshot creation fails without replacing older copies. Pre-migration marking requires a snapshot to be stored before the separate migration marker is written.
 
-The migration marker distinguishes a store that has never been migrated from one whose migration was recorded. A malformed marker is reported as unreadable rather than treated as “never migrated”. PR-B/PR-C must make migration idempotent and only mark completion after the new data has been durably committed.
+The migration marker distinguishes a store that has never been migrated from one whose migration was recorded. A malformed marker is reported as unreadable rather than treated as “never migrated”. The `migrateLegacyWorkspace` operation reads the legacy `devmate-workspace-v1` bytes while holding the shared lock, snapshots the raw source, runs an additive transform, commits the durable envelope, and only then writes and verifies the separate marker. If the process stops after the data commit but before the marker, the transform can be retried; PR-B/PR-C must therefore make it idempotent. If a valid marker exists but the durable data is missing, migration fails closed rather than silently treating the store as never migrated.
 
 Snapshot restoration is deliberately fail-closed: it requires a store-specific update guard, validates the selected project record, snapshots the current envelope first, and restores only that project. Profile and ledger stores must supply their own guards; an unguarded restore is rejected.
 
 ## Integration contract for PR-B and PR-C
 
 - PR-B must call `validateProjectProfilesStoreUpdate` from the durable write guard while the shared lock is held. Approval/revocation history must remain append-only, and approval must remain bound to profile content.
-- PR-C must call `validateAppendOnlyLedgerUpdate` inside the durable write guard, pass the current profile store for cross-validation, and preserve the append-only task event history. It must not omit the `profiles` argument in a way that skips project/profile checks.
-- Both integrations must use projectId-scoped calls, deterministic clocks/IDs in tests, and explicit migration markers. A store validator is mandatory at the integration boundary; schema-only validation outside the lock is insufficient.
+- PR-C must call `validateAppendOnlyLedgerUpdate` inside the durable write guard, use the supplied read-only storage view to load and validate the current profile store under the same shared lock, and pass those current profiles for cross-validation. It must not omit the `profiles` argument in a way that skips project/profile checks.
+- Both integrations must use projectId-scoped calls, deterministic clocks/IDs in tests, and `migrateLegacyWorkspace` for locked legacy reads and marker sequencing. A store validator is mandatory at the integration boundary; schema-only validation outside the lock is insufficient.
 - The optional `runExclusive` injection is a deterministic test seam only. Production callers must omit it so the shared Web Lock is used.
 
 ## Known limitations and follow-ups
