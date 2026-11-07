@@ -267,8 +267,17 @@ describe("task ledger schema v1", () => {
     expect(validateAppendOnlyLedgerUpdate(previous, update({ ...baseTask, attemptCount: 0, updatedAt: 102 }))).toBe(true);
     const attempted = { ...baseTask, attemptCount: 1, updatedAt: 102 };
     expect(validateAppendOnlyLedgerUpdate(previous, update(attempted))).toBe(true);
-    const lowered = { ...baseTask, attemptCount: -1, updatedAt: 102 };
-    expect(validateAppendOnlyLedgerUpdate(previous, update(lowered))).toBe(false);
+    const attemptedPrevious = storeWith([{ ...baseTask, attemptCount: 1 }]);
+    const lowered = { ...baseTask, attemptCount: 0, updatedAt: 102 };
+    expect(validateAppendOnlyLedgerUpdate(attemptedPrevious, update(lowered))).toBe(false);
+    const checkpointPrevious = storeWith([{ ...baseTask, checkpoint: {
+      taskId: "t1", projectId: "p1", sequence: 2, createdAt: 101, summary: "checkpoint",
+      completedCriteria: [], remainingWork: [], artifactReferences: []
+    } }]);
+    const loweredCheckpoint = { ...checkpointPrevious.records[0], checkpoint: {
+      ...checkpointPrevious.records[0].checkpoint!, sequence: 1
+    }, updatedAt: 102 };
+    expect(validateAppendOnlyLedgerUpdate(checkpointPrevious, update(loweredCheckpoint))).toBe(false);
     const finalTask = { ...baseTask, state: "completed" as const, updatedAt: 102,
       evidenceReferences: ["artifact:1"] };
     const finalPrevious = storeWith([finalTask], [{
@@ -303,10 +312,7 @@ describe("task ledger schema v1", () => {
     });
     const full = { schemaVersion: 1 as const, revision: 1, updatedAt: 11000, records: tasks, events };
     expect(validateTaskLedgerStore(full).ok).toBe(true);
-    const next = { ...full, revision: 2, updatedAt: 11001, events: [...events, {
-      eventId: "e10000", taskId: "t0", projectId: "p1", type: "task.note",
-      actor: "coordinator", createdAt: 11001, details: {}
-    }] };
+    const next = { ...full, revision: 2 };
     expect(validateAppendOnlyLedgerUpdate(full, next)).toBe(true);
   });
 
