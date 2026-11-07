@@ -6,10 +6,8 @@ import type { ProfileStoreOptions } from "./profileStore";
 
 class MemoryStorage {
   private values = new Map<string, string>();
-  getItem(key: string): string | null { return this.values.get(key) ?? null; }
-  setItem(key: string, value: string): void { this.values.set(key, value); }
-  removeItem(key: string): void { this.values.delete(key); }
   failMigrationMarkerWrites = 0;
+  getItem(key: string): string | null { return this.values.get(key) ?? null; }
   setItem(key: string, value: string): void {
     if (key === "devmate-migrations-v1:project-profiles" && this.failMigrationMarkerWrites > 0) {
       this.failMigrationMarkerWrites--;
@@ -17,51 +15,13 @@ class MemoryStorage {
     }
     this.values.set(key, value);
   }
+  removeItem(key: string): void { this.values.delete(key); }
   seed(key: string, value: string): void { this.values.set(key, value); }
 }
 
 const runExclusive: NonNullable<ProfileStoreOptions["runExclusive"]> = async (work) => ({
   ok: true,
   value: await work()
-
-  it("returns invalid-data rather than throwing synchronously for a null runtime payload", async () => {
-    const { store } = makeStore();
-    const result = await store.writeProfile("p1", null as unknown as ProjectProfile, 0);
-    expect(result).toMatchObject({ ok: false, reason: "invalid-data" });
-  });
-
-  it("rejects invalid expected revisions for profile writes and restores", async () => {
-    const { store } = makeStore();
-    const profile = draftProfile("p1", "One");
-    expect(await store.writeProfile("p1", profile, -1)).toMatchObject({ ok: false, reason: "invalid-data" });
-    expect(await store.writeProfile("p1", profile, Number.NaN)).toMatchObject({ ok: false, reason: "invalid-data" });
-    expect(await store.restoreSnapshot("p1", "not-a-snapshot", "00000000", -1))
-      .toMatchObject({ ok: false, reason: "invalid-data" });
-  });
-
-  it("preserves existing durable profiles when migrating additional legacy projects", async () => {
-    const { store, storage } = makeStore();
-    const existing = draftProfile("p1", "Existing");
-    storage.seed("devmate-durable-store-v1:project-profiles", JSON.stringify({
-      schemaVersion: 1, revision: 4, updatedAt: existing.updatedAt, records: { p1: existing }
-    }));
-    const legacy = JSON.stringify([{ id: "p1", name: "Legacy replacement" }, { id: "p2", name: "New project" }]);
-    storage.seed(STORAGE_KEY, legacy);
-    expect(await store.migrateLegacyProfiles()).toMatchObject({ ok: true, revision: 5 });
-    expect(await store.readProfile("p1")).toMatchObject({ ok: true, value: { identity: { name: "Existing" } } });
-    expect(await store.readProfile("p2")).toMatchObject({ ok: true, value: { identity: { name: "New project" } } });
-  });
-
-  it("uses the expected durable revision as a compare-and-swap guard for restore", async () => {
-    const { store } = makeStore();
-    const profile = draftProfile("p1", "One");
-    await store.writeProfile("p1", profile, 0);
-    const snapshot = await store.createSnapshot("pre-restore");
-    await store.writeProfile("p1", { ...profile, profileRevision: 2, updatedAt: 201, identity: { name: "Changed", purpose: "" } }, 1);
-    expect(await store.restoreSnapshot("p1", snapshot!.key, snapshot!.fingerprint, 1))
-      .toMatchObject({ ok: false, reason: "conflict" });
-  });
-
 });
 
 function draftProfile(projectId: string, name: string, at = 100): ProjectProfile {
@@ -133,5 +93,99 @@ describe("durable project profile adapter", () => {
     expect(await store.migrateLegacyProfiles()).toMatchObject({ ok: false, reason: "invalid-data" });
     expect(storage.getItem(STORAGE_KEY)).toBe(JSON.stringify({ projects: [] }));
     expect(await store.migrationStatus()).toBe("never-migrated");
+  });
+
+  it("returns invalid-data rather than throwing synchronously for a null runtime payload", async () => {
+    const { store } = makeStore();
+    const result = await store.writeProfile("p1", null as unknown as ProjectProfile, 0);
+    expect(result).toMatchObject({ ok: false, reason: "invalid-data" });
+  });
+
+  it("rejects invalid expected revisions for profile writes and restores", async () => {
+    const { store } = makeStore();
+    const profile = draftProfile("p1", "One");
+    expect(await store.writeProfile("p1", profile, -1)).toMatchObject({ ok: false, reason: "invalid-data" });
+    expect(await store.writeProfile("p1", profile, Number.NaN)).toMatchObject({ ok: false, reason: "invalid-data" });
+    expect(await store.restoreSnapshot("p1", "not-a-snapshot", "00000000", -1))
+      .toMatchObject({ ok: false, reason: "invalid-data" });
+  });
+
+  it("preserves existing durable profiles when migrating additional legacy projects", async () => {
+    const { store, storage } = makeStore();
+    const existing = draftProfile("p1", "Existing");
+    storage.seed("devmate-durable-store-v1:project-profiles", JSON.stringify({
+      schemaVersion: 1, revision: 4, updatedAt: existing.updatedAt, records: { p1: existing }
+    }));
+    const legacy = JSON.stringify([{ id: "p1", name: "Legacy replacement" }, { id: "p2", name: "New project" }]);
+    storage.seed(STORAGE_KEY, legacy);
+    expect(await store.migrateLegacyProfiles()).toMatchObject({ ok: true, revision: 5 });
+    expect(await store.readProfile("p1")).toMatchObject({ ok: true, value: { identity: { name: "Existing" } } });
+    expect(await store.readProfile("p2")).toMatchObject({ ok: true, value: { identity: { name: "New project" } } });
+  });
+
+  it("uses the expected durable revision as a compare-and-swap guard for restore", async () => {
+    const { store } = makeStore();
+    const profile = draftProfile("p1", "One");
+    await store.writeProfile("p1", profile, 0);
+    const snapshot = await store.createSnapshot("pre-restore");
+    await store.writeProfile("p1", { ...profile, profileRevision: 2, updatedAt: 201, identity: { name: "Changed", purpose: "" } }, 1);
+    expect(await store.restoreSnapshot("p1", snapshot!.key, snapshot!.fingerprint, 1))
+      .toMatchObject({ ok: false, reason: "conflict" });
+  });
+
+  it("retries safely after the durable data commit when writing the migration marker fails", async () => {
+    const storage = new MemoryStorage();
+    const { store } = makeStore(storage);
+    const legacy = JSON.stringify([{ id: "p1", name: "One" }]);
+    storage.seed(STORAGE_KEY, legacy);
+    storage.failMigrationMarkerWrites = 1;
+    expect(await store.migrateLegacyProfiles()).toMatchObject({ ok: false, reason: "write-failed" });
+    const committed = storage.getItem("devmate-durable-store-v1:project-profiles");
+    expect(committed).not.toBeNull();
+    expect(await store.migrateLegacyProfiles()).toMatchObject({ ok: true, revision: 1 });
+    expect(storage.getItem("devmate-durable-store-v1:project-profiles")).toBe(committed);
+    expect(await store.readProfile("p1")).toMatchObject({ ok: true, status: "found" });
+  });
+
+  it("runs approval-history validation inside the locked write and rejects approval regression", async () => {
+    const { store } = makeStore();
+    const draft = draftProfile("p1", "One");
+    await store.writeProfile("p1", draft, 0);
+    const approved: ProjectProfile = {
+      ...draft,
+      updatedAt: 201,
+      approval: {
+        status: "approved", approvedRevision: draft.profileRevision,
+        evidence: { kind: "owner-decision", reference: "test approval", commitSha: null },
+        approvedAt: 150, approvedContentHash: computeProfileContentHash(draft),
+        revokedAt: null, revokedRevision: null, revocationReason: null, revocationHistory: []
+      }
+    };
+    expect(await store.writeProfile("p1", approved, 1)).toMatchObject({ ok: true, revision: 2 });
+    const regression: ProjectProfile = {
+      ...approved,
+      profileRevision: 2,
+      updatedAt: 202,
+      approval: {
+        status: "unapproved", approvedRevision: null, evidence: null, approvedAt: null,
+        approvedContentHash: null, revokedAt: null, revokedRevision: null, revocationReason: null,
+        revocationHistory: []
+      }
+    };
+    expect(await store.writeProfile("p1", regression, 2)).toMatchObject({ ok: false, reason: "invalid-data" });
+    expect(await store.readProfile("p1")).toMatchObject({ ok: true, value: { approval: { status: "approved" } } });
+  });
+
+  it("keeps reads available but fails writes closed when another stored profile is invalid", async () => {
+    const { store, storage } = makeStore();
+    const valid = draftProfile("p1", "One");
+    const invalid = { ...draftProfile("p2", "Two"), projectId: "wrong-id" };
+    storage.seed("devmate-durable-store-v1:project-profiles", JSON.stringify({
+      schemaVersion: 1, revision: 7, updatedAt: valid.updatedAt, records: { p1: valid, p2: invalid }
+    }));
+    expect(await store.readProfile("p1")).toMatchObject({ ok: true, status: "found" });
+    expect(await store.writeProfile("p1", { ...valid, profileRevision: 2, updatedAt: 201 }, 7))
+      .toMatchObject({ ok: false, reason: "corrupt" });
+    expect(await store.readProfile("p1")).toMatchObject({ ok: true, status: "found" });
   });
 });
