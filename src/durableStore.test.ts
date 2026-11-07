@@ -200,6 +200,27 @@ describe("durable store foundation", () => {
     expect(await store.readProject("p1")).toMatchObject({ ok: true, value: { value: legacy } });
   });
 
+  it("lets legacy migration read another store under the shared lock", async () => {
+    const storage = new MemoryStorage();
+    const profileRaw = '{"schemaVersion":1,"revision":1,"updatedAt":1,"records":{}}';
+    storage.seed(durableStoreKey("project-profiles"), profileRaw);
+    storage.seed(STORAGE_KEY, '[{"id":"legacy-task"}]');
+    const store = createDurableStore<RecordValue>({
+      name: "task-ledger", storage,
+      runExclusive: async (work) => ({ ok: true, value: await work() }),
+      validateRecord: (projectId, value): value is RecordValue =>
+        !!value && typeof value === "object" && (value as RecordValue).projectId === projectId,
+      validateUpdate: () => true
+    });
+    let observedProfileRaw: string | null = null;
+    const result = await store.migrateLegacyWorkspace((legacyRaw, existing, readStorage) => {
+      observedProfileRaw = readStorage.getItem(durableStoreKey("project-profiles"));
+      return { ...existing, p1: { projectId: "p1", value: legacyRaw ?? "" } };
+    });
+    expect(result.ok).toBe(true);
+    expect(observedProfileRaw).toBe(profileRaw);
+  });
+
   it("refuses snapshot restoration when no store-specific update guard is configured", async () => {
     const storage = new MemoryStorage();
     const store = createDurableStore<RecordValue>({
