@@ -101,8 +101,11 @@ function isSafeJson(value: unknown, seen = new WeakSet<object>(), budget = { nod
   seen.add(value);
   let valid = true;
   if (Array.isArray(value)) {
-    for (let i = 0; i < value.length; i += 1) {
-      if (!Object.prototype.hasOwnProperty.call(value, i) || !isSafeJson(value[i], seen, budget, depth + 1)) { valid = false; break; }
+    if (Object.keys(value).some((key) => !/^(0|[1-9][0-9]*)$/.test(key) || Number(key) >= value.length)) valid = false;
+    for (let i = 0; valid && i < value.length; i += 1) {
+      const descriptor = Object.getOwnPropertyDescriptor(value, String(i));
+      if (!descriptor || !Object.prototype.hasOwnProperty.call(descriptor, "value") ||
+        !isSafeJson(descriptor.value, seen, budget, depth + 1)) { valid = false; break; }
     }
   } else if (isRecord(value)) {
     for (const key of Object.keys(value)) {
@@ -261,15 +264,16 @@ function validateProfile(value: unknown, index: number, errors: ProfileValidatio
     check(a.revokedAt === null || isNonNegativeInteger(a.revokedAt), "approval.revokedAt", "Expected null or a non-negative timestamp.");
     check(a.revokedRevision === null || isPositiveInteger(a.revokedRevision), "approval.revokedRevision", "Expected null or a positive revision.");
     check(a.revocationReason === null || (typeof a.revocationReason === "string" && a.revocationReason.trim().length > 0), "approval.revocationReason", "Expected null or a non-empty revocation reason.");
-    check(Array.isArray(a.revocationHistory) && a.revocationHistory.every((entry) =>
+    check(Array.isArray(a.revocationHistory) && a.revocationHistory.every((entry, historyIndex) =>
       isRecord(entry) && hasExactKeys(entry, [
         "approvedRevision", "evidence", "approvedAt", "approvedContentHash", "revokedAt", "revocationReason"
       ]) && isPositiveInteger(entry.approvedRevision) && validateEvidence(entry.evidence) &&
       isNonNegativeInteger(entry.approvedAt) && isNonNegativeInteger(entry.revokedAt) &&
       entry.revokedAt >= entry.approvedAt &&
+      (historyIndex === 0 || a.revocationHistory[historyIndex - 1].revokedAt <= entry.revokedAt) &&
       typeof entry.approvedContentHash === "string" && /^[0-9a-f]{16}$/i.test(entry.approvedContentHash) &&
       typeof entry.revocationReason === "string" && entry.revocationReason.trim().length > 0
-    ), "approval.revocationHistory", "Expected an array of complete, valid prior revocation records.");
+    ), "approval.revocationHistory", "Expected an ordered array of complete, valid prior revocation records.");
     if (a.status === "unapproved") {
       check(a.approvedRevision === null && a.evidence === null && a.approvedAt === null && a.approvedContentHash === null &&
         a.revokedAt === null && a.revokedRevision === null && a.revocationReason === null,
