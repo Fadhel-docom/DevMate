@@ -1803,3 +1803,10 @@ Remote sandbox, Node v24.22.1, npm 10.8.2 (CI uses Node 20.20.2), files fetched 
 
 ### Boundaries kept
 - No real user-data migration, deletion, cutover, deployment, provider, cost, permission change, `main` change or RateNest work. Nothing merged.
+
+
+## 2026-11-07 — Independent review repair: stale pre-barrier bundles
+
+- Finding: old JavaScript bundles loaded before the barrier can continue calling legacy mutators; a localStorage marker cannot force those already-loaded functions to inspect it. The previous direct-storage-mutation tests were insufficient evidence for stale-tab prevention.
+- Repair in progress on `fix/pr-d-stale-legacy-writer-gate` (based on PR #32 exact head `68207a4d776b06b7f986fb52b1f4b2c42daf25e8`): require a host-supplied quiescence verifier before `begin()` can write intent; absent, false, or throwing verifier fails closed. There is no production verifier yet, so the app cannot initiate cutover. Test-only `true` injection is not evidence of real browser quiescence.
+- R1 is explicitly partial until a host-level version/quiescence fence and real-browser stale-tab tests exist. No real user data, migration, deployment, or cutover touched.
