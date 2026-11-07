@@ -169,7 +169,7 @@ export function createDurableStore<T>(options: DurableStoreOptions<T>) {
       return { ok: false, reason: "indeterminate", message: `Interrupted-write recovery failed: ${String(error)}` };
     }
   };
-  const loadEnvelopeLocked = (): { envelope: DurableEnvelope<T> | null; failure?: DurableReadResult<T> } => {
+  const loadEnvelopeLocked = (): { envelope: DurableEnvelope<T> | null; failure?: Extract<DurableReadResult<T>, { ok: false }> } => {
     let raw: string | null;
     try { raw = readRaw(); } catch (error) {
       return { envelope: null, failure: { ok: false, reason: "unavailable", message: String(error) } };
