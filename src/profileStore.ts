@@ -112,7 +112,17 @@ export function createProjectProfileStore(options: ProfileStoreOptions = {}) {
     createSnapshot(reason: DurableSnapshotReason): Promise<DurableSnapshot | null> {
       return durable.createSnapshot(reason);
     },
-    restoreSnapshot(projectId: string, key: string, fingerprint: string): Promise<DurableWriteResult> {
+    async restoreSnapshot(projectId: string, key: string, fingerprint: string): Promise<DurableWriteResult> {
+      const snapshots = await durable.listSnapshots();
+      const selected = snapshots.find((snapshot) => snapshot.key === key);
+      if (!selected) return { ok: false, reason: "not-found", message: "Snapshot not found." };
+      if (selected.reason === "pre-migration") {
+        return {
+          ok: false,
+          reason: "invalid-data",
+          message: "This snapshot contains raw legacy workspace bytes and is export-only; it is not a durable profile envelope."
+        };
+      }
       return durable.restoreSnapshot(projectId, key, fingerprint);
     }
   };
