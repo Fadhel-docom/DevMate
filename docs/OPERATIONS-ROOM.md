@@ -1833,3 +1833,14 @@ Remote sandbox, Node v24.22.1, npm 10.8.2 (CI uses Node 20.20.2), files fetched 
 - 2026-11-07 (follow-up): evidence commit `427f166` pushed to the PR #32 branch (fast-forward, no force); CI run 42409531559 passed (319 tests, build OK). R1 still unresolved; S1 still open pending independent review.
 
 - 2026-11-07 (S2 environment, partial): in the isolated Composio sandbox (Debian 13, non-root, no system changes) Playwright 1.49.1 and its Chromium build were downloaded into a user directory, but Chromium cannot launch: the host lacks shared libraries (libnss3, libnspr4, libgbm, libdrm, libasound, libatk*, libatspi, libdbus-1, libxkbcommon, libXcomposite/Damage/Fixes/Randr). Installing them needs root/apt (`apt-get download` finds no package lists), which is outside the authorised limits. **No browser test has been run; S2 is not started and no browser result is claimed.** Alternative under consideration: unpack the required .deb files into a user directory and set LD_LIBRARY_PATH (no root); if that fails, a runner with Chromium dependencies is needed.
+
+## 2026-11-07 — S1 review package prepared; real-browser evidence; S2 environment status
+
+- Done: Chromium now launches in the isolated sandbox without root (Playwright 1.49.1 browser build plus Debian shared libraries unpacked into a user directory, loaded through `LD_LIBRARY_PATH`; no system change). Ran the S1 scenarios in real Chromium (harness and results committed at `22f3fcc`, CI success). Wrote `docs/reviews/S1-REVIEW-PACKAGE.md` and posted a review **request** (https://github.com/Fadhel-docom/DevMate/pull/32#issuecomment-6712583754).
+- Why: the reviewer asked for proof against the real pre-barrier writer, and a simulation with fake locks is not enough to describe real-browser behaviour.
+- Files: `e2e/s1-legacy-writer/*`, `docs/reviews/S1-REVIEW-PACKAGE.md`, the three log files.
+- Technical decisions: lock holding is kept only as a labelled experiment, not adopted as an R1 solution; Playwright stays outside `package.json`.
+- Discovered: old writer succeeds after `intent` and `committed` in real Chromium (10/10); brief cross-tab read lag after a write; lock holder death reopens the window.
+- Not complete: no fence; no independent S1 reviewer yet; S2 required scenarios (two-tab write contention, quota failure, marker read/write failure, restart at each phase, lock contention) are **not run**.
+- Next: continue only safe work that does not pass the S1 review gate (S2 browser tests, test-only); S3 is not started.
+- Boundaries kept: no real cutover/migration/deletion/deployment/merge.

@@ -872,3 +872,14 @@ This section supersedes the earlier dated sections only for R1/S1 status.
 - **R1: unresolved.** `confirmLegacyWritersQuiesced` is still not provided by the app, so cutover cannot start by default.
 - Local results: 319/319 tests, `tsc --noEmit` clean. CI for the new commit and an independent S1 review are pending. Details: `docs/PR-D-REVIEW-LEDGER.md` (S1 record 1) and `docs/OPERATIONS-ROOM.md`.
 - No real migration, cutover, deletion, deployment or merge was performed.
+
+## Current state — 2026-11-07 (PR #32: S1 review package ready; reviewer pending)
+
+This section supersedes the earlier dated sections only for S1/S2 status.
+
+- Review target for S1: `22f3fccf69cdaa0d1dd075f6015c167caeb9280a` (CI [run 42410871238](https://github.com/Fadhel-docom/DevMate/actions/runs/42410871238) success). Later commits are documentation-only.
+- Real Chromium 131 (two tabs, real Web Locks): the unmodified base-revision writer succeeded 5/5 after `intent` and 5/5 after `committed`. Marker and revalidation detect, they do not prevent. A live lock holder blocked the old writer only while the holder lived (separate mitigation experiment, not a fix).
+- **R1: unresolved.** **S1: Open** — independent review requested ([PR comment](https://github.com/Fadhel-docom/DevMate/pull/32#issuecomment-6712583754)); **no independent reviewer yet; not approved**.
+- **S2: Open / not started.** The browser environment works now, but none of the S2 scenarios (two-tab contention, quota, marker failures, restart per phase) has been run.
+- S3 is not started. No real cutover, migration, deletion, deployment or merge.
+- Details: `docs/reviews/S1-REVIEW-PACKAGE.md`, `docs/PR-D-REVIEW-LEDGER.md` (S1 record 3), `docs/OPERATIONS-ROOM.md`.
