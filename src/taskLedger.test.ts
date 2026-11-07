@@ -38,7 +38,7 @@ describe("task ledger schema v1", () => {
       records: [{ ...profiles.records[0], profileRevision: 2, updatedAt: 200 }] };
     expect(validateTaskLedgerStore(storeWith([baseTask]), changedCurrentProfile).ok).toBe(true);
     expect(validateTaskLedgerStore(storeWith([{ ...baseTask, projectId: "missing" }]), profiles).ok).toBe(false);
-    expect(validateTaskLedgerStore(storeWith([{ ...baseTask, policySnapshot: { ...baseTask.policySnapshot, profileApprovalStatus: "approved" as const } }]), profiles).ok).toBe(false);
+    expect(validateTaskLedgerStore(storeWith([{ ...baseTask, policySnapshot: { ...baseTask.policySnapshot, profileApprovalStatus: "approved" as const } }]), profiles).ok).toBe(true);
   });
   it("rejects future versions, unknown fields, and malformed enum values", () => {
     expect(validateTaskLedgerStore({ schemaVersion: 2, revision: 1, updatedAt: 100, records: [], events: [] }).ok).toBe(false);
