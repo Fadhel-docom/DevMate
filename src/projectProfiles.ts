@@ -6,6 +6,14 @@ export type ProfileApprovalEvidence = {
   reference: string;
   commitSha: string | null;
 };
+export type ProfileRevocationRecord = {
+  approvedRevision: number;
+  evidence: ProfileApprovalEvidence;
+  approvedAt: number;
+  approvedContentHash: string;
+  revokedAt: number;
+  revocationReason: string;
+};
 export type ProfileApproval = {
   status: "unapproved" | "approved" | "revoked";
   approvedRevision: number | null;
@@ -15,6 +23,8 @@ export type ProfileApproval = {
   revokedAt: number | null;
   revokedRevision: number | null;
   revocationReason: string | null;
+  /** Append-only history of earlier revoked approvals, retained across re-approval. */
+  revocationHistory: ProfileRevocationRecord[];
 };
 export type ProjectProfile = {
   projectId: string;
@@ -65,7 +75,7 @@ const profileKeys = [
 ];
 const approvalKeys = [
   "status", "approvedRevision", "evidence", "approvedAt", "approvedContentHash",
-  "revokedAt", "revokedRevision", "revocationReason"
+  "revokedAt", "revokedRevision", "revocationReason", "revocationHistory"
 ];
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -172,6 +182,15 @@ function validateProfile(value: unknown, index: number, errors: ProfileValidatio
     check(a.revokedAt === null || isNonNegativeInteger(a.revokedAt), "approval.revokedAt", "Expected null or a non-negative timestamp.");
     check(a.revokedRevision === null || isPositiveInteger(a.revokedRevision), "approval.revokedRevision", "Expected null or a positive revision.");
     check(a.revocationReason === null || (typeof a.revocationReason === "string" && a.revocationReason.trim().length > 0), "approval.revocationReason", "Expected null or a non-empty revocation reason.");
+    check(Array.isArray(a.revocationHistory) && a.revocationHistory.every((entry) =>
+      isRecord(entry) && hasExactKeys(entry, [
+        "approvedRevision", "evidence", "approvedAt", "approvedContentHash", "revokedAt", "revocationReason"
+      ]) && isPositiveInteger(entry.approvedRevision) && validateEvidence(entry.evidence) &&
+      isNonNegativeInteger(entry.approvedAt) && isNonNegativeInteger(entry.revokedAt) &&
+      entry.revokedAt >= entry.approvedAt &&
+      typeof entry.approvedContentHash === "string" && /^[0-9a-f]{16}$/i.test(entry.approvedContentHash) &&
+      typeof entry.revocationReason === "string" && entry.revocationReason.trim().length > 0
+    ), "approval.revocationHistory", "Expected an array of complete, valid prior revocation records.");
     if (a.status === "unapproved") {
       check(a.approvedRevision === null && a.evidence === null && a.approvedAt === null && a.approvedContentHash === null &&
         a.revokedAt === null && a.revokedRevision === null && a.revocationReason === null,
