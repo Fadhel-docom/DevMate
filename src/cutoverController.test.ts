@@ -133,6 +133,7 @@ describe("marker schema (R2, R6)", () => {
   });
 });
 
+describe("legacy writer quiescence gate", () => {
   it("fails closed before intent unless a host proves every pre-barrier writer is quiesced", async () => {
     const storage = new MemStorage(); storage.values.set(STORAGE_KEY, LEGACY);
     const controller = createCutoverController({ storage, stages: fakeStages({ calls: [], hooks: {} }) });
@@ -145,6 +146,21 @@ describe("marker schema (R2, R6)", () => {
     storage.setItem(STORAGE_KEY, "[]");
     expect(readCutoverState(storage)).toEqual({ mode: "legacy" });
   });
+
+  it("also refuses when the host verifier denies quiescence or throws", async () => {
+    for (const verifier of [async () => false, async () => { throw new Error("verifier unavailable"); }]) {
+      const storage = new MemStorage(); storage.values.set(STORAGE_KEY, LEGACY);
+      const controller = createCutoverController({
+        storage, stages: fakeStages({ calls: [], hooks: {} }),
+        confirmLegacyWritersQuiesced: verifier
+      });
+      const plan = controller.preflight(); if (!plan.ok) throw new Error("preflight failed");
+      expect(await controller.begin(plan.plan)).toMatchObject({ ok: false, reason: "legacy-writers-not-quiesced" });
+      expect(storage.sets).toEqual([]);
+      expect(storage.values.has(CUTOVER_MARKER_KEY)).toBe(false);
+    }
+  });
+});
 
 describe("restart rule: readCutoverState", () => {
   it("maps no marker to legacy, intent/intermediate to recovery, committed to durable", () => {
