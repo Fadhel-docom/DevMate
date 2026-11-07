@@ -179,4 +179,18 @@ describe("task ledger schema v1", () => {
     expect(canTransitionTaskState("review", "ready")).toBe(false);
   });
 
+
+  it("consumes reconciliation events when persisting the state transition", () => {
+    const priorTask = { ...baseTask, state: "indeterminate" as const, failureReason: "Outcome unknown", evidenceReferences: ["audit:9"] };
+    const previous = storeWith([priorTask], []);
+    const event = { eventId: "reconcile-9", taskId: "t1", projectId: "p1", type: "task.reconciled",
+      actor: "coordinator", createdAt: 102, outcome: "succeeded" as const,
+      details: { resolution: "not-applied", evidenceReference: "audit:9" } };
+    const nextTask = { ...priorTask, state: "ready" as const, updatedAt: 103, failureReason: null };
+    const next = { ...storeWith([nextTask], [event]), revision: 2 };
+    expect(validateAppendOnlyLedgerUpdate(previous, next)).toBe(true);
+    const unconsumed = { ...next, records: [{ ...nextTask, updatedAt: 102 }] };
+    expect(validateAppendOnlyLedgerUpdate(previous, unconsumed)).toBe(false);
+  });
+
 });
