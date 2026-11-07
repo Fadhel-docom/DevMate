@@ -699,10 +699,17 @@ Run the full Vitest suite, TypeScript/Vite production build, and dependency audi
 - Rebased cumulative PR-B implementation onto the current foundation in branch `feature/project-profile-durable-integration-rebased`.
 - The cumulative implementation includes PR #24, PR #26, and two additional regression fixes: empty/missing legacy source now commits an empty durable envelope before writing the migration marker; actual restore tests verify that older draft and approved snapshots cannot roll back profile revision or approval/revocation history.
 - Original stacked-branch fix commits: `d0f41cd7ddc54da3a03923afbefc22d04b2644dc`, `f38e49b7923abdac0e81ee3ef73790fbd89c53e2`, `5af764c7f3a7ad702c110b09abc81ab011cd720e`.
-- CI on original cumulative head `5af764c7f3a7ad702c110b09abc81ab011cd720e`: run #336, ID `42377882586`, success; npm ci installed 155 packages, audit summary 0 vulnerabilities, 8 test files / 205 tests passed, TypeScript check and Vite production build passed. This verifies the source tree before rebasing; CI must run again on the rebased PR head.
+- Exact rebased PR #27 head `ac54cfda217489867e058a06f85d350e1e921306` passed Actions run #347, ID `42378120896`: npm ci installed 155 packages, audit summary 0 vulnerabilities, 8 test files / 205 tests passed, TypeScript check and Vite production build passed. Job logs were inspected.
 - No App/UI cutover, legacy migration invocation, provider integration, deployment, or PR-D recovery implementation has been performed.
 
 ### Next actions
-1. Open one cumulative PR from `feature/project-profile-durable-integration-rebased` to `feature/phase-1-foundation`.
-2. Verify CI on its exact head and obtain one focused independent review of the cumulative implementation, including the F1/F2 fixes and forward-only PR-D recovery design.
-3. If all applicable gates pass, merge under the standing delegation; then begin PR-C task-ledger persistence.
+1. Obtain one focused independent review of [PR #27](https://github.com/Fadhel-docom/DevMate/pull/27), exact head `ac54cfda217489867e058a06f85d350e1e921306`, including the F1/F2 fixes and forward-only PR-D recovery design.
+2. If the review has no blockers and exact-head CI remains green, merge under the standing delegation.
+3. Then begin PR-C durable task-ledger persistence.
+
+
+### PR-B exact rebased verification — 2026-11-07
+- Cumulative PR #27: https://github.com/Fadhel-docom/DevMate/pull/27
+- Exact head: `ac54cfda217489867e058a06f85d350e1e921306`; base: `2f7f9c69e80863b3720c269cc33a36b33a841209`.
+- GitHub Actions run #347 (`42378120896`) completed successfully on this exact head: 8 test files / 205 tests passed, npm ci installed 155 packages, audit summary 0 vulnerabilities, TypeScript check passed, Vite production build passed.
+- PR #27 is open and ready for one focused independent review; no merge has occurred.
