@@ -2,6 +2,7 @@ export type Task = { id: string; title: string; done: boolean; createdAt: number
 export type Project = { id: string; name: string; tasks: Task[]; [key: string]: unknown };
 
 export const STORAGE_KEY = "devmate-workspace-v1";
+export const CUTOVER_INTENT_KEY = "devmate-cutover-v1:workspace";
 export const BACKUP_KEY = "devmate-workspace-v1.unreadable-backup";
 export const MAX_BACKUPS = 20;
 export const STORAGE_LOCK_NAME = "devmate-workspace-v1";
@@ -14,7 +15,8 @@ export type LoadResult = {
 };
 export type SaveFailureReason =
   | "unavailable" | "quota" | "invalid-data" | "serialize" | "verify" | "protect-original"
-  | "unknown" | "conflict" | "lock-unavailable" | "lock-timeout" | "lock-error" | "not-found" | "invalid-key";
+  | "unknown" | "conflict" | "lock-unavailable" | "lock-timeout" | "lock-error" | "not-found" | "invalid-key"
+  | "cutover-active" | "cutover-indeterminate";
 export type SaveResult = { ok: true; backupKey?: string; raw: string } | { ok: false; reason: SaveFailureReason; message: string };
 export type BackupReason = "corrupt" | "invalid" | "recovered" | "pre-restore";
 export type BackupInfo = {
@@ -190,6 +192,8 @@ function protectStoredOriginal(target: WritableStorage): Guard {
 export function saveProjects(projects: Project[], storage?: WritableStorage | null, expectedRaw?: string | null): SaveResult {
   const target = storage === undefined ? getBrowserStorage() : storage;
   if (!target) return { ok: false, reason: "unavailable", message: "Browser storage is not available." };
+  const barrier = checkLegacyWriteBarrier(target);
+  if (!barrier.ok) return barrier;
   const checked = parseProjects(projects);
   if (checked.droppedProjects || checked.droppedTasks || checked.repairedProjects || checked.projects.length !== projects.length)
     return { ok: false, reason: "invalid-data", message: "Refused to save data that does not match the project format." };
@@ -217,6 +221,25 @@ export function saveProjects(projects: Project[], storage?: WritableStorage | nu
   }
   return guard.backupKey ? { ok: true, backupKey: guard.backupKey, raw: serialized } : { ok: true, raw: serialized };
 }
+type CutoverBarrierResult =
+  | { ok: true }
+  | { ok: false; reason: "cutover-active" | "cutover-indeterminate"; message: string };
+
+/** Any present or unreadable intent marker blocks legacy writes, including malformed marker bytes. */
+function checkLegacyWriteBarrier(storage: { getItem?: (key: string) => string | null }): CutoverBarrierResult {
+  if (typeof storage.getItem !== "function") {
+    return { ok: false, reason: "cutover-indeterminate", message: "The cutover marker cannot be inspected, so legacy writes are blocked." };
+  }
+  try {
+    if (storage.getItem(CUTOVER_INTENT_KEY) !== null) {
+      return { ok: false, reason: "cutover-active", message: "A cutover intent marker exists. Legacy workspace writes are blocked until recovery state is inspected." };
+    }
+    return { ok: true };
+  } catch (error) {
+    return { ok: false, reason: "cutover-indeterminate", message: `The cutover marker could not be read, so legacy writes are blocked: ${describeError(error)}` };
+  }
+}
+
 type LockFailure = { ok: false; reason: "lock-unavailable" | "lock-timeout" | "lock-error"; message: string };
 type LockResult<T> = { ok: true; value: T } | LockFailure;
 export function hasStorageLock(): boolean {
@@ -288,11 +311,13 @@ export function listBackups(storage: ReadableStorage | null = getBrowserStorage(
 }
 export type RestoreResult =
   | { ok: true; snapshotKey: string | null }
-  | { ok: false; reason: "lock-unavailable" | "lock-timeout" | "lock-error" | "not-found" | "invalid-key" | "protect-original" | "write-failed" | "verify" | "invalid-backup" | "stale-backup"; message: string; snapshotKey?: string | null; rollbackVerified?: boolean };
+  | { ok: false; reason: "lock-unavailable" | "lock-timeout" | "lock-error" | "not-found" | "invalid-key" | "protect-original" | "write-failed" | "verify" | "invalid-backup" | "stale-backup" | "cutover-active" | "cutover-indeterminate"; message: string; snapshotKey?: string | null; rollbackVerified?: boolean };
 export async function restoreBackup(key: string, storage: StorageLike | null = getBrowserStorage(), expectedRaw?: string): Promise<RestoreResult> {
   if (slotFromKey(key) === null) return { ok: false, reason: "invalid-key", message: "Invalid backup key." };
   const locked = await withStorageLock((): RestoreResult => {
     if (!storage) return { ok: false, reason: "write-failed", message: "Browser storage is unavailable." };
+    const barrier = checkLegacyWriteBarrier(storage);
+    if (!barrier.ok) return barrier;
     let backup: string | null, current: string | null;
     try { backup = storage.getItem(key); current = storage.getItem(STORAGE_KEY); }
     catch (error) { return { ok: false, reason: "write-failed", message: describeError(error) }; }

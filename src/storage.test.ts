@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { BACKUP_KEY, MAX_BACKUPS, STORAGE_KEY, backupKey, backupMetaKey, getBrowserStorage, loadProjects, readProjects, readProjectsLocked, saveProjects, saveProjectsLocked, listBackups, restoreBackup, deleteBackup, isBackupKeyName, withStorageLock, type LoadResult, type Project, type SaveResult } from "./storage";
+import { BACKUP_KEY, CUTOVER_INTENT_KEY, MAX_BACKUPS, STORAGE_KEY, backupKey, backupMetaKey, getBrowserStorage, loadProjects, readProjects, readProjectsLocked, saveProjects, saveProjectsLocked, listBackups, restoreBackup, deleteBackup, isBackupKeyName, withStorageLock, type LoadResult, type Project, type SaveResult } from "./storage";
 import { loadNotice, saveMessage } from "./App";
 
 function memoryStorage() {
@@ -255,10 +255,35 @@ describe("save failures", () => {
     if (!result.ok) expect(result.reason).toBe("verify");
   });
 
-  it("succeeds with a storage that only offers setItem", () => {
+  it("fails closed when a storage writer cannot inspect the cutover marker", () => {
     const values = new Map<string, string>();
-    expect(saveProjects(sample, { setItem: (key: string, value: string) => values.set(key, value) })).toMatchObject({ ok: true });
-    expect(values.get(STORAGE_KEY)).toBe(JSON.stringify(sample));
+    const result = saveProjects(sample, { setItem: (key: string, value: string) => values.set(key, value) });
+    expect(result).toMatchObject({ ok: false, reason: "cutover-indeterminate" });
+    expect(values.has(STORAGE_KEY)).toBe(false);
+  });
+
+  it("blocks legacy saves whenever any cutover marker bytes exist", () => {
+    const storage = memoryStorage();
+    storage.setItem(STORAGE_KEY, JSON.stringify(sample));
+    storage.setItem(CUTOVER_INTENT_KEY, "malformed-or-incomplete-marker");
+    const before = storage.getItem(STORAGE_KEY);
+    const result = saveProjects([{ id: "changed", name: "Changed", tasks: [] }], storage);
+    expect(result).toMatchObject({ ok: false, reason: "cutover-active" });
+    expect(storage.getItem(STORAGE_KEY)).toBe(before);
+  });
+
+  it("fails closed when the cutover marker cannot be read", () => {
+    const base = memoryStorage();
+    const storage = {
+      getItem(key: string) {
+        if (key === CUTOVER_INTENT_KEY) throw new Error("marker read failed");
+        return base.getItem(key);
+      },
+      setItem: base.setItem
+    };
+    const result = saveProjects(sample, storage);
+    expect(result).toMatchObject({ ok: false, reason: "cutover-indeterminate" });
+    expect(base.getItem(STORAGE_KEY)).toBeNull();
   });
 
   it("refuses to write data that does not match the project format", () => {
@@ -725,6 +750,15 @@ describe("Web Locks fail-closed behaviour", () => {
     if (!result.ok) expect(result.reason).toBe("lock-unavailable");
     expect(storage.getItem(STORAGE_KEY)).toBeNull();
   });
+
+  it("checks the cutover barrier while holding the shared lock", async () => {
+    installFakeLocks(); const storage = memoryStorage();
+    storage.setItem(CUTOVER_INTENT_KEY, "present");
+    const result = await saveProjectsLocked(sample, storage);
+    expect(result).toMatchObject({ ok: false, reason: "cutover-active" });
+    expect(storage.getItem(STORAGE_KEY)).toBeNull();
+    uninstallLocks();
+  });
   it("times out while waiting for a lock", async () => {
     Object.defineProperty(navigator, "locks", { configurable: true, value: {
       request(_name: string, opts: { signal?: AbortSignal }) {
@@ -864,6 +898,19 @@ describe("backup management", () => {
     expect(list[1].parseable).toBe(false);
     expect(list[1].restorable).toBe(false);
   });
+  it("refuses legacy backup restoration when a cutover marker exists", async () => {
+    installFakeLocks();
+    const storage = memoryStorage();
+    const current = JSON.stringify([{ id: "current", name: "Current", tasks: [] }]);
+    storage.setItem(STORAGE_KEY, current);
+    storage.setItem(BACKUP_KEY, JSON.stringify([{ id: "old", name: "Old", tasks: [] }]));
+    storage.setItem(CUTOVER_INTENT_KEY, "unexpected-marker-bytes");
+    const result = await restoreBackup(BACKUP_KEY, storage);
+    expect(result).toMatchObject({ ok: false, reason: "cutover-active" });
+    expect(storage.getItem(STORAGE_KEY)).toBe(current);
+    uninstallLocks();
+  });
+
   it("restores a selected backup after preserving the current workspace", async () => {
     installFakeLocks(); const storage = memoryStorage();
     storage.setItem(BACKUP_KEY, JSON.stringify([{ id: "old", name: "Old", tasks: [] }]));
