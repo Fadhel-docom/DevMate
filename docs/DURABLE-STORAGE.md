@@ -23,7 +23,7 @@ The envelope is schema version 1 and stores a monotonically increasing revision,
 
 All durable stores use the existing shared Web Lock name exported by `src/storage.ts`. There is one lock boundary rather than nested per-store locks, avoiding lock-order inversions with the legacy workspace layer.
 
-A write performs the complete read-modify-write while holding that lock. The update guard receives a read-only storage view, so a ledger validator can read the current profile-store bytes under the same shared lock rather than validating against a stale copy loaded before the write.
+A write performs the complete read-modify-write while holding that lock. The update guard receives the complete before/after project-record maps plus a read-only storage view, so a profile validator can reconstruct the complete profile stores and a ledger validator can read current profile-store bytes under the same shared lock rather than validating against stale data loaded before the write.
 
 1. Reconcile any pending transaction journal.
 2. Read and validate the current envelope and all existing project records.
