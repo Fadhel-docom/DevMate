@@ -250,7 +250,7 @@ describe("project profile schema v1", () => {
     const nextProfile = JSON.parse(JSON.stringify(approvedStore.records[0]));
     nextProfile.approval = { ...nextProfile.approval, status: "revoked", revokedAt: 1400,
       revokedRevision: nextProfile.approval.approvedRevision, revocationReason: "Scope changed" };
-    const revokedStore = { ...approvedStore, revision: 2, updatedAt: 1400, records: [nextProfile] };
+    const revokedStore = { ...approvedStore, revision: approvedStore.revision + 1, updatedAt: 1400, records: [nextProfile] };
     expect(validateProjectProfilesStore(approvedStore).ok).toBe(true);
     expect(validateProjectProfilesStore(revokedStore).ok).toBe(true);
     expect(validateProfileApprovalHistoryUpdate(approvedStore.records[0].approval, nextProfile.approval)).toBe(true);
