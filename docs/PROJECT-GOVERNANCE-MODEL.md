@@ -1,6 +1,6 @@
 # Project Governance and Low-Pressure Autonomy Model
 
-**Status:** implementation design for owner review; not an amendment to the approved constitution.
+**Status:** owner-accepted architecture baseline via PR #12 (merged 2026-11-07); includes follow-ups and implementation gates; not an amendment to the approved constitution.
 **Applies to:** the future DevMate project-management and coordination system.
 **Purpose:** make DevMate reduce the owner's coordination burden while managing each project under the global constitution and that project's own approved rules.
 
@@ -245,9 +245,9 @@ The system must eventually demonstrate these scenarios:
 - No assumption that every project uses the same tools, technology, release process, or growth strategy.
 
 
-## 13. Project-profile data contract — proposal, not yet approved
+## 13. Project-profile data contract — accepted baseline; implementation must satisfy review findings
 
-This section makes the loader prerequisites explicit. It is a proposed contract for review; it is not an implementation and does not make any project profile trusted.
+This section makes the loader prerequisites explicit. It is an accepted architecture contract, not an implementation; it does not make any project profile trusted. Implementation must also address the review findings recorded in the operations room.
 
 ### 13.1 Versioned envelope
 
@@ -322,7 +322,7 @@ Rules:
 - Migrations are one-way only after the new representation has been read back and verified. Do not delete the legacy source in this phase.
 - Add fixture tests for empty, valid, partially malformed, corrupt, future-version, duplicate-ID, interrupted, repeated, and quota-failure migration scenarios.
 
-## 14. Durable task-ledger contract — proposal, not yet approved
+## 14. Durable task-ledger contract — accepted baseline; implementation remains gated
 
 The ledger is a separate, project-scoped record system. "Durable" in the pre-backend phase means recoverable across reloads in the same browser profile; it does not mean cloud-synced, cross-device, or server-backed storage.
 
@@ -385,10 +385,10 @@ Terminal states are `completed`, `cancelled`, and `failed`; `indeterminate` is a
 - A storage lock unavailable, revision conflict, quota error, or failed read-back must leave the task in a recoverable non-completed state.
 - The current browser-local implementation must disclose its limits: clearing browser data can remove the ledger, and no cross-device sync exists.
 
-## 15. Implementation gates derived from this proposal
+## 15. Implementation gates derived from the accepted architecture baseline
 
 Before a profile loader or task ledger is implemented:
-1. Owner reviews and accepts the architecture proposal; this document alone does not grant that acceptance.
+1. Owner acceptance of the architecture baseline is recorded in D-001 and PR #12. This does not grant implementation-specific permissions or bypass sensitive-change approval gates.
 2. The profile and task schema definitions are converted into runtime validators and versioned fixtures.
 3. Approval metadata is treated as evidence, not authorization, until authentication and policy enforcement exist.
 4. Migration and recovery tests pass, including interrupted writes and future schema versions.
