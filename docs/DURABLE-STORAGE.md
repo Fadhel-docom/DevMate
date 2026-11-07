@@ -125,3 +125,7 @@ PR-C adds `src/taskLedgerStore.ts` as a project-scoped adapter over the generic 
 **Initial ledger revision:** The append-only domain validator requires a positive revision. A new project's first ledger payload uses domain revision 2 against an empty revision-1 baseline; the generic durable envelope has its own independent revision and CAS counter, initially 0. Do not confuse the domain ledger revision with the durable-envelope revision passed as `expectedRevision`.
 
 **Remaining PR-D gates:** no App/UI cutover, no automatic migration, no real browser restart/quota/multi-tab verification, no forward-only recovery workflow, and no task execution are included in PR-C.
+
+## PR-D recovery design reference
+
+The controlled application cutover and forward-only recovery requirements are specified in [PR-D-RECOVERY-DESIGN.md](./PR-D-RECOVERY-DESIGN.md). This design is not migration authorization; the legacy writer must remain unchanged until the Sensitive-level cutover gates are met.
