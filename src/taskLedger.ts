@@ -289,16 +289,21 @@ export function validateTaskLedgerStore(input: unknown, profiles?: ProjectProfil
   if (isTimestamp(input.updatedAt) && input.updatedAt < latestLedgerTimestamp) addError(errors, "updatedAt", "Ledger timestamp cannot precede a task or event update.");
   if (Array.isArray(input.records)) input.records.forEach((task, index) => {
     if (!isRecord(task) || task.state !== "completed") return;
-    const verified = Array.isArray(input.events) && input.events.some((event) =>
-      isRecord(event) && event.taskId === task.taskId && event.projectId === task.projectId &&
-      event.type === "task.acceptance-verified" && event.outcome === "succeeded" &&
-      isTimestamp(event.createdAt) && event.createdAt <= task.updatedAt &&
-      event.actor === task.accountableCoordinator &&
-      isRecord(event.details) && requiredString(event.details.evidenceReference) &&
-      isStringList(event.details.verifiedCriteria) && isStringList(task.acceptanceCriteria) &&
-      task.acceptanceCriteria.every((criterion) => event.details.verifiedCriteria.includes(criterion)) &&
-      isStringList(task.evidenceReferences) && task.evidenceReferences.includes(event.details.evidenceReference)
-    );
+    const criteria = task.acceptanceCriteria;
+    const taskEvidence = task.evidenceReferences;
+    const taskUpdatedAt = task.updatedAt;
+    const verified = isStringList(criteria) && isStringList(taskEvidence) && isTimestamp(taskUpdatedAt) &&
+      Array.isArray(input.events) && input.events.some((event) => {
+        if (!isRecord(event) || event.taskId !== task.taskId || event.projectId !== task.projectId ||
+          event.type !== "task.acceptance-verified" || event.outcome !== "succeeded" ||
+          !isTimestamp(event.createdAt) || event.createdAt > taskUpdatedAt ||
+          event.actor !== task.accountableCoordinator || !isRecord(event.details)) return false;
+        const evidenceReference = event.details.evidenceReference;
+        const verifiedCriteria = event.details.verifiedCriteria;
+        return requiredString(evidenceReference) && isStringList(verifiedCriteria) &&
+          criteria.every((criterion) => verifiedCriteria.includes(criterion)) &&
+          taskEvidence.includes(evidenceReference);
+      });
     if (!verified) addError(errors, `records[${index}].state`, "Completed tasks require a successful acceptance-verification event covering every criterion and linking stored evidence.");
   });
   // Node/depth budgets are enforced independently for each task and event.
@@ -381,11 +386,12 @@ export function canTransitionTaskState(from: TaskState, to: TaskState, context?:
   if (to === "completed") {
     if (!context || !("task" in context) || !("event" in context)) return false;
     const { task, event } = context as TaskCompletionEvidence;
+    const verifiedCriteria = event.details.verifiedCriteria;
     return task.state === "review" && task.acceptanceCriteria.length > 0 &&
       task.evidenceReferences.length > 0 &&
       eventSupportsTransition(task, event, "task.acceptance-verified") &&
-      Array.isArray(event.details.verifiedCriteria) &&
-      task.acceptanceCriteria.every((criterion) => event.details.verifiedCriteria.includes(criterion));
+      isStringList(verifiedCriteria) &&
+      task.acceptanceCriteria.every((criterion) => verifiedCriteria.includes(criterion));
   }
   if ((from === "blocked" || from === "awaiting_owner" || from === "review") && to === "ready") {
     if (!context || !("task" in context) || !("event" in context)) return false;
