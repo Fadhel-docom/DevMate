@@ -280,6 +280,7 @@ export function validateTaskLedgerStore(input: unknown, profiles?: ProjectProfil
       isRecord(event) && event.taskId === task.taskId && event.projectId === task.projectId &&
       event.type === "task.acceptance-verified" && event.outcome === "succeeded" &&
       isTimestamp(event.createdAt) && event.createdAt <= task.updatedAt &&
+      event.actor === task.accountableCoordinator &&
       isRecord(event.details) && requiredString(event.details.evidenceReference) &&
       isStringList(event.details.verifiedCriteria) && isStringList(task.acceptanceCriteria) &&
       task.acceptanceCriteria.every((criterion) => event.details.verifiedCriteria.includes(criterion)) &&
@@ -293,7 +294,14 @@ export function validateTaskLedgerStore(input: unknown, profiles?: ProjectProfil
 
 /** Verifies that a new ledger snapshot preserves every prior event unchanged and in order. */
 export function validateAppendOnlyLedgerUpdate(previous: TaskLedgerStore, next: TaskLedgerStore): boolean {
-  if (next.events.length < previous.events.length) return false;
+  if (!validateTaskLedgerStore(previous).ok || !validateTaskLedgerStore(next).ok ||
+    next.revision <= previous.revision || next.updatedAt < previous.updatedAt ||
+    next.events.length < previous.events.length) return false;
+  const nextTasks = new Map(next.records.map((task) => [task.taskId, task]));
+  if (!previous.records.every((task) => {
+    const retained = nextTasks.get(task.taskId);
+    return Boolean(retained && retained.projectId === task.projectId);
+  })) return false;
   return previous.events.every((event, index) => JSON.stringify(event) === JSON.stringify(next.events[index]));
 }
 
@@ -346,10 +354,11 @@ export function canTransitionTaskState(from: TaskState, to: TaskState, context?:
       Array.isArray(event.details.verifiedCriteria) &&
       task.acceptanceCriteria.every((criterion) => event.details.verifiedCriteria.includes(criterion));
   }
-  if ((from === "blocked" || from === "awaiting_owner") && to === "ready") {
+  if ((from === "blocked" || from === "awaiting_owner" || from === "review") && to === "ready") {
     if (!context || !("task" in context) || !("event" in context)) return false;
     const { task, event } = context as TaskTransitionEventEvidence;
-    const expected = from === "blocked" ? "task.blocker-resolved" : "task.owner-decision-recorded";
+    const expected = from === "blocked" ? "task.blocker-resolved" :
+      from === "awaiting_owner" ? "task.owner-decision-recorded" : "task.review-rework-recorded";
     return eventSupportsTransition(task, event, expected);
   }
   return true;
