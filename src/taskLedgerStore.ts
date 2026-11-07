@@ -30,6 +30,19 @@ function isLedgerForProject(projectId: string, value: unknown): value is TaskLed
     ledger.events.every((event) => event.projectId === projectId);
 }
 
+function changedTasksHaveOneAppendedEvent(previous: TaskLedgerStore | null, next: TaskLedgerStore): boolean {
+  if (!previous) return true; // Creation is already constrained by the domain validator.
+  const appended = next.events.slice(previous.events.length);
+  const counts = new Map<string, number>();
+  for (const event of appended) counts.set(event.taskId, (counts.get(event.taskId) ?? 0) + 1);
+  const nextById = new Map(next.records.map((task) => [task.taskId, task]));
+  return previous.records.every((prior) => {
+    const current = nextById.get(prior.taskId);
+    if (!current || JSON.stringify(prior) === JSON.stringify(current)) return true;
+    return counts.get(prior.taskId) === 1;
+  });
+}
+
 function readCurrentProfiles(readStorage: Pick<Storage, "getItem">): ProjectProfilesStore | null {
   let raw: string | null;
   try {
@@ -76,7 +89,8 @@ export function createTaskLedgerStore(options: TaskLedgerStoreOptions = {}) {
       if (!isLedgerForProject(projectId, next)) return false;
       const profiles = readCurrentProfiles(readStorage);
       if (!profiles || !profiles.records.some((profile) => profile.projectId === projectId)) return false;
-      if (!validateTaskLedgerStore(next, profiles).ok) return false;
+      if (!validateTaskLedgerStore(next, profiles).ok ||
+        !changedTasksHaveOneAppendedEvent(previous, next)) return false;
       if (previous === null) {
         // The domain validator requires a positive revision. A new project
         // ledger starts from an empty revision-1 baseline and appends to it.
