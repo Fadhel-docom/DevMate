@@ -254,7 +254,7 @@ describe("task ledger schema v1", () => {
 
   it("prevents immutable identity, criteria, permission, counter, checkpoint, and terminal-task rewrites", () => {
     const previous = storeWith([baseTask]);
-    const update = (task: typeof baseTask, eventType = "task.updated") => ({
+    const update = (task: TaskLedgerStore["records"][number], eventType = "task.updated") => ({
       ...storeWith([task], [{ eventId: "change-1", taskId: "t1", projectId: "p1",
         type: eventType, actor: "coordinator", createdAt: 101, details: { changedFields: ["scope"] } }]),
       revision: 2
