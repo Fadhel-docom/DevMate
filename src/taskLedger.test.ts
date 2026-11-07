@@ -74,7 +74,7 @@ describe("task ledger schema v1", () => {
     expect(validateAppendOnlyLedgerUpdate(previous, storeWith([baseTask], [{ ...previous.events[0], type: "task.deleted" }]))).toBe(false);
   });
   it("requires a linked reconciliation event with evidence to leave indeterminate", () => {
-    const ledger = storeWith([baseTask], [{
+    const ledger = storeWith([{ ...baseTask, state: "indeterminate" as const, failureReason: "Outcome unknown" }], [{
       eventId: "e1", taskId: "t1", projectId: "p1", type: "task.reconciled", actor: "coordinator",
       createdAt: 102, outcome: "succeeded", details: { resolution: "not-applied", evidenceReference: "audit:123" }
     }]);
@@ -82,6 +82,10 @@ describe("task ledger schema v1", () => {
     expect(canTransitionTaskState("indeterminate", "ready", { eventId: "missing", taskId: "t1", projectId: "p1", ledger })).toBe(false);
     expect(canTransitionTaskState("indeterminate", "ready", { eventId: "e1", taskId: "t2", projectId: "p1", ledger })).toBe(false);
     expect(canTransitionTaskState("indeterminate", "ready", { eventId: "e1", taskId: "t1", projectId: "p1", ledger })).toBe(true);
+    expect(canTransitionTaskState("indeterminate", "ready", {
+      eventId: "e1", taskId: "t1", projectId: "p1",
+      ledger: storeWith([baseTask], ledger.events)
+    })).toBe(false);
     expect(canTransitionTaskState("indeterminate", "failed", { eventId: "e1", taskId: "t1", projectId: "p1", ledger })).toBe(false);
   });
 });
