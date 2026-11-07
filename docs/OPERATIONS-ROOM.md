@@ -1517,3 +1517,36 @@ Remote sandbox, Node v24.22.1, npm 10.8.2 (CI uses Node 20.20.2), files fetched 
 - PR #22 is open as Draft: https://github.com/Fadhel-docom/DevMate/pull/22. It targets `feature/phase-1-foundation`; PR #22 exact current documentation head `dca72a801faa313a7ac632caf51e89fc276de276` passed run #308. The subsequent status/operations reconciliation commits update the PR head and require their own exact-head CI run. The implementation remains on `feature/durable-store-foundation`.
 - Next: verify CI on the exact PR #22 head after this final evidence reconciliation, update the PR body with the resulting SHA and run, then request an independent review of that exact head. Do not merge before review.
 - PR-B profile persistence, PR-C ledger persistence, and PR-D App integration remain separate bounded changes. No provider integration or owner-reserved permission/cost decision is implied.
+
+
+---
+
+## 56. PR-A merged; owner standing merge instruction; PR-B profile persistence — 2026-11-07 — ChatGPT coordinator
+
+### Owner instruction and governance record
+- The owner explicitly instructed: do not return for repeated merge permission when a PR satisfies all applicable conditions; proceed and continue work.
+- PR-A is a bounded data-persistence foundation change. After the owner instruction, PR #22 was marked ready and squash-merged into `feature/phase-1-foundation` with expected-head SHA guard `f35d8692e402368a7deb71e8276ed6008793019d`.
+- PR #22 merged at `f3b2e4f4fe748ae75aba0095c837b30c9635f692`. The independent review was **APPROVE WITH FOLLOW-UP**. The exact-head run #311 succeeded; the coordinator inspected job logs, confirming npm ci, audit 0 vulnerabilities, 7 test files / 186 tests, TypeScript, and Vite build.
+- Created PR #23 to record the owner's standing merge delegation in proposed constitution v1.2 and decision D-002. It remains Draft pending independent review because it changes governance/approval boundaries. PR #23: https://github.com/Fadhel-docom/DevMate/pull/23.
+- The delegation preserves owner-reserved matters, PR #1, costs, secrets, sensitive permissions, destructive actions, material security-risk acceptance, licensing, mission/scope changes, and unauthorized public release. No repeat approval prompt is required for a merge already covered by the delegation.
+
+### PR-B implementation checkpoint
+- Created `feature/project-profile-durable-integration` from the PR-A merge commit.
+- Added `src/profileStore.ts` and `src/profileStore.test.ts`. The adapter stores one profile per projectId, requires expected durable revision on every write, and invokes `validateProjectProfilesStoreUpdate` inside the durable shared-lock update guard with full before/after maps.
+- Added additive/idempotent legacy profile migration. Invalid or malformed entries cause the whole migration to be refused rather than partially migrating. The legacy workspace key remains unchanged.
+- Raw pre-migration snapshots are export-only; the profile adapter refuses to treat them as durable envelopes for restoration.
+- Hardened `src/durableStore.ts`: rejects all prototype-sensitive IDs and requires runtime validator results to be exactly boolean true. Added regression tests.
+- Added PR-B integration and migration timing requirements to `docs/DURABLE-STORAGE.md`. The App still writes legacy workspace data, so PR-B does not automatically invoke migration; PR-D must coordinate migration with the App persistence cutover.
+- Known limitation retained and documented: an invalid existing record can block writes to other projects. No silent deletion/quarantine was introduced; a safe recovery/quarantine design must be independently reviewed.
+
+### Exact verification
+- PR-B head `4e060090fd5fc6cab7db3121d35217d88495ef50`.
+- GitHub Actions run #322 (ID `42366544091`) passed on that exact head. Logs confirm: npm ci installed 155 packages; audit 0 vulnerabilities; 8 test files / 194 tests passed (including 6 profile-store tests and 19 durable-store tests); `tsc --noEmit`; Vite production build (29 modules). Run: https://github.com/Fadhel-docom/DevMate/actions/runs/42366544091.
+- PR #24: https://github.com/Fadhel-docom/DevMate/pull/24 — Draft, awaiting independent review of exact head above.
+- No App/UI migration, provider integration, network action, new dependency, cost, secret, permission, deployment, main-branch write, or RateNest change.
+
+### Next exact actions
+1. Obtain independent review of PR #23's proposed constitution v1.2 / D-002 exact head.
+2. Obtain independent review of PR #24 exact head `4e060090fd5fc6cab7db3121d35217d88495ef50`; resolve blockers only, rerun exact-head CI after changes, then merge automatically under the owner's standing delegation if all gates pass.
+3. Begin PR-C task-ledger durable integration with append-only event checks and profile-store cross-validation inside the same lock.
+4. Plan PR-D cutover only after PR-B/PR-C contracts are accepted; do not invoke migration while the current App still writes the legacy workspace key.
