@@ -24,7 +24,7 @@ type TransactionJournal = {
 };
 type MigrationMarker = { version: 1; migratedAt: number; sourceFingerprint: string };
 export type DurableReadResult<T> =
-  | { ok: true; status: "empty"; revision: 0; value: null }
+  | { ok: true; status: "empty"; revision: number; value: null }
   | { ok: true; status: "found"; revision: number; value: T }
   | { ok: false; reason: DurableStoreFailure; message: string };
 export type DurableWriteResult =
@@ -185,7 +185,10 @@ export function createDurableStore<T>(options: DurableStoreOptions<T>) {
       return { envelope: null, failure: { ok: false, reason: "future-version", message: "Stored data was written by a newer schema version and was not modified." } };
     }
     const envelope = envelopeFromRaw<T>(raw);
-    if (!envelope) return { envelope: null, failure: { ok: false, reason: "corrupt", message: "Stored durable data failed schema validation and was not modified." } };
+    if (!envelope) {
+      try { snapshotRaw(raw, "corrupt"); } catch { /* preserve original bytes */ }
+      return { envelope: null, failure: { ok: false, reason: "corrupt", message: "Stored durable data failed schema validation and was not modified." } };
+    }
     return { envelope };
   };
   const transactLocked = (projectId: string, nextEnvelope: DurableEnvelope<T>): DurableWriteResult => {
@@ -227,7 +230,7 @@ export function createDurableStore<T>(options: DurableStoreOptions<T>) {
         const loaded = loadEnvelopeLocked();
         if (loaded.failure) return loaded.failure;
         const value = loaded.envelope!.records[projectId];
-        if (value === undefined) return { ok: true as const, status: "empty" as const, revision: 0 as const, value: null };
+        if (value === undefined) return { ok: true as const, status: "empty" as const, revision: loaded.envelope!.revision, value: null };
         if (!options.validateRecord(projectId, value)) return { ok: false as const, reason: "corrupt" as const, message: "The project-scoped record failed its validator." };
         return { ok: true as const, status: "found" as const, revision: loaded.envelope!.revision, value: clone(value) };
       });
@@ -243,6 +246,8 @@ export function createDurableStore<T>(options: DurableStoreOptions<T>) {
         const loaded = loadEnvelopeLocked();
         if (loaded.failure) return { ok: false as const, reason: loaded.failure.reason, message: loaded.failure.message };
         const current = loaded.envelope!;
+        if (!Object.entries(current.records).every(([id, item]) => safeId(id) && options.validateRecord(id, item)))
+          return { ok: false as const, reason: "corrupt" as const, message: "An existing project record failed validation; no write was attempted." };
         if (expectedRevision !== undefined && current.revision !== expectedRevision)
           return { ok: false as const, reason: "conflict" as const, message: "The durable store revision changed; reload before writing." };
         const previous = current.records[projectId] ?? null;
@@ -291,7 +296,13 @@ export function createDurableStore<T>(options: DurableStoreOptions<T>) {
         if (raw === null) return { ok: false as const, reason: "not-found" as const, message: "Snapshot not found." };
         if (fingerprint(raw) !== expectedFingerprint) return { ok: false as const, reason: "conflict" as const, message: "Snapshot content changed; refresh the snapshot list." };
         const restored = envelopeFromRaw<T>(raw);
-        if (!restored || !Object.entries(restored.records).every(([id, item]) => safeId(id) && options.validateRecord(id, item)))
+        if (!options.validateUpdate)
+          return { ok: false as const, reason: "invalid-data" as const, message: "Restore requires the store-specific update guard; an unguarded restore is refused." };
+        const currentEnvelope = currentRaw === null ? { schemaVersion: 1 as const, revision: 0, updatedAt: now(), records: {} as Record<string, T> } : envelopeFromRaw<T>(currentRaw);
+        if (!currentEnvelope || !restored || !Object.entries(restored.records).every(([id, item]) =>
+          safeId(id) && options.validateRecord(id, item) &&
+          options.validateUpdate!(id, currentEnvelope.records[id] ?? null, item, currentEnvelope.records)) ||
+          !Object.keys(currentEnvelope.records).every((id) => Object.prototype.hasOwnProperty.call(restored.records, id)))
           return { ok: false as const, reason: "corrupt" as const, message: "Snapshot failed validation; current data was not changed." };
         const currentRaw = readRaw();
         if (currentRaw !== null) {
@@ -321,7 +332,7 @@ export function createDurableStore<T>(options: DurableStoreOptions<T>) {
         try {
           const existing = storage.getItem(migrationKey);
           if (existing !== null) return false;
-          snapshotRaw(sourceRaw, "pre-migration");
+          if (!snapshotRaw(sourceRaw, "pre-migration")) return false;
           const marker: MigrationMarker = { version: 1, migratedAt: now(), sourceFingerprint: fingerprint(sourceRaw) };
           storage.setItem(migrationKey, JSON.stringify(marker));
           return storage.getItem(migrationKey) === JSON.stringify(marker);
