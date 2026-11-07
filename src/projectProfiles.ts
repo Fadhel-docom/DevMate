@@ -247,6 +247,7 @@ function validateEvidence(value: unknown): value is ProfileApprovalEvidence {
 function validateProfile(value: unknown, index: number, errors: ProfileValidationError[]): value is ProjectProfile {
   const root = `records[${index}]`;
   if (!isRecord(value)) { addError(errors, root, "Expected a plain object."); return false; }
+  if (!isSafeJson(value)) { addError(errors, root, "Profile contains unsafe, accessor, sparse, cyclic, non-JSON, or over-deep values."); return false; }
   let valid = true;
   const check = (condition: boolean, path: string, message: string) => {
     if (!condition) { addError(errors, path ? `${root}.${path}` : root, message); valid = false; }
