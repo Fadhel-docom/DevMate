@@ -238,7 +238,12 @@ export function createDurableStore<T>(options: DurableStoreOptions<T>) {
       return locked.value;
     },
     async writeProject(projectId: string, value: T, expectedRevision?: number): Promise<DurableWriteResult> {
-      if (!safeId(projectId) || !options.validateRecord(projectId, value))
+      if (!safeId(projectId)) return { ok: false, reason: "invalid-data", message: "A valid projectId is required." };
+      let candidate: T;
+      try { candidate = clone(value); } catch {
+        return { ok: false, reason: "invalid-data", message: "The project-scoped record must be JSON-serializable." };
+      }
+      if (!options.validateRecord(projectId, clone(candidate)))
         return { ok: false, reason: "invalid-data", message: "The projectId or project-scoped record is invalid." };
       const locked = await runExclusive(() => {
         const recovered = recoverLocked();
@@ -246,7 +251,7 @@ export function createDurableStore<T>(options: DurableStoreOptions<T>) {
         const loaded = loadEnvelopeLocked();
         if (loaded.failure) return { ok: false as const, reason: loaded.failure.reason, message: loaded.failure.message };
         const current = loaded.envelope!;
-        if (!Object.entries(current.records).every(([id, item]) => safeId(id) && options.validateRecord(id, item)))
+        if (!Object.entries(current.records).every(([id, item]) => safeId(id) && options.validateRecord(id, clone(item))))
           return { ok: false as const, reason: "corrupt" as const, message: "An existing project record failed validation; no write was attempted." };
         if (expectedRevision !== undefined && current.revision !== expectedRevision)
           return { ok: false as const, reason: "conflict" as const, message: "The durable store revision changed; reload before writing." };
