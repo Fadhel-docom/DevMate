@@ -52,7 +52,7 @@ Snapshot restoration is deliberately fail-closed: it requires a store-specific u
 
 - PR-B must call `validateProjectProfilesStoreUpdate` from the durable write guard while the shared lock is held. Approval/revocation history must remain append-only, and approval must remain bound to profile content.
 - PR-C must call `validateAppendOnlyLedgerUpdate` inside the durable write guard and use the supplied read-only storage view to load and validate the current profile-store envelope under the same shared lock. It must pass those current profiles for policy snapshots and cross-validation; omitting the `profiles` argument would skip project/profile checks. If a later task-ledger migration is designed, it must separately use the locked migration protocol and prove idempotence; PR-C intentionally exposes no legacy task migration because the old workspace task shape lacks the governance/evidence fields required for safe reconstruction.
-- Both integrations must use projectId-scoped calls, deterministic clocks/IDs in tests, and `migrateLegacyWorkspace` for locked legacy reads and marker sequencing. A store validator is mandatory at the integration boundary; schema-only validation outside the lock is insufficient.
+- Both integrations must use projectId-scoped calls and deterministic clocks/IDs in tests. PR-B uses `migrateLegacyWorkspace` for its locked legacy-project read and marker sequencing; PR-C deliberately exposes no legacy task migration. A store validator is mandatory at the integration boundary; schema-only validation outside the lock is insufficient.
 - The optional `runExclusive` injection is a deterministic test seam only. Production callers must omit it so the shared Web Lock is used.
 
 ## Known limitations and follow-ups
