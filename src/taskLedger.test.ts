@@ -227,4 +227,94 @@ describe("task ledger schema v1", () => {
     expect(validateAppendOnlyLedgerUpdate(previous, { ...storeWith([changedSnapshot], [snapshotEvent]), revision: 2 })).toBe(false);
   });
 
+  it("admits only clean draft task creation with a single event and matching profile snapshot", () => {
+    const profile = { projectId: "p1", profileRevision: 1, createdAt: 1, updatedAt: 100,
+      identity: { name: "One", purpose: "" }, lifecycle: "draft" as const, repositories: [], websites: [],
+      technology: [], goals: [], governanceReferences: [], workflow: [], dataClassification: "unknown",
+      allowedTools: [], forbiddenActions: [], releaseRules: [], risks: [], recoveryPlan: [], unknownFields: [],
+      approval: { status: "unapproved" as const, approvedRevision: null, evidence: null, approvedAt: null,
+        approvedContentHash: null, revokedAt: null, revokedRevision: null, revocationReason: null, revocationHistory: [] } };
+    const profiles = { schemaVersion: 1 as const, revision: 1, updatedAt: 100, records: [profile] };
+    const draft = { ...baseTask, state: "draft" as const };
+    const created = { eventId: "create-1", taskId: "t1", projectId: "p1", type: "task.created",
+      actor: "coordinator", createdAt: 100, details: {} };
+    const previous = storeWith([]);
+    const next = { ...storeWith([draft], [created]), revision: 2 };
+    expect(validateAppendOnlyLedgerUpdate(previous, next, profiles)).toBe(true);
+    expect(validateAppendOnlyLedgerUpdate(previous, { ...next, records: [{ ...draft, state: "ready" as const }] }, profiles)).toBe(false);
+    expect(validateAppendOnlyLedgerUpdate(previous, { ...next, records: [{ ...draft, state: "completed" as const,
+      evidenceReferences: ["fabricated"], updatedAt: 100 }] }, profiles)).toBe(false);
+    expect(validateAppendOnlyLedgerUpdate(previous, { ...next, events: [] }, profiles)).toBe(false);
+    expect(validateAppendOnlyLedgerUpdate(previous, { ...next, records: [{ ...draft, attemptCount: 1 }] }, profiles)).toBe(false);
+    expect(validateAppendOnlyLedgerUpdate(previous, { ...next, records: [{ ...draft, evidenceReferences: ["fabricated"] }] }, profiles)).toBe(false);
+    expect(validateAppendOnlyLedgerUpdate(previous, { ...next, records: [{ ...draft,
+      policySnapshot: { ...draft.policySnapshot, projectProfileRevision: 99 } }] }, profiles)).toBe(false);
+    expect(validateAppendOnlyLedgerUpdate(previous, next)).toBe(false);
+  });
+
+  it("prevents immutable identity, criteria, permission, counter, checkpoint, and terminal-task rewrites", () => {
+    const previous = storeWith([baseTask]);
+    const update = (task: typeof baseTask, eventType = "task.updated") => ({
+      ...storeWith([task], [{ eventId: "change-1", taskId: "t1", projectId: "p1",
+        type: eventType, actor: "coordinator", createdAt: 101, details: { changedFields: ["scope"] } }]),
+      revision: 2
+    });
+    expect(validateAppendOnlyLedgerUpdate(previous, update({ ...baseTask, taskId: "renamed", updatedAt: 102 }))).toBe(false);
+    expect(validateAppendOnlyLedgerUpdate(previous, update({ ...baseTask, createdAt: 99, updatedAt: 102 }))).toBe(false);
+    expect(validateAppendOnlyLedgerUpdate(previous, update({ ...baseTask, acceptanceCriteria: ["weakened"], updatedAt: 102 }))).toBe(false);
+    expect(validateAppendOnlyLedgerUpdate(previous, update({ ...baseTask, allowedTools: [], updatedAt: 102 }))).toBe(false);
+    expect(validateAppendOnlyLedgerUpdate(previous, update({ ...baseTask, allowedActions: ["delete"], updatedAt: 102 }))).toBe(false);
+    expect(validateAppendOnlyLedgerUpdate(previous, update({ ...baseTask, attemptCount: 0, updatedAt: 102 }))).toBe(true);
+    const attempted = { ...baseTask, attemptCount: 1, updatedAt: 102 };
+    expect(validateAppendOnlyLedgerUpdate(previous, update(attempted))).toBe(true);
+    const attemptedPrevious = storeWith([{ ...baseTask, attemptCount: 1 }]);
+    const lowered = { ...baseTask, attemptCount: 0, updatedAt: 102 };
+    expect(validateAppendOnlyLedgerUpdate(attemptedPrevious, update(lowered))).toBe(false);
+    const checkpointPrevious = storeWith([{ ...baseTask, checkpoint: {
+      taskId: "t1", projectId: "p1", sequence: 2, createdAt: 101, summary: "checkpoint",
+      completedCriteria: [], remainingWork: [], artifactReferences: []
+    } }]);
+    const loweredCheckpoint = { ...checkpointPrevious.records[0], checkpoint: {
+      ...checkpointPrevious.records[0].checkpoint!, sequence: 1
+    }, updatedAt: 102 };
+    expect(validateAppendOnlyLedgerUpdate(checkpointPrevious, update(loweredCheckpoint))).toBe(false);
+    const finalTask = { ...baseTask, state: "completed" as const, updatedAt: 102,
+      evidenceReferences: ["artifact:1"] };
+    const finalPrevious = storeWith([finalTask], [{
+      eventId: "verify-final", taskId: "t1", projectId: "p1", type: "task.acceptance-verified",
+      actor: "coordinator", createdAt: 101, outcome: "succeeded" as const,
+      details: { evidenceReference: "artifact:1", verifiedCriteria: [...baseTask.acceptanceCriteria] }
+    }]);
+    const editedFinal = { ...finalTask, scope: "rewritten", updatedAt: 103 };
+    const finalNext = { ...storeWith([editedFinal], [...finalPrevious.events, {
+      eventId: "edit-final", taskId: "t1", projectId: "p1", type: "task.updated",
+      actor: "coordinator", createdAt: 102, details: { changedFields: ["scope"] }
+    }]), revision: 2 };
+    expect(validateAppendOnlyLedgerUpdate(finalPrevious, finalNext)).toBe(false);
+  });
+
+  it("validates the declared 2,000-task and 10,000-event scale without quadratic completion scans", () => {
+    const tasks = Array.from({ length: 2000 }, (_, index) => ({
+      ...baseTask, taskId: `t${index}`, state: "completed" as const,
+      updatedAt: 200, evidenceReferences: [`artifact:${index}`]
+    }));
+    const events = Array.from({ length: 10000 }, (_, index) => {
+      const taskIndex = Math.floor(index / 5);
+      const taskId = `t${taskIndex}`;
+      return index % 5 === 0 ? {
+        eventId: `e${index}`, taskId, projectId: "p1", type: "task.acceptance-verified",
+        actor: "coordinator", createdAt: 101, outcome: "succeeded" as const,
+        details: { evidenceReference: `artifact:${taskIndex}`, verifiedCriteria: [...baseTask.acceptanceCriteria] }
+      } : {
+        eventId: `e${index}`, taskId, projectId: "p1", type: "task.note",
+        actor: "coordinator", createdAt: 102 + index, details: {}
+      };
+    });
+    const full = { schemaVersion: 1 as const, revision: 1, updatedAt: 11000, records: tasks, events };
+    expect(validateTaskLedgerStore(full).ok).toBe(true);
+    const next = { ...full, revision: 2 };
+    expect(validateAppendOnlyLedgerUpdate(full, next)).toBe(true);
+  });
+
+
 });
