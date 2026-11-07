@@ -307,7 +307,8 @@ export function validateAppendOnlyLedgerUpdate(previous: TaskLedgerStore, next: 
   for (const priorTask of previous.records) {
     const updatedTask = nextTasks.get(priorTask.taskId);
     if (!updatedTask || updatedTask.state === priorTask.state) continue;
-    const event = appendedEvents.filter((item) => item.taskId === priorTask.taskId && item.projectId === priorTask.projectId).at(-1);
+    const matchingEvents = appendedEvents.filter((item) => item.taskId === priorTask.taskId && item.projectId === priorTask.projectId);
+    const event = matchingEvents[matchingEvents.length - 1];
     let context: TaskTransitionContext | undefined;
     if (priorTask.state === "indeterminate" && event) {
       const reconciliationLedger: TaskLedgerStore = {
