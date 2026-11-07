@@ -806,3 +806,374 @@ Carried over from PR #7's entry (previously omitted):
 
 - Last verified checkpoint: `feature/phase-1-foundation` at `3312d22e4da9e663148c2f7af235c4290fa4e607`; PR #8 merged; post-merge CI run #85 successful on that exact commit.
 - Next exact action: independently review the focused documentation-only PR opened for this closeout (PR #9) at its exact head. If it passes §7/§8 gates, merge under the existing routine delegation; otherwise record the blocker. Afterward resume the already documented pre-Phase-1 governance backlog as separate tasks. PR #1 remains owner-controlled and unmerged.
+
+
+---
+
+## 30. Storage Reliability — takeover, completion and verification — 2026-11-06 — Claude (third assistant)
+
+**Risk level (constitution §2):** Standard — product code change; no new dependency, no CI/lockfile change, no data-format change (same storage key; new backup keys are additive).
+
+### Starting checkpoint and governing sources
+
+- Branch `fix/storage-reliability` at `09ad473fe7013bc5d90cde6ed0ec28aae45386f0` (one commit ahead of `feature/phase-1-foundation` at `39b9c47f1efcca78bd5913719cbb73ce44e9c827`); PR #10 open, draft, unmerged, three files (`src/storage.ts`, `src/storage.test.ts`, `src/App.tsx`).
+- Verified live on GitHub before editing: PR #10 head and base SHAs as above; PR #9 closed and merged (merge commit `39b9c47…`); PR #1 open, draft, targets `main`, head `39b9c47…`; no workflow run exists for `09ad473…` (0 runs).
+- Governing documents read in full at `39b9c47…`: [OPERATIONS-ROOM](https://github.com/Fadhel-docom/DevMate/blob/39b9c47f1efcca78bd5913719cbb73ce44e9c827/docs/OPERATIONS-ROOM.md) (blob `d30245c391ef63f7b54b00c4ac724c7143319369`), [STATUS](https://github.com/Fadhel-docom/DevMate/blob/39b9c47f1efcca78bd5913719cbb73ce44e9c827/docs/STATUS.md) (blob `26dd43bd4df96238a2cd0a1ab315554edc4e769a`), [constitution 1.1](https://github.com/Fadhel-docom/DevMate/blob/39b9c47f1efcca78bd5913719cbb73ce44e9c827/docs/CHARTER-AND-QUALITY-RULES.md) (blob `50126a159961b71faf88025a8695cb7e734d63b7`, unchanged), SESSION-START (blob `a1a06cff72403a81c7b1d728a84ee4d82acddc84`), DECISIONS (blob `67f5e6f4ac3c18fd09f41fc4cd070290a8288818`).
+
+### What the previous contributor actually delivered (Verified)
+
+- Claude II's PR #10 commit `09ad473…` adds schema validation, a never-throwing `readProjects`, `saveProjects` returning a real `SaveResult` with read-back verification, App notices, and 29 new tests (32 total). Its description says its 32 tests ran only under a shim, not Vitest.
+- Verified by this contributor on a fresh clone of `09ad473…`: `npm ci` (0 vulnerabilities), real `npm test` = **Vitest 4.1.12, 1 file, 32 tests passed**, `npm run build` passed. Claude II's work was not redone.
+
+### Defects confirmed at `09ad473…` (Verified by reading the code)
+
+1. Only one backup slot (`devmate-workspace-v1.unreadable-backup`): a second unreadable value was not kept at all.
+2. Backup success was reported without reading the copy back.
+3. Protection gap: if the backup could not be written, the first edit made `saveProjects` overwrite the unreadable (or only partly recovered) original, losing it. The App only skipped the initial re-save.
+4. Reading the same unreadable data again would have been indistinguishable from new damage once multiple slots exist (needed de-duplication).
+5. App notices did not distinguish "copy saved" from "no copy" for partly recovered data, said nothing about the unprotected original, and a notice about a failed backup could not become true later.
+
+### Changes (code commit `20e4a3bb53779edeff1ef3fe4939fbd15c859e93`)
+
+- `src/storage.ts` (blob `e64eff61c1dd23dbc4977526dfe502aab1a628f6`):
+  - Backup slots: slot 1 is the existing key, then `<key>.2`, `<key>.3`, … up to `MAX_BACKUPS = 20`. First free slot is chosen deterministically (no clock, no randomness). No slot is ever replaced. An identical copy already stored is reused. Success is reported only after the copy is read back; read, write, verify and slot-limit failures return "no backup".
+  - `saveProjects` now inspects what is currently stored. If it is corrupt, wrongly shaped or only partly readable, it is replaced only after a verified backup exists; otherwise the write is refused (`reason: "protect-original"`) and the original is untouched. A later save retries the backup. `SaveResult` gains an optional `backupKey` (set only when a backup was ensured during the save). `LoadResult` gains `backupKey`; `backedUp` is kept.
+- `src/App.tsx` (blob `ad52cfa5cc505caf84c37d59110b6764a9e55ca9`): `loadNotice` and `saveMessage` (now exported) give distinct text for: healthy/empty (no notice), partly recovered with a saved copy, partly recovered without one, corrupt/invalid with a saved copy, corrupt/invalid without one (original untouched; changes are in memory only and not saved), unavailable storage, and each save failure including `protect-original` and `verify`. The startup notice is recomputed if a backup is made later, so it never goes stale.
+- `src/storage.test.ts` (blob `a7d62f83430e5d0510ff6b5c29c6f7eac0ed797b`): 63 tests (was 32). New groups: multiple backups (first/second/third copy, legacy key kept, repeated reads, identical copy in a later slot, partly recovered backup, full storage, silent write failure, slot-read failure, read-only storage, slot limit), protecting originals on save (backup failed for corrupt / partly recovered / wrong-shape data, slots full, later retry, backup-then-replace, backup ok but main write fails, unreadable stored value, no backup for valid/empty data, invalid data never touches storage, verify failures), and user-facing messages.
+- **Test change to disclose:** one earlier test, "never overwrites an existing backup", asserted the old limitation (a second unreadable copy was not kept: `backedUp === false`). It was rewritten to assert the same safety property (the first copy is never overwritten) plus the new behaviour (the second copy is stored in slot 2). All other earlier tests are unchanged.
+
+### Checks run (observed; all local, none on GitHub Actions)
+
+Environment: Linux sandbox, Node v24.22.1, npm 10.8.2 (CI uses Node 20.20.2 / npm 10.8.2). Fresh `git clone` of `20e4a3b…`, blob SHAs identical to the committed files.
+
+- `npm ci`: passed, 155 packages, 0 vulnerabilities.
+- `npm test` (real Vitest 4.1.12, jsdom): **1 file, 63 tests passed**.
+- `tsc --noEmit && vite build` (`npm run build`): passed (28 modules transformed).
+- `npm audit`: 0 vulnerabilities (info/low/moderate/high/critical = 0) for the installed tree.
+- Mutation checks (not committed): removing the overwrite guard fails 6 tests; disabling duplicate detection fails 3; removing the backup read-back fails 1.
+- jsdom render smoke test of `App` (not committed — a new test file is outside the allowed paths): healthy data (no notice, edit saves); corrupt data with working backup (notice says a copy was saved, original unchanged until the edit, backup holds the original afterwards); corrupt data with a blocked backup (notice says no copy could be saved, edit refused with an alert, original unchanged, change still visible in memory). 3 of 3 passed.
+
+### CI
+
+- **No GitHub Actions run exists for `09ad473…` or `20e4a3b…` (0 runs, Verified).** `.github/workflows/ci.yml` runs on `pull_request` to `main` and on `push` to `main` and `feature/**`; `fix/storage-reliability` matches neither and PR #10 targets `feature/phase-1-foundation`. The CI success recorded for `39b9c47…` does not test PR #10. CI was not modified.
+- Compatible ways to get real CI (need coordinator/owner decision; not done): (a) push the same commit to a scratch branch named `feature/storage-reliability-ci` (no PR) so the existing push trigger runs; (b) rename/recreate the branch under `feature/**` and retarget PR #10 (changes the branch structure); (c) a separate task to add `fix/**` or all-branch PR triggers to the workflow (workflow change, owner-reserved).
+
+### Not verified / Unknown
+
+- Real browsers (Android, Safari private mode, a genuinely full quota); accessibility and visual look of the inline-styled notices.
+- Node 20: a Node 20 download failed in the sandbox, so the local runs used Node 24.
+- Behaviour with two tabs open (cross-tab races), see risks.
+- Independent review has not happened (Gate D): this contributor authored the latest commit and Claude II authored the first one, so the reviewer must be someone else (the ChatGPT coordinator or the owner).
+
+### Residual risks
+
+- No UI to list, restore or delete backups; slots are never cleaned up automatically. After 20 distinct unreadable copies, no further copy can be made and saves are refused while unreadable data is stored, until space is freed manually.
+- Near-full storage: a backup needs as much space as the unreadable data, so a nearly full browser can end up unable to save until space is freed. This is the intended trade-off (data kept over changes saved); the user is told changes are not saved.
+- A write-only storage object (no `getItem`) cannot be inspected, so the overwrite guard is skipped; real `localStorage` always has `getItem`.
+- Another tab can change the stored value between the guard's read and the write (no `storage` event handling; last write wins).
+- Unknown extra fields in stored data are still stripped on the next save (carried over from PR #10).
+- The first save after load may create a backup of partly valid data before replacing it (extra storage use; intended).
+
+### Intentionally not done
+
+No merge, close or delete of any PR or branch; no change to `main`, PR #1, the constitution, CI, `package.json`, `package-lock.json` or dependencies; no new branch or duplicate PR; no RateNest or other-repository access; no deployment.
+
+### Last verified checkpoint and next exact action
+
+- Last verified checkpoint: PR #10 code at `20e4a3bb53779edeff1ef3fe4939fbd15c859e93` (63 tests, build and audit verified locally; no CI). The head after this documentation commit differs from it only in `docs/STATUS.md` and `docs/OPERATIONS-ROOM.md`; its SHA is shown on PR #10.
+- Next exact action: the coordinator/owner decides how to obtain a real CI run on the PR head (options above), then a reviewer other than Claude (author) independently reviews the diff at the exact head and the CI result. Keep PR #10 draft until then. Handoff owner: ChatGPT coordinator for review and CI routing; the owner for any workflow change.
+- Handoff authorship: authored by Claude (third assistant) and committed through the GitHub connector under the owner's delegation; GitHub shows the owner's account.
+
+
+---
+
+## 31. Storage Reliability — review follow-up: empty string and multi-tab limit — 2026-11-06 — Claude (third assistant)
+
+**Risk level (§2):** Standard. Scope limited to the owner's review of PR #10 at `d976077a6ed0cfe7d977bcca795906a8a02c37ba`; the task was not redone or widened.
+
+### Starting checkpoint
+
+- PR #10 head `d976077a6ed0cfe7d977bcca795906a8a02c37ba` (re-fetched live before editing); base `feature/phase-1-foundation` at `39b9c47f1efcca78bd5913719cbb73ce44e9c827`. Governing documents as listed in entry 30 (constitution 1.1, blob `50126a159961b71faf88025a8695cb7e734d63b7`, unchanged).
+
+### Finding 1 — empty string treated as empty storage (Verified, fixed)
+
+- `inspectRaw` in `src/storage.ts` returned `empty` for `""`. An empty string is not valid JSON and not the project format, so treating it as "nothing stored" let `saveProjects` overwrite it with no backup (and `readProjects` skipped the backup).
+- Fix (code commit `01dd54cfd2f8bd95789765d299d2c8f369f3b658`): the special case was removed, so `""` is classified `corrupt`: it is backed up (the backup holds the empty string), and the original key is replaced only after a verified backup exists; if the backup fails, the write is refused (`protect-original`) and the original stays. Unchanged: a missing key reads as empty storage, and the valid list `"[]"` is empty and may be overwritten without a backup.
+- Tests, real Vitest 4.1.12. Before the fix (new tests against the old `src/storage.ts`): **6 failed, 64 passed (70)**; the failing ones are the empty-string tests for classification as corrupt, backup, no duplicate backup on repeated reads, no replacement when the backup fails, replacement only after a verified backup, and no replacement when the backup write silently stores nothing. After the fix: **70 passed, 0 failed**. The 7th new test (missing key and `"[]"` unchanged) passed both before and after, as intended. One earlier test iterated `[null, "", "[]"]` as "nothing meaningful stored"; the `""` was removed from it and is now covered by the new group.
+
+### Finding 2 — multi-tab limit (documented; not solved)
+
+- Backup slots are not overwritten in a normal single-tab run, but two tabs can read the same slot as free and both write to it, so one of the two copies can be lost. The overwrite guard in `saveProjects` is also checked just before the write, and another tab can change storage in between. No locking was added and the architecture was not extended.
+- Wording corrected in the `src/storage.ts` comments (the non-replacement is no longer described as a guarantee). **Correction to entry 30 and to the STATUS update above:** their statements that no backup slot is "ever replaced" and that originals are "never replaced" without a backup describe single-tab behaviour only. The multi-tab problem is **not** resolved. The PR #10 description was updated accordingly. Earlier text is not erased.
+
+### Checks run (observed, local, none on GitHub Actions)
+
+Node v24.22.1, npm 10.8.2 (CI uses Node 20.20.2). Results listed for the code commit's files (blob `5dc4db32d6cee175147d96976b14469ebd11f57b` for `src/storage.ts`, `e07c2b874cbbfb020a45f0015e5101051e0f1eca` for `src/storage.test.ts`; identical to the committed blobs):
+
+- `npm ci`: passed, 155 packages. `tsc --noEmit`: passed.
+- `npm test` (real Vitest 4.1.12, jsdom): **1 file, 70 tests passed.**
+- `npm run build`: passed.
+- `npm audit`: 0 vulnerabilities.
+
+### CI
+
+No GitHub Actions run exists for any PR #10 head (Verified for `09ad473…`/`20e4a3b…` in entry 30; no run is claimed for `01dd54c…` or later). `.github/workflows/ci.yml`, branch settings and the PR base were not changed. Routing for a real CI run stays a coordinator/owner decision (options in entry 30).
+
+### Residual risks (changed)
+
+All entry 30 risks stand, with these changes: **the multi-tab risk is now stated precisely** — concurrent tabs can lose a backup copy (same free slot) or change storage between the guard check and the write; this is not solved. The empty-string classification gap is closed. Still: no UI to restore/delete backups, 20-slot limit, near-full storage can block saving by design, write-only storages skip the guard, unknown extra fields are stripped on save, no real-browser, Node 20, accessibility or independent-review evidence yet.
+
+### Intentionally not done
+
+No merge, close or delete of any PR or branch; no change to `main`, PR #1, the constitution, CI, `package.json`, `package-lock.json`, `src/App.tsx`, branch settings or the PR base; no duplicate PR; no declaration that PR #10 is ready to merge.
+
+### Last verified checkpoint and next exact action
+
+- Last verified checkpoint: code commit `01dd54cfd2f8bd95789765d299d2c8f369f3b658` (70 tests, build and audit local). The head after this documentation commit differs from it only in `docs/STATUS.md` and `docs/OPERATIONS-ROOM.md`; its SHA is shown on PR #10.
+- Next exact action: coordinator/owner picks the CI route; then an independent reviewer (not Claude) reviews the exact new head and the CI result. PR #10 stays open and draft. Handoff owner: ChatGPT coordinator for review and CI routing; the owner for any workflow or branch-structure change.
+- Handoff authorship: authored by Claude (third assistant) and committed through the GitHub connector under the owner's delegation; GitHub shows the owner's account.
+
+
+## 32. PR #10 — exact-head CI and Android smoke evidence — 2026-11-06 — ChatGPT coordinator
+
+### CI result (Verified from GitHub Actions job log)
+
+- PR #10 head under test: `a4c7bbb48f99ac2734cafca9b0419863ddcd58d8`.
+- Existing scratch branch: `feature/ci-probe-pr10-a4c7bbb`; GitHub branch search confirms it exists. No additional Android branch was created and no Termux push was performed.
+- Workflow: **DevMate CI**, run #89, run ID `42178927687`, event `push`, attempt 1; run URL: https://github.com/Fadhel-docom/DevMate/actions/runs/42178927687.
+- Job `verify`, job ID `127763740640`: completed with conclusion `success`. All observed steps succeeded: checkout, setup Node, `npm ci`, dependency audit report, `npm test`, and `npm run build`.
+- The job log confirms checkout at the exact SHA above; Node `v20.20.2`, npm `10.8.2`; `npm ci` added 155 packages and reported 0 vulnerabilities; audit summary info/low/moderate/high/critical/total all 0; Vitest 4.1.12 passed **1 file / 70 tests**; TypeScript check and Vite production build passed (28 modules transformed).
+- Non-blocking environment notices: npm package deprecation warning and GitHub runner notice that Node 20 actions are being forced to Node 24. Neither caused a failed step.
+- This is an official GitHub Actions success on the exact PR #10 head. The previous statement in entry 31 that no GitHub Actions run existed is historical and is superseded by this entry.
+
+### Android smoke test (Reported by owner from Android/Termux session)
+
+- On Android/Termux: Node `v26.3.1`, npm `11.17.0`; `npm test` passed 70/70 and `npm run build` passed.
+- Manual browser smoke: created a project and task, reloaded the page, and confirmed both remained visible. This verifies basic persistence across reload in that Android browser session.
+- Not tested manually: blocked storage, genuinely full quota, Safari, or other real browsers. Do not overstate the smoke test.
+
+### State and next gate
+
+- PR #10 remains open and Draft; it is not merged. No code, workflow, base branch, PR state, or `main` changes were made to obtain this CI run.
+- The CI gate is now satisfied for exact head `a4c7bbb…`. Independent review by the ChatGPT coordinator remains to be completed against the exact PR diff and the known residual risks, especially multi-tab backup races, unknown-field stripping, backup restore/delete UI, and near-full quota behaviour.
+- Keep PR #10 Draft and unmerged until that independent review and any owner-reserved decision gates are resolved. Do not declare Phase 1 complete.
+- Next exact action: coordinator performs the independent PR #10 review at `a4c7bbb48f99ac2734cafca9b0419863ddcd58d8`, using run #89 as CI evidence; then records a clear accept/request-changes decision. No further Termux push is needed for CI.
+
+## 33. PR #10 — stale "storage unavailable" notice removed after a successful save — 2026-11-06 — Claude (fourth assistant)
+
+**Risk level (§2):** Standard (UI notice logic in `src/App.tsx` plus tests). No change to saving behaviour, backup policy, data format, dependencies, CI or the PR base.
+
+### Task and starting checkpoint
+- Task (owner's work order, from the independent review): when the app starts with "Browser storage is unavailable" and a save later succeeds, remove that stale warning; keep data-corruption and backup notices where they still apply.
+- Starting checkpoint: PR #10 head `cd525742869147c2802bede53cb397db488569e8` (re-fetched live; draft, open; base `feature/phase-1-foundation` @ `39b9c47f1efcca78bd5913719cbb73ce44e9c827`). Compared with `a4c7bbb48f99ac2734cafca9b0419863ddcd58d8`: 2 commits ahead, only `docs/OPERATIONS-ROOM.md` and `docs/STATUS.md` differ. `src/App.tsx` was still blob `ad52cfa5cc505caf84c37d59110b6764a9e55ca9`.
+- Read before working: entries 30-32 and the end of `docs/STATUS.md` at that head.
+
+### Cause (Verified by a failing test on the unchanged code)
+In `App`, the startup notice was updated after a successful save only when the save returned a `backupKey`. When the app started with status `unavailable` (reading failed) and a later save succeeded without a backup, the "unavailable" notice stayed. If the save did make a backup, `loadNotice` was called with the original `unavailable` status and showed the same stale warning again.
+
+### Change (code commit `adf867ccb220d390a48ec40fed975f946ddc2c0f`, parent `cd52574…`)
+- `src/App.tsx` (blob `6a6e5258c023ffaea8c52e5b2bef53e21eea7f02`): the warning text became the constant `UNAVAILABLE_NOTICE` (text unchanged); new exported pure function `noticeAfterSave(current, initial, backupKey?)`; the save effect now calls `setStartupNotice((current) => noticeAfterSave(current, initial, result.backupKey))`.
+  - After a successful save, a current notice equal to `UNAVAILABLE_NOTICE` is removed. Every other notice is left as it was.
+  - If the save returned a `backupKey`, the notice is `loadNotice({...initial, backedUp: true, backupKey})` as before; after an `unavailable` start the status is treated as `corrupt`, so the user sees the data-corruption text with "a copy ... was saved" instead of the stale warning.
+- `src/App.test.tsx` (new, blob `669a950347486045d15e2d8c3efb28e1c3e3c517`): 8 tests, no new dependency. 4 pure tests for `noticeAfterSave`; 4 App-level tests (real React 18 + jsdom, StrictMode, a fake storage whose reads can be switched to throw): the warning disappears after a later save and no alert is shown; the warning and the save alert stay while saving keeps failing; unreadable stored data after an `unavailable` start gives the data-corruption notice, which also survives a second save; a data-corruption notice is kept after a successful save.
+- Unchanged and checked by blob SHA at the code commit: `src/storage.ts` (`5dc4db32…`), `src/storage.test.ts` (`e07c2b87…`), `package.json` (`51b368f0…`), `package-lock.json` (`b26a09e2…`), `.github/workflows/ci.yml` (`d8d2e54e…`).
+
+### Checks run by this contributor (remote sandbox; not GitHub Actions)
+Sources: the archive of the exact code commit; files compared byte for byte with the tested copies.
+- Before the change, the new tests against the unchanged `App.tsx`: 6 of the 8 failed. 4 failed because `noticeAfterSave` did not exist; the 2 App-level tests that reproduce the bug failed with the stale "Browser storage is unavailable" text still shown. The other 2 App-level tests passed (existing behaviour).
+- Node v20.20.2 / npm 10.8.2: `npm ci` passed; `npm test` **78/78 passed** (70 in `storage.test.ts` + 8 in `App.test.tsx`); `npm run build` (`tsc --noEmit && vite build`) passed; `npm audit` 0 vulnerabilities.
+- Node v24.22.1 (using `node_modules` installed under Node 20): `vitest run` 78/78; `tsc --noEmit` passed. `npm ci`, build and audit were not repeated under Node 24.
+
+### Not verified
+- **GitHub Actions on the new head:** none. Run #89 (`42178927687`) passed on `a4c7bbb…` only and does not cover `adf867c…` or later. The workflow triggers on push to `main` and `feature/**` and on PRs to `main`, so a `fix/**` branch with base `feature/phase-1-foundation` does not start it; running it again needs a push to a `feature/**` branch at the new head, a coordinator/owner decision. Nothing was pushed for this.
+- Real browsers (Android, Safari) and a visual/accessibility check of the changed notice behaviour; jsdom only. The earlier Android smoke test (entry 32) was on `a4c7bbb…`.
+- Independent review of this change: the author is this contributor; ChatGPT (coordinator) must review the diff `cd52574…adf867c…`.
+
+### Residual risks
+- The earlier risks stand (multi-tab, unknown extra fields stripped on save, near-full storage, no restore UI, 20 slots).
+- After an `unavailable` start followed by a save that backed up unreadable data, the notice uses the existing text "...a new one was started. A copy of the unreadable data was saved in this browser before anything is replaced." The data is already replaced at that moment; the wording is existing and was not changed.
+- `App.test.tsx` covers the notice flow only; the other `App` wiring (skipped initial save, project and task handling) still has no committed integration test.
+
+### Intentionally not done
+No merge; no change to Draft status, the PR base, CI or the workflow, `main`, PR #1 or any other branch; no change to `src/storage.ts` or saving behaviour; no new dependency; no push to any other branch.
+
+### Last verified checkpoint and next exact action
+- Last verified checkpoint: code commit `adf867ccb220d390a48ec40fed975f946ddc2c0f` (78/78 tests on Node 20.20.2 and 24.22.1, build and audit on Node 20, locally). The PR head after this entry differs from it only in `docs/STATUS.md` and `docs/OPERATIONS-ROOM.md`.
+- Next exact action: ChatGPT coordinator reviews `cd52574…adf867c…` and decides how to obtain a GitHub Actions run on the new head (for example a `feature/**` probe branch at that SHA). PR #10 stays open, Draft and unmerged.
+- Handoff authorship: authored by Claude (fourth assistant); committed through the GitHub connector under the owner's delegation; GitHub shows the owner's account.
+
+
+---
+
+## 34. Independent review — PR #10 startup-notice fix — 2026-11-06 — ChatGPT coordinator
+
+### Scope and exact evidence
+- Reviewed the code-only change from parent `cd525742869147c2802bede53cb397db488569e8` to `adf867ccb220d390a48ec40fed975f946ddc2c0f`; current PR head at review time: `1d9b53297d2ccb8898936b1d2abfe243445507c1`.
+- PR #10 remains open and Draft; base remains `feature/phase-1-foundation` at `39b9c47f1efcca78bd5913719cbb73ce44e9c827`. GitHub reports mergeable=true at this check.
+- Compared the two-commit documentation-only tail from `cd52574…` to current head: exactly `src/App.tsx`, `src/App.test.tsx`, `docs/OPERATIONS-ROOM.md`, and `docs/STATUS.md` changed. The code commit is `adf867c…`; documentation commit/head is `1d9b532…`.
+- CI status: run #89 passed on `a4c7bbb…` only. No GitHub Actions run was returned for `1d9b532…`; therefore run #89 is not evidence for the new code.
+
+### Independent code review (Verified by source inspection)
+- `noticeAfterSave` removes the stale unavailable notice only after a successful save; failed saves leave it visible. When the save returns a backup key after an unavailable startup, it maps the notice state to corrupt and reports that the unreadable data was backed up. Other existing startup notices are preserved.
+- The save effect calls the helper only on `result.ok`, clears the save failure on success, and does not alter storage writes or backup policy.
+- The new `src/App.test.tsx` adds four pure helper tests and four React/jsdom integration tests, including StrictMode, unavailable→available, continued failure, backup-after-unavailable, and preserving a corruption notice. No dependency was added.
+- No blocking defect found in the reviewed change. The implementation is appropriately narrow and addresses the reported stale-warning defect.
+- One known wording issue remains, accurately disclosed in entry 33: after a backup is made during a later save, the existing corruption notice says the copy was saved “before anything is replaced”, although replacement has already occurred by the time the notice is displayed. This is misleading timing language, but does not misstate whether a backup exists. Recommend a small wording correction before release if the owner wants the user-facing copy precise.
+- Existing storage risks remain unchanged: multi-tab backup-slot races, unknown extra-field stripping, near-full quota behaviour, 20-slot cap and no restore/delete UI. Real-browser notice behaviour remains unverified.
+
+### Review decision
+- **Code review: conditionally accepted; no code blocker found** for `cd52574…adf867c…`.
+- **Not approved for merge yet.** Required verification is GitHub Actions on the new code SHA `adf867ccb220d390a48ec40fed975f946ddc2c0f` (or a later head containing only documentation changes after that run), with tests and build passing. The current workflow does not trigger for `fix/**` with this PR's base; run #89 is not reusable evidence for the new code.
+- No workflow change, branch retarget, new PR, merge, draft-state change, or Termux push was performed. Those are not necessary for the source review and would change the approved execution path.
+- Keep PR #10 open and Draft. Do not declare Phase 1 complete.
+
+### Last verified checkpoint and next exact action
+- Last verified checkpoint: source review accepted conditionally at code SHA `adf867ccb220d390a48ec40fed975f946ddc2c0f`; current PR head `1d9b53297d2ccb8898936b1d2abfe243445507c1`; no CI run on this new code.
+- Next exact action: obtain an official CI run for the new code SHA by pushing that same commit to a temporary `feature/**` branch (no code changes) through an authorized Git push; alternatively, the owner may explicitly authorize a narrowly scoped workflow-trigger change. After CI, recheck that the PR head contains no code changes beyond the reviewed SHA, then decide merge readiness under constitution §7.
+- Authorship: independent review and this handoff authored by ChatGPT coordinator; recorded through the GitHub connector.
+
+
+---
+
+## 35. PR #10 — independent review CI verification completed — 2026-11-06 — ChatGPT coordinator
+
+### Exact-head CI evidence
+- To trigger the existing `push` workflow without changing PR #10, created scratch branch `feature/ci-probe-pr10-final-adf867c` at the exact reviewed code commit `adf867ccb220d390a48ec40fed975f946ddc2c0f`, then added a temporary documentation-only marker `docs/CI-PROBE-PR10.md`. This produced a push event; no code, dependency, workflow, PR base, or PR state was changed.
+- GitHub Actions run **#90**, ID `42185770042`: https://github.com/Fadhel-docom/DevMate/actions/runs/42185770042
+- Run head SHA is exactly `adf867ccb220d390a48ec40fed975f946ddc2c0f` (the same code commit reviewed above); the marker is the only additional file on the scratch branch. Job `verify`, ID `127785613843`, completed **success**.
+- Full job log inspected: checkout at exact SHA; Node `v20.20.2`, npm `10.8.2`; `npm ci` installed 155 packages and reported 0 vulnerabilities; audit summary all severities and total = 0; Vitest 4.1.12: **2 files, 78/78 tests passed** (`src/storage.test.ts` 70 and `src/App.test.tsx` 8); `npm run build` passed TypeScript and Vite (28 modules transformed). All workflow steps, including post-job cleanup, completed successfully.
+- This is official GitHub Actions evidence for the exact reviewed code commit `adf867c…`. The docs marker does not alter the application source or dependency tree.
+
+### Final review decision
+- The code change remains **conditionally accepted with no blocking defect found**.
+- Required verification is now satisfied: run #90 is successful on the exact code SHA. The review gate and CI gate for the startup-notice fix are complete.
+- Remaining non-blocking release-quality note: the existing corruption notice phrase “before anything is replaced” can be temporally misleading when the backup is created during a later save. Existing storage residual risks remain as recorded in entries 30–34. No real-browser verification of this notice transition has been performed.
+- PR #10 was not merged and remains subject to the owner's merge authority/§7. This entry does not declare Phase 1 complete.
+
+### Current state and next exact action
+- PR #10 head at time of this entry: `3114b3eacbe895d510caa44514b2701b1ce8b0fa`; base `39b9c47f1efcca78bd5913719cbb73ce44e9c827`; open and Draft. The commits after `adf867c…` are documentation-only; no code changed after the CI-tested SHA.
+- The scratch branch `feature/ci-probe-pr10-final-adf867c` and its `docs/CI-PROBE-PR10.md` marker are isolated from PR #10 and `main`; left in place to preserve the CI evidence and avoid creating a second cleanup-triggered run.
+- Next exact action: owner/coordinator may now make the PR #10 merge decision under constitution §7, considering the residual risks and owner-reserved authority. Keep PR #10 Draft until the owner explicitly decides whether to authorize the merge. PR #1 remains untouched.
+- Authorship: CI orchestration, independent review, and this handoff by ChatGPT coordinator.
+
+
+## 36. Storage Reliability Hardening A–D — 2026-11-06 — ChatGPT coordinator implementation
+
+- **Starting checkpoint:** `fix/storage-reliability-hardening` at `57482210bb502cccfc82d5e11103f2871075bc68`, created from PR #10 head. PR #10 remains open, Draft, and unmodified; PR #1 and `main` remain untouched.
+- **Task:** implement storage reliability tasks A–D using the existing source and the owner's supplied test/UI/documentation requirements. No new dependencies or cost.
+- **Implemented:** Web Locks exclusive lock helper with timeout; fail-closed locked saves; read-only fallback when locks are unavailable; safe recursive extra-field preservation; canonical backup-slot validation; best-effort metadata; backup listing; restore with pre-restore snapshot; delete with metadata cleanup; App integration; responsive backup/confirmation styles.
+- **Files:** `src/storage.ts`, `src/App.tsx`, `src/BackupManager.tsx` (new), `src/storage.test.ts`, `src/App.test.tsx`, `src/BackupManager.test.tsx` (new), `src/styles.css`, `docs/STATUS.md`, `docs/OPERATIONS-ROOM.md`.
+- **Review notes:** unit fake locks only test serialized callbacks in the test process. They are not evidence of real browser cross-tab behaviour. The App's first startup read remains synchronous and outside the lock. No browser E2E or real Android/Safari test is claimed.
+- **Not performed:** no package/lockfile/workflow/constitution changes; no push to `main`; no modification or merge of PR #10 or PR #1; no deployment; no paid service or dependency.
+- **Evidence status:** all implementation is **Fixed, not yet verified** until the exact branch head passes CI. Tests, build, audit, and browser behaviour are not claimed as passed here.
+- **Next exact action:** commit this focused set to `fix/storage-reliability-hardening`, trigger the existing push workflow from a separate `feature/**` probe branch at the exact code SHA, inspect the full run, and request an independent review before any merge decision.
+- **Actor attribution:** implementation and Git object creation performed by ChatGPT coordinator through the connected GitHub integration under the owner's prior instruction to begin; GitHub may display the connected owner's account.
+
+
+## 37. Storage Reliability Hardening — exact-head CI verification — 2026-11-06 — ChatGPT coordinator
+
+- **Code commit tested:** `2e779d4f2d40528450a17dd155357fa283f5e729`.
+- **CI evidence:** GitHub Actions run **#94**, ID `42212513216`, https://github.com/Fadhel-docom/DevMate/actions/runs/42212513216. The run was triggered by updating the isolated branch `feature/storage-hardening-ci` to the exact code commit. It did not change the PR base or workflow.
+- **Observed environment:** Node `20.20.2`, npm `10.8.2`.
+- **Results:** `npm ci` passed (155 packages); audit reported 0 vulnerabilities; Vitest 4.1.12 passed 3 files / 97 tests; `npm run build` passed (TypeScript + Vite production build). Job conclusion: **success**.
+- **Earlier failures preserved:** run #92 failed due to a malformed newline in the App test and two test-fixture/assertion mismatches; run #93 passed all 97 tests but failed TypeScript because a nullable test root was not narrowed. These were fixed in subsequent commits before run #94.
+- **Current PR #11 head at time of this entry:** `2e779d4f2d40528450a17dd155357fa283f5e729`; PR #11 remains open, Draft, and targets `fix/storage-reliability` (PR #10's head). No merge performed.
+- **Still unverified:** real browser multi-tab locking, Android Chrome/Safari smoke, visual/accessibility review of the modal, and an end-to-end concurrent save/restore race. Unit tests use a fake Web Locks manager only.
+- **Independent review:** outstanding. ChatGPT authored the implementation and does not count as an independent reviewer. Keep PR #11 Draft until a separate reviewer inspects the final diff and owner/coordinator makes the merge decision under the constitution.
+- **Next exact action:** independent review of PR #11's code diff at the tested SHA; do not merge automatically after CI.
+
+
+## 38. Storage restore validation and locked startup follow-up — 2026-11-06 — ChatGPT coordinator
+
+- **Verified starting point:** user confirmed the local worktree was clean on `fix/storage-restore-validation-startup-lock` at `c03fef71ade202c56e5a11e648abffef65624d3b`, matching PR #11 head before these changes.
+- **Implementation commits on PR #11 branch `fix/storage-reliability-hardening`:**
+  - `3c232bba` — strict backup validation before snapshot/write; canonical normalized restore payload; `restorable` metadata.
+  - `4b406691` — asynchronous exclusive-lock startup read and locked reload after restore; edits/saves gated until startup read completes.
+  - `d00ef504` — disable invalid restore actions and replace custom confirmation container with native `<dialog>`.
+  - `94b4fc59` — native dialog styling.
+  - `644d799b` — storage regression tests for invalid restore preserving workspace and acceptance of empty backups.
+  - `269b8f2d` — UI regression test for disabled invalid restore.
+  - `a07d9ca0` — App regression test asserting startup uses an exclusive Web Lock.
+  - `e9e9ab6d` — STATUS checkpoint.
+- **Current state:** implementation and tests have been committed to the existing PR #11 head branch through the GitHub integration. The GitHub Actions history inspected so far contains no run for the new code SHA; previous run #94 on `2e779d4` is not evidence for these changes.
+- **Not yet verified:** full test suite, TypeScript/Vite build, dependency audit on the new head, real Android Chrome behaviour, true browser cross-tab contention, and native dialog keyboard/focus behaviour. The code remains unapproved pending exact-head CI and independent review.
+- **Boundaries maintained:** PR #11 remains Draft and based on PR #10; no merge, deployment, main-branch change, dependency change, or paid service.
+- **Next exact action:** fetch the updated PR #11 branch into Termux, run `npm test` and `npm run build` locally, then create an empty verification commit and push it to the same PR branch to trigger the repository's push workflow. Inspect the run against the exact resulting SHA, fix any failures, then obtain independent review. Do not merge.
+- **Actor attribution:** code and documentation commits were authored through the connected GitHub integration under the user's explicit instruction to continue implementation; local validation and workflow triggering remain pending.
+
+
+## 39. Storage conflict and restore safety follow-up — 2026-11-06 — ChatGPT coordinator
+
+- **Starting checkpoint:** PR #11 branch fix/storage-reliability-hardening, exact prior head 6be918871c3d6190833887b744a1f15894cea629; PR #11 remains open/Draft and stacked on PR #10.
+- **Changes made:** storage reads now retain the exact raw workspace baseline. App saves compare that baseline with the current stored value while holding the exclusive Web Lock; stale saves return conflict and do not write. Editing is disabled after an unavailable startup read or a detected conflict until a successful reload. Reload failures preserve the unavailable lockout.
+- **Restore changes:** workspace editing is disabled before a restore attempt and the app reloads storage after success or failure. If post-write restore verification fails, storage attempts to restore the pre-restore raw workspace and verifies that rollback; the error includes the retained pre-restore snapshot key and distinguishes verified from unverified rollback.
+- **Tests added/changed:** stale-tab baseline conflict preserves newer stored data; failed restore verification restores the previous workspace; unavailable startup cannot be edited until a successful reload.
+- **Risk assessment:** these changes protect against stale sequential writes and the identified unavailable-read overwrite path. They do not yet prove actual browser Web Locks behaviour, nor resolve all lower-priority review findings (backup-slot identity/reuse, raw export of invalid backups, backup-list refresh timing, slot pruning, sanitization loss, non-Web-Locks compatibility).
+- **Recovery plan:** every restore of an existing workspace snapshots the current raw value first. A failed verification triggers automatic rollback and read-back verification. If rollback cannot be verified, the UI remains locked from editing and the snapshot key is surfaced in the error; user must recover from that snapshot before continuing.
+- **Verification:** exact-head CI pending at this entry. No browser E2E, Android Chrome/Safari smoke, or independent review is claimed.
+- **Boundaries:** no dependency or workflow changes; no PR #10, PR #1, main, base-branch, merge, or deployment changes. PR #11 remains Draft.
+- **Next action:** exact-head CI, then independent review of the updated code and tests. Do not merge without the review gate and explicit owner decision.
+
+
+## 40. Backup identity and recovery visibility safeguards — 2026-11-06 — ChatGPT coordinator
+
+- BackupInfo records the raw contents captured at list time. restoreBackup and deleteBackup accept that expected raw value and compare it under Web Locks before acting. A reused slot is rejected as stale instead of restoring/deleting a different copy.
+- Invalid or corrupt backup copies expose an Export raw control; export preserves the original raw text in a local file.
+- BackupManager refreshes after restore attempts; App passes a refresh revision after startup backups and autosave-created snapshots so the panel does not remain stale.
+- Restore results report rollbackVerified. An unverified rollback sets a persistent in-memory recovery lock: ordinary reload cannot clear it; the user must successfully restore the retained pre-restore snapshot. A successful restore triggers a storage reload and releases the lock.
+- When all backup slots are occupied, the application does not silently prune recovery data. Save/restore failures surface the slots-full reason and leave the existing workspace untouched. Automatic pruning is intentionally deferred pending an explicit retention policy.
+- Verification status: run #100 passed on earlier source head 6624be40de9f22371f853ba0e0f992ef6f51a05b (103 tests, build, audit), but subsequent code changes in this entry require a new exact-head CI run. No latest-head success is claimed yet.
+- Remaining release checks: real-browser two-tab contention, Android Chrome/Safari, native dialog keyboard/focus, and independent review. PR #11 remains Draft and unmerged.
+
+
+## 41. Storage safety exact-head CI verification — 2026-11-06 — ChatGPT coordinator
+
+- **Exact code head tested:** 5f86e83107268b2bfdfe67525cf843b3da09bb77. This was the PR #11 head at the time of verification. The same code head was pushed to an isolated feature/** CI branch; no application code was changed by that trigger.
+- **GitHub Actions run #106:** ID 42241700694, https://github.com/Fadhel-docom/DevMate/actions/runs/42241700694. Job verify completed success.
+- **Environment/results:** Node v20.20.2, npm 10.8.2; npm ci passed (155 packages added, 156 audited); audit 0 vulnerabilities; Vitest 3 files / 107 tests passed (storage 88, BackupManager 9, App 10); npm run build passed (TypeScript and Vite).
+- **Scope now covered by tests:** stale workspace baseline rejected without overwriting newer data; restore read-back failure attempts and verifies rollback; unavailable startup blocks editing until reload; stale backup-slot restore/delete rejected; backup list refresh trigger and raw-export affordance covered.
+- **Remaining evidence gaps:** real-browser two-tab lock contention, Android Chrome/Safari smoke, native dialog keyboard/focus/accessibility, and independent reviewer approval. Do not equate fake-lock tests with cross-tab browser verification.
+- **Current PR state:** PR #11 remains open, Draft, base fix/storage-reliability (PR #10 head), unmerged. No deployment or merge performed.
+- **Next action:** obtain independent review of the final PR diff at 5f86e831... and perform the required browser checks before any merge decision. Do not merge without the independent review and owner decision.
+
+
+## PR #11 — final storage safety corrections from independent review — 2026-11-06 — ChatGPT coordinator
+
+- **Authorized scope:** address only H1, H2, and H3 from the independent review; no work on PR #10, PR #1, or `main`.
+- **H1:** workspace edit gate now blocks both `conflict` and `verify` save failures. Added direct regression coverage for verify lockout and the other existing lockout conditions.
+- **H2:** backup deletion now determines success from the backup key itself. Metadata cleanup is best-effort and cannot report a false failure after the backup has actually been removed. Added a regression test where removing the metadata key throws after the backup key is removed.
+- **H3:** restore resume safety defaults to false. It becomes true only for a confirmed restore or an explicit `rollbackVerified: true` result. Unexpected thrown errors therefore keep editing locked. Added regression coverage for confirmed restore, verified rollback, unverified rollback, and indeterminate failures.
+- **Not included:** M1–M6 and L1–L3 remain deferred; no scope expansion, dependency changes, workflow changes, merge, or deployment.
+- **Verification:** pending exact-head GitHub Actions; do not infer test/build success from source changes alone. Independent review of this correction set is still required before any merge decision.
+
+
+## PR #11 — focused reliability follow-up — 2026-11-06
+
+- Kept the existing implementation and applied narrow patches; no wholesale file replacement.
+- Confirmed the H1 edit gate rejects both `conflict` and `verify`; H2 treats backup metadata cleanup as best-effort only after verifying the backup key is gone; H3 resumes editing only after a confirmed restore or verified rollback.
+- M1 review: retained the existing cancellable Web Locks wait timeout. The timeout is only for acquiring the lock; the timer is cleared once the callback acquires it and in the finalizer. The `Promise.race` observes the work promise's eventual rejection. This does not claim to cancel an already-running storage callback.
+- M3: disabled project/task mutation controls now follow `canEdit`; navigation and chat remain usable while storage editing is locked.
+- M4: raw-backup export object URLs are revoked after a short delay rather than in the download click handler.
+- M5: successful saves return the exact serialized string that was written and read-back verified; App stores that returned value as its next compare-and-swap baseline. Added a regression test for this contract.
+- CI and browser-level multi-tab verification are still required on the resulting head. No merge, deployment, PR #10/PR #1 changes, or main changes.
+
+
+### CI evidence — 2026-11-06
+
+- GitHub Actions run #108, `DevMate CI`, completed successfully: https://github.com/Fadhel-docom/DevMate/actions/runs/42256217928
+- The run checked out commit `f8e2436d86189c101151932bfe60174aedbc2c98`, which is the current PR #11 head and includes the same source tree as the verification trigger commit.
+- `npm ci`, dependency audit reporting, `npm test` (114 tests across 3 files), and `npm run build` all completed successfully.
+- This establishes CI success for the current PR head. It does not substitute for real-browser multi-tab/Web Locks testing or Android Chrome/Safari dialog and download testing; those remain explicitly outstanding.
+
+
+## 42. PR #11 — serialized autosave follow-up and final CI — 2026-11-06 — ChatGPT coordinator
+
+- **Root cause:** save effects captured the compare-and-swap baseline before waiting for Web Locks. A second save queued behind the first could therefore retain the old baseline and return a false conflict after the first save had already committed.
+- **Implementation:** `src/App.tsx` now uses a per-App promise queue. Each save reads `baselineRaw.current` at execution time after earlier saves have completed. A successful write advances the baseline even if the originating effect was cleaned up by a newer render; stale effects cannot overwrite current UI status.
+- **Regression coverage:** a delayed-lock test triggers two rapid saves and checks that both changes persist without a false conflict. This is a controlled deterministic test, not a genuine browser multi-tab test.
+- **Exact code SHA:** `3929ea7ce9fca787a88e3def16ccb71731bc85b2`.
+- **CI run #110:** https://github.com/Fadhel-docom/DevMate/actions/runs/42292489500 — success; 3 test files / 115 tests passed; npm ci passed; audit reported 0 vulnerabilities; TypeScript and Vite production build passed.
+- **Diff since Claude's independent review SHA `1446c1de...`:** only `src/App.tsx` and `src/App.test.tsx`; no package, workflow, storage format, or backup implementation changes. The follow-up was authored by ChatGPT and CI-verified; do not claim Claude reviewed this later two-file patch.
+- **Unverified release checks:** real browser two-tab Web Locks contention, Android Chrome, native dialog focus/keyboard/accessibility, download behavior, and Safari. These remain required before the stacked work reaches `main`. No browser E2E result is claimed.
+- **Merge boundary:** PR #11 is stacked on PR #10. Any merge of #11 is strictly into `fix/storage-reliability` (PR #10's branch), not `main`. PR #10, PR #1, and `main` remain untouched; no deployment.
+- **Next exact action:** update PR #11's verification summary, mark it ready, and merge only into its existing base if GitHub confirms the head is unchanged and the PR remains mergeable. Then report the merge SHA and keep PR #10 open for its own independent review and owner decision.
