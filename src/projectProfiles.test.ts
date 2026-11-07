@@ -94,6 +94,22 @@ describe("project profile schema v1", () => {
       };
       expect(validateProjectProfilesStore(invalidSha).ok).toBe(false);
     }
+    const nullSha = draftStore();
+    nullSha.records[0].approval = {
+      status: "approved", approvedRevision: 1,
+      evidence: { kind: "approved-pull-request", reference: "PR #1", commitSha: null },
+      approvedAt: 1234, approvedContentHash: computeProfileContentHash(nullSha.records[0]),
+      revokedAt: null, revokedRevision: null, revocationReason: null, revocationHistory: []
+    };
+    expect(validateProjectProfilesStore(nullSha).ok).toBe(false);
+    const badOwnerSha = draftStore();
+    badOwnerSha.records[0].approval = {
+      status: "approved", approvedRevision: 1,
+      evidence: { kind: "owner-decision", reference: "Decision D-1", commitSha: "bad" },
+      approvedAt: 1234, approvedContentHash: computeProfileContentHash(badOwnerSha.records[0]),
+      revokedAt: null, revokedRevision: null, revocationReason: null, revocationHistory: []
+    };
+    expect(validateProjectProfilesStore(badOwnerSha).ok).toBe(false);
     const uppercaseSha = draftStore();
     uppercaseSha.records[0].approval = {
       status: "approved", approvedRevision: 1,
@@ -212,6 +228,34 @@ describe("project profile schema v1", () => {
     tooLarge.records[0].extensions = { values: Array(10001).fill("x") };
     expect(validateProjectProfilesStore(tooLarge).ok).toBe(false);
   });
+  it("changes the content fingerprint for each policy-controlled profile field", () => {
+    const original = draftStore().records[0];
+    const mutations: Array<(profile: ProjectProfile) => void> = [
+      (profile) => { profile.projectId = "p2"; },
+      (profile) => { profile.identity.name = "Changed"; },
+      (profile) => { profile.identity.purpose = "Changed"; },
+      (profile) => { profile.lifecycle = "active"; },
+      (profile) => { profile.repositories.push("https://github.com/org/repo"); },
+      (profile) => { profile.websites.push("https://example.com"); },
+      (profile) => { profile.technology.push("TypeScript"); },
+      (profile) => { profile.goals.push("Goal"); },
+      (profile) => { profile.governanceReferences.push("D-001"); },
+      (profile) => { profile.workflow.push("review"); },
+      (profile) => { profile.dataClassification = "public"; },
+      (profile) => { profile.allowedTools.push("read"); },
+      (profile) => { profile.forbiddenActions.push("publish"); },
+      (profile) => { profile.releaseRules.push("review-required"); },
+      (profile) => { profile.risks.push("risk"); },
+      (profile) => { profile.recoveryPlan.push("restore"); },
+      (profile) => { profile.unknownFields.push("new-field"); }
+    ];
+    const baseline = computeProfileContentHash(original);
+    for (const mutate of mutations) {
+      const changed = JSON.parse(JSON.stringify(original)) as ProjectProfile;
+      mutate(changed);
+      expect(computeProfileContentHash(changed)).not.toBe(baseline);
+    }
+  });
   it("hashes controlled profile content, excludes approval and updatedAt, and rejects unsafe input", () => {
     const original = draftStore().records[0];
     const baseline = computeProfileContentHash(original);
@@ -232,6 +276,16 @@ describe("project profile schema v1", () => {
     expect(result.rejected).toContainEqual({ index: 1, reason: "Sparse legacy project entry." });
     expect(() => migrateLegacyProjectsToProfiles([{ id: "p2", name: "Two" }], 1234,
       { schemaVersion: 1, revision: 1, updatedAt: 1234, records: [null] } as never)).toThrow();
+  });
+  it("continues after duplicate legacy IDs and rejects future-version existing stores", () => {
+    const result = migrateLegacyProjectsToProfiles([
+      { id: "p1", name: "First" }, { id: "p1", name: "Duplicate" }, { id: "p2", name: "Second" }
+    ], 1234);
+    expect(result.store.records.map((record) => record.projectId)).toEqual(["p1", "p2"]);
+    expect(result.rejected).toContainEqual({ index: 1, reason: "Duplicate legacy project ID." });
+    expect(() => migrateLegacyProjectsToProfiles([], 1234,
+      { schemaVersion: 2, revision: 1, updatedAt: 1234, records: [] } as never)).toThrow();
+    expect(migrateLegacyProjectsToProfiles([], 1234).store.records).toEqual([]);
   });
   it("rejects duplicate repository identifiers", () => {
     const store = draftStore();
