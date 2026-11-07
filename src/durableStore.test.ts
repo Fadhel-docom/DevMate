@@ -126,6 +126,20 @@ describe("durable store foundation", () => {
     expect(await store.readProject("p1")).toMatchObject({ ok: true, value: { value: "before" } });
   });
 
+  it("fails closed when a terminal journal no longer matches the stored bytes", async () => {
+    const { store, storage } = setup();
+    const before = envelope({ p1: { projectId: "p1", value: "before" } });
+    const after = envelope({ p1: { projectId: "p1", value: "after" } }, 2);
+    storage.seed(durableStoreKey("project-profiles"), before);
+    storage.seed(durableJournalKey("project-profiles"), JSON.stringify({
+      version: 1, transactionId: "tampered", projectId: "p1",
+      beforeRaw: before, afterRaw: after, phase: "committed", createdAt: 1000
+    }));
+    expect(await store.recover()).toMatchObject({ ok: false, reason: "indeterminate" });
+    expect(await store.writeProject("p1", { projectId: "p1", value: "new" })).toMatchObject({ ok: false, reason: "indeterminate" });
+    expect(storage.getItem(durableStoreKey("project-profiles"))).toBe(before);
+  });
+
   it("snapshots only into the separate bounded backup namespace and refuses a sixth copy", async () => {
     const { store, storage } = setup();
     for (let i = 0; i < 5; i++) {
