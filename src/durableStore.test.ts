@@ -110,6 +110,25 @@ describe("durable store foundation", () => {
     expect(await store.writeProject("p1", { projectId: "p1", value: "changed-task" })).toMatchObject({ ok: false, reason: "invalid-data" });
   });
 
+  it("exposes only read access to cross-store update guards", async () => {
+    const storage = new MemoryStorage();
+    let view: unknown;
+    const store = createDurableStore<RecordValue>({
+      name: "task-ledger", storage,
+      runExclusive: async (work) => ({ ok: true, value: await work() }),
+      validateRecord: (id, value): value is RecordValue =>
+        !!value && typeof value === "object" && (value as RecordValue).projectId === id,
+      validateUpdate: (_id, _previous, _next, _before, _after, readStorage) => {
+        view = readStorage;
+        return true;
+      }
+    });
+    expect(await store.writeProject("p1", { projectId: "p1", value: "task" })).toMatchObject({ ok: true });
+    expect(view).toBeDefined();
+    expect(Object.keys(view as object)).toEqual(["getItem"]);
+    expect(Object.isFrozen(view)).toBe(true);
+  });
+
   it("rolls back and verifies the old bytes when a write cannot be read back", async () => {
     const { store, storage } = setup();
     await store.writeProject("p1", { projectId: "p1", value: "before" });
