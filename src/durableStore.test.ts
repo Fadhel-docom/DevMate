@@ -94,6 +94,22 @@ describe("durable store foundation", () => {
     expect(await store.writeProject("p1", { projectId: "p1", value: "changed" })).toMatchObject({ ok: false, reason: "invalid-data" });
   });
 
+  it("lets a locked update guard read another store for cross-project policy checks", async () => {
+    const storage = new MemoryStorage();
+    storage.seed(durableStoreKey("project-profiles"), "approved-profile-store");
+    const store = createDurableStore<RecordValue>({
+      name: "task-ledger", storage,
+      runExclusive: async (work) => ({ ok: true, value: await work() }),
+      validateRecord: (projectId, value): value is RecordValue =>
+        !!value && typeof value === "object" && (value as RecordValue).projectId === projectId,
+      validateUpdate: (_id, _previous, _next, _records, readStorage) =>
+        readStorage.getItem(durableStoreKey("project-profiles")) === "approved-profile-store"
+    });
+    expect(await store.writeProject("p1", { projectId: "p1", value: "task" })).toMatchObject({ ok: true });
+    storage.seed(durableStoreKey("project-profiles"), "changed-profile-store");
+    expect(await store.writeProject("p1", { projectId: "p1", value: "changed-task" })).toMatchObject({ ok: false, reason: "invalid-data" });
+  });
+
   it("rolls back and verifies the old bytes when a write cannot be read back", async () => {
     const { store, storage } = setup();
     await store.writeProject("p1", { projectId: "p1", value: "before" });
