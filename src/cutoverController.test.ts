@@ -78,7 +78,7 @@ function setup(raw: string | null = LEGACY) {
   if (raw !== null) storage.values.set(STORAGE_KEY, raw);
   const log: StageLog = { calls: [], hooks: {} };
   const lock = mutex();
-  const make = () => createCutoverController({ storage, stages: fakeStages(log), now: () => NOW, runExclusive: lock });
+  const make = () => createCutoverController({ storage, stages: fakeStages(log), now: () => NOW, runExclusive: lock, confirmLegacyWritersQuiesced: async () => true });
   return { storage, log, lock, make, controller: make() };
 }
 async function begun(raw: string | null = LEGACY) {
@@ -133,6 +133,19 @@ describe("marker schema (R2, R6)", () => {
   });
 });
 
+  it("fails closed before intent unless a host proves every pre-barrier writer is quiesced", async () => {
+    const storage = new MemStorage(); storage.values.set(STORAGE_KEY, LEGACY);
+    const controller = createCutoverController({ storage, stages: fakeStages({ calls: [], hooks: {} }) });
+    const plan = controller.preflight(); if (!plan.ok) throw new Error("preflight failed");
+    expect(await controller.begin(plan.plan)).toMatchObject({ ok: false, reason: "legacy-writers-not-quiesced", state: { mode: "legacy" } });
+    expect(storage.sets).toEqual([]);
+    expect(storage.values.has(CUTOVER_MARKER_KEY)).toBe(false);
+    // A pre-barrier bundle has no marker check and can still write; therefore the safe outcome is
+    // to keep cutover unstarted until a real host-level quiescence verifier exists.
+    storage.setItem(STORAGE_KEY, "[]");
+    expect(readCutoverState(storage)).toEqual({ mode: "legacy" });
+  });
+
 describe("restart rule: readCutoverState", () => {
   it("maps no marker to legacy, intent/intermediate to recovery, committed to durable", () => {
     const storage = new MemStorage();
@@ -186,7 +199,7 @@ describe("preflight and intent (begin)", () => {
   it("a stale tab's plan cannot override intent declared by another tab for different bytes", async () => {
     const a = setup(); const planA = a.controller.preflight(); if (!planA.ok) throw new Error("x");
     expect((await a.controller.begin(planA.plan)).ok).toBe(true);
-    const staleTab = createCutoverController({ storage: a.storage, stages: fakeStages(a.log), now: () => NOW, runExclusive: a.lock });
+    const staleTab = createCutoverController({ storage: a.storage, stages: fakeStages(a.log), now: () => NOW, runExclusive: a.lock, confirmLegacyWritersQuiesced: async () => true });
     const stalePlan = { sourceRaw: "[]", fingerprint: fingerprintSource("[]") };
     expect(await staleTab.begin(stalePlan)).toMatchObject({ ok: false, reason: "marker-present" });
     expect(a.controller.preflight()).toMatchObject({ ok: false, reason: "marker-present" });
@@ -253,7 +266,8 @@ describe("preflight and intent (begin)", () => {
     const storage = new MemStorage(); storage.values.set(STORAGE_KEY, LEGACY);
     const controller = createCutoverController({
       storage, stages: fakeStages({ calls: [], hooks: {} }),
-      runExclusive: async () => ({ ok: false, reason: "lock-timeout", message: "timeout" })
+      runExclusive: async () => ({ ok: false, reason: "lock-timeout", message: "timeout" }),
+      confirmLegacyWritersQuiesced: async () => true
     });
     const plan = controller.preflight(); if (!plan.ok) throw new Error("x");
     expect(await controller.begin(plan.plan)).toMatchObject({ ok: false, reason: "lock-timeout" });
@@ -486,7 +500,7 @@ describe("production stages over the real PR-B / PR-C adapters (in-memory storag
     const storage = new MemStorage();
     if (raw !== null) storage.values.set(STORAGE_KEY, raw);
     // Default lock runner (navigator.locks) on purpose: stages must not request the lock again.
-    const controller = createCutoverController({ storage, stages: createCutoverStages({ storage, now: () => NOW }), now: () => NOW });
+    const controller = createCutoverController({ storage, stages: createCutoverStages({ storage, now: () => NOW }), now: () => NOW, confirmLegacyWritersQuiesced: async () => true });
     return { storage, controller };
   }
   const full = async (ctx: ReturnType<typeof real>) => {
@@ -517,7 +531,7 @@ describe("production stages over the real PR-B / PR-C adapters (in-memory storag
       const plan = ctx.controller.preflight(); if (!plan.ok) throw new Error("x");
       await ctx.controller.begin(plan.plan);
       for (let i = 0; i < stopAfter; i++) await ctx.controller.advance();
-      const restarted = createCutoverController({ storage: ctx.storage, stages: createCutoverStages({ storage: ctx.storage, now: () => NOW }), now: () => NOW });
+      const restarted = createCutoverController({ storage: ctx.storage, stages: createCutoverStages({ storage: ctx.storage, now: () => NOW }), now: () => NOW, confirmLegacyWritersQuiesced: async () => true });
       expect(await restarted.resume()).toMatchObject({ ok: true, state: { mode: "durable" } });
       expect(ctx.storage.values.get(STORAGE_KEY)).toBe(LEGACY);
     }
