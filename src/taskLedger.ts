@@ -86,7 +86,7 @@ const taskStates = new Set<TaskState>([
 ]);
 const riskLevels = new Set<TaskRisk>(["small", "standard", "sensitive"]);
 const actionOutcomes = new Set<TaskActionOutcome>(["planned", "started", "succeeded", "failed", "indeterminate"]);
-const unsafeKeys = new Set(["__proto__", "prototype", "constructor"]);
+const unsafeKeys = new Set(["__proto__", "prototype", "constructor", "toString", "toLocaleString", "valueOf", "hasOwnProperty", "isPrototypeOf", "propertyIsEnumerable", "__defineGetter__", "__defineSetter__", "__lookupGetter__", "__lookupSetter__"]);
 const storeKeys = ["schemaVersion", "revision", "updatedAt", "records", "events"];
 const taskKeys = [
   "taskId", "projectId", "objective", "scope", "acceptanceCriteria", "risk", "priority", "dueAt",
