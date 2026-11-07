@@ -666,3 +666,9 @@ Run the full Vitest suite, TypeScript/Vite production build, and dependency audi
 1. Obtain a fresh independent review of the exact current PR #23 head.
 2. If review approves, request the owner's separate explicit approval of this exact v1.2 amendment. Do not merge before that approval.
 3. Only after approved merge, reconcile PR #24 first and stacked PR #26 second; rerun exact-head CI and independent reviews as applicable.
+
+
+### PR #23 owner approval gate — 2026-11-07
+- The independent review of head `594603d64cb7670509e5a652d91d7c709da0eb56` returned **APPROVE WITH FOLLOW-UP**, no blockers. Three documentation follow-ups were applied in the subsequent corrective commits.
+- No owner approval of v1.2 is recorded. Before merge, require a separate explicit owner approval identifying both this exact constitutional amendment and the final PR head SHA, recorded durably with date and attributable evidence. A shared-account GitHub comment alone is insufficient identity evidence.
+- v1.1 remains the only effective version; PR #23 remains Draft and unmerged. CI on the previous review head was Not verified; verify the final head separately.
