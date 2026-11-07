@@ -1,6 +1,6 @@
 # DevMate Status
 
-> Current state: see "## Current state — 2026-11-07 (after PR #21 merge and PR-A durable-store foundation)" at the end of this file. Earlier dated checkpoints are historical snapshots and do not describe the present.
+> Current state: see "## Current state — 2026-11-07 (PR #23 second-review follow-ups; owner approval pending)" at the end of this file. Earlier dated checkpoints are historical snapshots and do not describe the present.
 
 ## Current milestone
 Phase 1 — foundation and local demo.
@@ -620,7 +620,7 @@ Run the full Vitest suite, TypeScript/Vite production build, and dependency audi
 - Constitution v1.1 remains the effective governing version until PR #23 is approved, merged, and its merge SHA is recorded.
 - PR #23: https://github.com/Fadhel-docom/DevMate/pull/23 — open Draft, targets `feature/phase-1-foundation`.
 - The first independent review returned **REQUEST CHANGES** on head `96ace96d3d6434e7f12352ea675a50e7065dce61`, identifying two blockers: §17's stale v1.1 current-version statement and the absence of a verbatim preserved v1.1 file.
-- Corrected both blockers: §17 now states v1.2 becomes current only after merge; added `docs/CHARTER-AND-QUALITY-RULES-v1.1.md`, copied byte-for-byte from the approved v1.1 source at commit `50126a159961b71faf88025a8695cb7e734d63b7`. Verified exact content equality against that source.
+- Corrected both blockers: §17 now states v1.2 becomes current only after merge; added `docs/CHARTER-AND-QUALITY-RULES-v1.1.md`, copied byte-for-byte from the approved v1.1 source at approved commit `371da3325f3b5a8e9e8d9c794c3e1829cce8c818`. Verified exact content equality against that source.
 - Also clarified that constitution/approval-boundary changes remain owner-reserved, uncertainty requires asking the owner, and D-002 says "may merge" rather than "must merge". The owner's standing instruction is recorded verbatim in D-002.
 - New PR #23 head is pending final verification and a second independent review. The docs-only branch/PR workflow does not trigger the repository's configured CI for this base/branch combination; CI is **Not verified**, not claimed as passed. Diff review and exact content comparison are the applicable checks here.
 - The owner has explicitly approved the standing instruction not to ask again for routine merges that satisfy all conditions. The constitution amendment itself remains subject to its own explicit owner approval and independent review.
@@ -632,3 +632,22 @@ Run the full Vitest suite, TypeScript/Vite production build, and dependency audi
 ### Boundaries
 - PR #1 remains excluded from delegated merge authority.
 - No changes to `main`, RateNest, other repositories, providers, costs, secrets, permissions, or public release.
+
+
+## Current state — 2026-11-07 (PR #23 second-review follow-ups; owner approval pending)
+
+### Review result and governance status
+- Second independent review of PR #23 returned **APPROVE WITH FOLLOW-UP**, with no blocking defects. CI on review head `0644007347d846e2d61b9903fd1ae5747f5e718c` is **Not verified**: no workflow runs, check-runs, or commit statuses were present. No CI success is claimed.
+- The reviewer identified seven non-blocking corrections. This follow-up updates the v1.2 predecessor to v1.1; corrects the approved v1.1 provenance to commit `371da3325f3b5a8e9e8d9c794c3e1829cce8c818` (the previous `50126a1…` was a Git blob SHA, not a commit); corrects this file's top current-state pointer; updates D-002 to the corrected review head; explicitly excludes constitution/approval-boundary amendments; explicitly adds Sensitive-level threat assessment and least-privilege/data-handling review; and states the separate owner-approval prerequisite for PR #23 itself.
+- The approved v1.1 text remains byte-for-byte preserved at `docs/CHARTER-AND-QUALITY-RULES-v1.1.md`. Its approval commit is `371da3325f3b5a8e9e8d9c794c3e1829cce8c818`; do not label a blob SHA as a commit.
+- Version 1.1 remains the effective constitution. Version 1.2 is only a proposal until the owner explicitly approves this amendment and PR #23 is subsequently merged. D-002 records the owner's standing instruction for routine merges; it does not authorize this constitution amendment or supply its required separate approval.
+- PR #23's final merge commit SHA and v1.2 change-log merge reference must be added only after a properly approved merge; no merge SHA exists yet.
+
+### PR and branch interaction
+- PR #23 remains Draft and unmerged pending a fresh independent review of this corrected head and the owner's explicit approval of the constitution amendment itself.
+- PR #24 and its stacked follow-up PR #26 both carry STATUS/OPERATIONS-ROOM append-only changes based on an earlier common base. After PR #23 is merged, rebase/reconcile PR #24 first and then PR #26 on its updated parent; resolve duplicate/conflicting chronological append sections rather than dropping either history. Do not merge stale stacked heads.
+- PR #24 remains Draft. PR #26 remains Draft. Their technical review/CI state is separate from this governance amendment.
+
+### CI and boundaries
+- CI for review head `0644007347d846e2d61b9903fd1ae5747f5e718c`: **Not verified**, exactly as reported by the independent reviewer.
+- No change to `main`, RateNest, other repositories, providers, costs, secrets, permissions, deployment, or public release.
