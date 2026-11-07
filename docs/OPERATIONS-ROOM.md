@@ -1633,3 +1633,15 @@ Remote sandbox, Node v24.22.1, npm 10.8.2 (CI uses Node 20.20.2), files fetched 
 ### Boundaries and next checkpoint
 - No legacy migration has been invoked. No App/UI persistence cutover, PR-D recovery workflow implementation, provider connection, external data transfer, cost, permission expansion, deployment, or change to `main`/RateNest occurred.
 - Next: open one cumulative PR from the rebased branch to `feature/phase-1-foundation`; run exact-head CI; obtain one focused independent review of the cumulative tree and forward-only PR-D design. After approval and all applicable gates pass, merge under the standing delegation and proceed to PR-C durable task-ledger integration.
+
+
+---
+
+## 63. PR-B rebased cumulative PR #27 exact-head CI — 2026-11-07 — ChatGPT coordinator
+
+- Opened [PR #27](https://github.com/Fadhel-docom/DevMate/pull/27), a cumulative replacement for the stale stacked PRs #24/#26, based directly on the current foundation merge commit `2f7f9c69e80863b3720c269cc33a36b33a841209`.
+- Exact PR #27 head: `ac54cfda217489867e058a06f85d350e1e921306`; GitHub reports mergeable and the PR is ready for review.
+- Exact-head Actions run #347 (ID `42378120896`) completed successfully. Inspected job logs: npm ci installed 155 packages; audit summary 0 vulnerabilities; 8 test files / 205 tests passed; `tsc --noEmit`; Vite production build succeeded.
+- The cumulative PR includes the F1 empty-source migration-envelope fix and F2 actual restore guard tests for older draft and approved-after-revocation snapshots. No migration was invoked and no App/UI cutover was attempted.
+- One independent review remains. Request review of exact SHA `ac54cfda217489867e058a06f85d350e1e921306`, with one overall verdict, concrete blockers only, and a concise forward-only PR-D recovery design assessment. Do not reopen multiple review cycles for non-blocking style or documentation nits.
+- After review, if no blockers and exact-head checks remain green, merge PR #27 under the standing delegation. Then start PR-C durable task-ledger integration. PR #24 and #26 are superseded and must not be merged.
