@@ -63,7 +63,7 @@ export type ProfileValidationResult =
 export type LegacyMigrationRejection = { index: number; reason: string };
 export type LegacyMigrationResult = { store: ProjectProfilesStore; rejected: LegacyMigrationRejection[] };
 
-const dangerousKeys = new Set(["__proto__", "prototype", "constructor"]);
+const dangerousKeys = new Set(["__proto__", "prototype", "constructor", "toString", "toLocaleString", "valueOf", "hasOwnProperty", "isPrototypeOf", "propertyIsEnumerable", "__defineGetter__", "__defineSetter__", "__lookupGetter__", "__lookupSetter__"]);
 const listFields = [
   "repositories", "websites", "technology", "goals", "governanceReferences",
   "workflow", "allowedTools", "forbiddenActions", "releaseRules", "risks",
