@@ -333,6 +333,7 @@ export function validateAppendOnlyLedgerUpdate(previous: TaskLedgerStore, next: 
       context = { task: priorTask, event };
     }
     if (!canTransitionTaskState(priorTask.state, updatedTask.state, context)) return false;
+    if (priorTask.state === "indeterminate" && event && updatedTask.updatedAt <= event.createdAt) return false;
   }
   return true;
 }
