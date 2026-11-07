@@ -191,6 +191,12 @@ describe("durable store foundation", () => {
     });
     expect(retry).toMatchObject({ ok: true, revision: 1 });
     expect(transformCalls).toBe(1);
+    storage.seed(STORAGE_KEY, `${legacy} changed`);
+    expect(await store.migrateLegacyWorkspace(() => {
+      transformCalls++;
+      return {};
+    })).toMatchObject({ ok: false, reason: "conflict" });
+    expect(transformCalls).toBe(1);
     expect(await store.readProject("p1")).toMatchObject({ ok: true, value: { value: legacy } });
   });
 
