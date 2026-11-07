@@ -590,7 +590,7 @@ Run the full Vitest suite, TypeScript/Vite production build, and dependency audi
 - PR #17 is closed as superseded by PR #21: https://github.com/Fadhel-docom/DevMate/pull/17. PR #20 had already been closed as superseded. PR #1 remains explicitly excluded from standing merge delegation and is untouched.
 
 ### PR-A — durable-store foundation (implementation in progress)
-- Branch: `feature/durable-store-foundation`, created from merge commit `393cb6795e14c1d14b4dc6d3ec0fe443fa2736f9`.
+- PR #22: https://github.com/Fadhel-docom/DevMate/pull/22 — open, Draft, targets `feature/phase-1-foundation`; branch `feature/durable-store-foundation`, created from merge commit `393cb6795e14c1d14b4dc6d3ec0fe443fa2736f9`.
 - Added `src/durableStore.ts` and `src/durableStore.test.ts`; added the contract document `docs/DURABLE-STORAGE.md`.
 - The new primitive uses separate per-store data, transaction-journal, migration-marker, and backup namespaces; at most five raw snapshots per store; the existing shared Web Lock; projectId-scoped reads, writes, and restores; revision checks; read-back verification; rollback; interrupted-intent recovery; and fail-closed indeterminate handling.
 - Restore requires a store-specific update guard, snapshots current data first, and changes only the requested project record. PR-B/PR-C must supply their profile/ledger validators inside the locked write boundary.
@@ -600,7 +600,7 @@ Run the full Vitest suite, TypeScript/Vite production build, and dependency audi
 - The journal stores the latest transaction recovery state; it is not the domain append-only audit log. The task ledger remains responsible for append-only domain events.
 
 ### Next actions
-1. Complete documentation-head CI and open PR-A as Draft for independent review.
+1. Complete exact-head CI for PR #22 and obtain an independent review of that exact head.
 2. Resolve only genuine blocking findings; retain the documented follow-ups for PR-B/PR-C.
 3. PR-B: project-profile persistence and additive/idempotent migration, with `validateProjectProfilesStoreUpdate` inside the shared lock.
 4. PR-C: task-ledger persistence, append-only event validation, project/profile cross-validation, and immutable policy snapshots inside the shared lock.
