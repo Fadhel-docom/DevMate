@@ -266,8 +266,9 @@ function validateProfile(value: unknown, index: number, errors: ProfileValidatio
     check(Array.isArray(list) && list.every((item) => typeof item === "string"), field, "Expected an array of strings.");
   }
   if (Array.isArray(value.repositories)) {
-    const normalizedRepositories = value.repositories.map((item) => item.trim().toLowerCase().replace(new RegExp("/+$"), ""));
-    check(normalizedRepositories.every(Boolean) &&
+    const normalizedRepositories = value.repositories.filter((item): item is string => typeof item === "string")
+      .map((item) => item.trim().toLowerCase().replace(new RegExp("/+$"), ""));
+    check(normalizedRepositories.length === value.repositories.length && normalizedRepositories.every(Boolean) &&
       new Set(normalizedRepositories).size === normalizedRepositories.length,
       "repositories", "Repository identifiers must be non-empty and unique.");
   }
