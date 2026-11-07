@@ -32,3 +32,16 @@ This log records important decisions and their rationale. It does not replace or
 ## Decisions
 
 No decisions have been inventoried into this log yet. This is intentional: historical backfilling must be evidence-based and must not rely on memory or summaries alone.
+
+
+### D-001 — Adopt the project-governance and low-pressure autonomy model as the Phase 1 architecture baseline
+
+- Date: 2026-11-07
+- Status: Accepted with follow-ups
+- Decided / approved by: Repository owner; explicit approval was given in the project conversation before PR #12 was merged. The PR body also records the approval; GitHub's shared-account attribution does not independently authenticate the conversational instruction.
+- Context: DevMate needs a project-scoped governance model, versioned profiles, a durable task ledger, explicit approval boundaries, and a staged path to self-management.
+- Alternatives considered: Continue implementation without a common project-governance baseline; defer the profile/task contracts.
+- Decision: Accept `docs/PROJECT-GOVERNANCE-MODEL.md` as the architecture baseline through PR #12, with the non-blocking follow-ups documented in the review record and subsequent implementation gates.
+- Rationale: The model preserves constitution v1.1 as the highest authority, keeps approval evidence distinct from authorization, and explicitly gates provider integrations.
+- Consequences / risks: The acceptance does not approve every future implementation detail, storage mechanism, provider connection, cost, external data transfer, permission expansion, deployment, or action on another repository. Sensitive implementation PRs still require their own independent review and any owner-reserved approval.
+- References: [PR #12](https://github.com/Fadhel-docom/DevMate/pull/12); merge commit `f38475485268d212eddc906ee06f762648070d37`; approved constitution v1.1 `50126a159961b71faf88025a8695cb7e734d63b7`.
