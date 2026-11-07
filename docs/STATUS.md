@@ -1,6 +1,6 @@
 # DevMate Status
 
-> Current state: see "## Current state — 2026-11-07 (after PR #12 merge and PR #17 review)" at the end of this file. Earlier dated checkpoints are historical snapshots and do not describe the present.
+> Current state: see "## Current state — 2026-11-07 (after PR #21 merge and PR-A durable-store foundation)" at the end of this file. Earlier dated checkpoints are historical snapshots and do not describe the present.
 
 ## Current milestone
 Phase 1 — foundation and local demo.
@@ -577,3 +577,38 @@ Run the full Vitest suite, TypeScript/Vite production build, and dependency audi
 - No AI provider, API key, server-side adapter, in-app GitHub connector, or autonomous orchestrator is connected.
 - Real browser/mobile, accessibility, and multi-tab Web Locks behavior remain unverified.
 - No changes to `main`, RateNest, or another repository were made.
+
+
+## Current state — 2026-11-07 (after PR #21 merge and PR-A durable-store foundation)
+
+### Verified foundation branch
+- Repository: `Fadhel-docom/DevMate`.
+- Active foundation branch: `feature/phase-1-foundation`.
+- PR #21 merged by Squash at `393cb6795e14c1d14b4dc6d3ec0fe443fa2736f9`, based on the exact reviewed head `24eb8a6b222d57741672641013a161ddc31aae16`.
+- PR #21 final independent review: **APPROVE**; no blocking defect. Six integration/policy follow-ups are explicitly recorded in `docs/DURABLE-STORAGE.md`.
+- Post-merge GitHub Actions run #253 (ID `42363984934`) succeeded on the exact merge commit: `npm ci`, audit 0 vulnerabilities, 6 files / 169 tests passed, TypeScript and Vite production build passed. Run: https://github.com/Fadhel-docom/DevMate/actions/runs/42363984934.
+- PR #17 is closed as superseded by PR #21: https://github.com/Fadhel-docom/DevMate/pull/17. PR #20 had already been closed as superseded. PR #1 remains explicitly excluded from standing merge delegation and is untouched.
+
+### PR-A — durable-store foundation (implementation in progress)
+- Branch: `feature/durable-store-foundation`, created from merge commit `393cb6795e14c1d14b4dc6d3ec0fe443fa2736f9`.
+- Added `src/durableStore.ts` and `src/durableStore.test.ts`; added the contract document `docs/DURABLE-STORAGE.md`.
+- The new primitive uses separate per-store data, transaction-journal, migration-marker, and backup namespaces; at most five raw snapshots per store; the existing shared Web Lock; projectId-scoped reads, writes, and restores; revision checks; read-back verification; rollback; interrupted-intent recovery; and fail-closed indeterminate handling.
+- Restore requires a store-specific update guard, snapshots current data first, and changes only the requested project record. PR-B/PR-C must supply their profile/ledger validators inside the locked write boundary.
+- Legacy `src/storage.ts`, `devmate-workspace-v1`, and its backup namespace are unchanged. No App/UI integration or migration was performed.
+- Exact code head verified by GitHub Actions run #266 (ID `42364309730`): `af233a3c1961a775ce5baf630d65436a1301dba5`. Audit: 0 vulnerabilities; 7 test files / 181 tests passed; TypeScript and Vite production build passed. Run: https://github.com/Fadhel-docom/DevMate/actions/runs/42364309730. Documentation commits after this code head require their own exact-head CI.
+- Not verified: real-browser multi-tab Web Locks, crash/restart timing in a browser, quota exhaustion, Android/Safari, or accessibility. Unit tests use deterministic in-memory storage and an injected lock runner.
+- The journal stores the latest transaction recovery state; it is not the domain append-only audit log. The task ledger remains responsible for append-only domain events.
+
+### Next actions
+1. Complete documentation-head CI and open PR-A as Draft for independent review.
+2. Resolve only genuine blocking findings; retain the documented follow-ups for PR-B/PR-C.
+3. PR-B: project-profile persistence and additive/idempotent migration, with `validateProjectProfilesStoreUpdate` inside the shared lock.
+4. PR-C: task-ledger persistence, append-only event validation, project/profile cross-validation, and immutable policy snapshots inside the shared lock.
+5. PR-D: controlled App integration and recovery visibility.
+6. Only after these gates, register DevMate as a managed project and demonstrate restart/resume/recovery before any provider integration.
+
+### Product truth and boundaries
+- Project profile and task-ledger schema modules still are not connected to the app's current workspace UI.
+- The durable-store foundation is a new unused persistence primitive until PR-B/PR-C integrate it.
+- No AI provider, API key, server-side adapter, in-app GitHub connector, autonomous orchestrator, paid service, or external data transfer is connected or authorized.
+- No change to `main`, RateNest, or any other repository.
