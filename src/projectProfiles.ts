@@ -143,6 +143,32 @@ export function computeProfileContentHash(profile: ProjectProfile): string {
   const canonical = stableJson(controlledContent);
   return hashText(canonical, 2166136261) + hashText(canonical, 2246822519);
 }
+
+/**
+ * Pure guard for profile approval-history updates. Re-approval after revocation
+ * must archive the exact revoked evidence before the current approval is replaced.
+ * Persistence must call this alongside the store revision check.
+ */
+export function validateProfileApprovalHistoryUpdate(previous: ProfileApproval, next: ProfileApproval): boolean {
+  if (next.revocationHistory.length < previous.revocationHistory.length) return false;
+  const prefixPreserved = previous.revocationHistory.every((entry, index) =>
+    JSON.stringify(entry) === JSON.stringify(next.revocationHistory[index])
+  );
+  if (!prefixPreserved) return false;
+  if (previous.status === "revoked" && next.status === "approved") {
+    const archived: ProfileRevocationRecord = {
+      approvedRevision: previous.approvedRevision as number,
+      evidence: previous.evidence as ProfileApprovalEvidence,
+      approvedAt: previous.approvedAt as number,
+      approvedContentHash: previous.approvedContentHash as string,
+      revokedAt: previous.revokedAt as number,
+      revocationReason: previous.revocationReason as string
+    };
+    return next.revocationHistory.length === previous.revocationHistory.length + 1 &&
+      JSON.stringify(next.revocationHistory[previous.revocationHistory.length]) === JSON.stringify(archived);
+  }
+  return next.revocationHistory.length === previous.revocationHistory.length;
+}
 function validateEvidence(value: unknown): value is ProfileApprovalEvidence {
   if (!isRecord(value) || !hasExactKeys(value, ["kind", "reference", "commitSha"])) return false;
   if (value.kind !== "owner-decision" && value.kind !== "approved-pull-request") return false;
