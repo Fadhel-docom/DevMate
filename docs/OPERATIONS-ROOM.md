@@ -1505,11 +1505,11 @@ Remote sandbox, Node v24.22.1, npm 10.8.2 (CI uses Node 20.20.2), files fetched 
 ### CI history and exact evidence
 - An early run exposed a test-injection timing error: the fake storage returned the wrong value during the pre-write read instead of after the data write. The test seam was corrected to inject the mismatch after the write.
 - A later run passed all 180 tests but surfaced a TypeScript narrowing error in the internal read-result type. The failure type was narrowed explicitly.
-- GitHub Actions run #266 (ID `42364309730`) passed on exact code head `af233a3c1961a775ce5baf630d65436a1301dba5`: audit 0 vulnerabilities; 7 files / 181 tests passed; TypeScript and Vite production build passed. Run: https://github.com/Fadhel-docom/DevMate/actions/runs/42364309730.
-- Subsequent documentation-only changes to STATUS, OPERATIONS-ROOM, and this durable-storage contract require CI on the resulting final PR head. No result is claimed for that later head until checked.
+- GitHub Actions run #276 (ID `42364565092`) passed on exact code head `0ed9efa64bde0fce38f57048484eb861c6681a8d`: audit 0 vulnerabilities; 7 files / 182 tests passed; TypeScript and Vite production build passed. Run: https://github.com/Fadhel-docom/DevMate/actions/runs/42364565092. Earlier run #266 passed on a prior code head and is superseded by this later exact-head result.
+- The STATUS/OPERATIONS-ROOM evidence updates after code head `0ed9efa...` are documentation-only; GitHub Actions must pass on the resulting final PR head before independent review. No result is claimed for that later head until checked.
 - Not verified: real browser multi-tab lock contention, browser process termination at each write boundary, real quota exhaustion, Android/Safari, and accessibility.
 
 ### Current PR and next action
-- PR #22 is open as Draft: https://github.com/Fadhel-docom/DevMate/pull/22. It targets `feature/phase-1-foundation`; current PR head at opening was `eec639d97b970a9e8a8d8f35dd9a08d18c09e10c`. The implementation remains on `feature/durable-store-foundation`.
+- PR #22 is open as Draft: https://github.com/Fadhel-docom/DevMate/pull/22. It targets `feature/phase-1-foundation`; PR #22 head at the latest code verification was `0ed9efa64bde0fce38f57048484eb861c6681a8d`; the subsequent evidence-only documentation commits update the PR head and require their own CI run. The implementation remains on `feature/durable-store-foundation`.
 - Next: finish the documentation-head CI check after this handoff update, then request an independent review of the exact PR #22 head. Do not merge before review.
 - PR-B profile persistence, PR-C ledger persistence, and PR-D App integration remain separate bounded changes. No provider integration or owner-reserved permission/cost decision is implied.
