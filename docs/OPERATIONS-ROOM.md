@@ -1586,3 +1586,11 @@ Remote sandbox, Node v24.22.1, npm 10.8.2 (CI uses Node 20.20.2), files fetched 
 - PR #23 remains Draft and unmerged. The corrective commit(s) do not constitute owner approval.
 - CI on the previously reviewed head `d1ef5d290b21048cea4ce925d711c293cc3b233e` was **Not verified** (no workflow runs, check-runs, or statuses). Exact-head CI for the new corrective head must be checked independently; no CI success is claimed.
 - After the documentation correction, obtain a fresh independent review of the exact final head. Do not merge before the separate owner approval.
+
+
+## 60. PR #23 final owner-approval evidence gate — 2026-11-07 — ChatGPT coordinator
+
+- Independent review of head `594603d64cb7670509e5a652d91d7c709da0eb56` returned **APPROVE WITH FOLLOW-UP**, with no blockers. The three non-blocking documentation follow-ups have now been applied: §17 explicitly requires the owner's approval before merge; the historical STATUS CI note now states only that no runs were observed; and the PR title now says “propose”.
+- Before any merge, the owner must provide a separate, explicit approval of this exact v1.2 constitutional amendment **and the final PR head SHA** after the latest independent review. Record the approval in a durable, attributable project record that quotes or precisely identifies the amendment and exact SHA, and records the date. A technical review verdict is not owner approval. A GitHub comment attributed only to a shared account is not sufficient identity evidence by itself.
+- Until that evidence is recorded, PR #23 remains Draft and unmerged; v1.1 remains the sole effective constitution. Do not infer approval from the standing operational delegation instruction, silence, a review result, or the PR author's shared-account activity.
+- Exact-head CI must also be checked and recorded. At the latest check, the previously reviewed head had no workflow runs or statuses; this is **Not verified**, not a pass. Recheck the final head before any approval/merge decision.
