@@ -1829,3 +1829,5 @@ Remote sandbox, Node v24.22.1, npm 10.8.2 (CI uses Node 20.20.2), files fetched 
 - Not complete: no production fence exists; R1 stays **unresolved**; no real-browser verification yet (S2); CI for this commit and independent review are pending.
 - Next: record the commit SHA and its CI result, then decide with evidence between the lock-window mitigation and a narrowed guarantee, then prepare the S1 review package. S2 setup (Playwright/Chromium in the sandbox) follows S1 as authorised.
 - Boundaries kept: no real migration, cutover, deletion, deployment, provider, cost, permission change, `main` change; nothing merged.
+
+- 2026-11-07 (follow-up): evidence commit `427f166` pushed to the PR #32 branch (fast-forward, no force); CI run 42409531559 passed (319 tests, build OK). R1 still unresolved; S1 still open pending independent review.

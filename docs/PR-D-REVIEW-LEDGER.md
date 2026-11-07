@@ -105,3 +105,11 @@ After completing a stage, append a dated immutable record below before moving to
 - **CI:** not yet run for the commit carrying this record (see record 2).
 - **Review:** none. No independent reviewer has seen this stage.
 - **Verdict:** **R1 UNRESOLVED.** S1 status: **Open** (evidence implemented locally; not CI-verified; not reviewed).
+
+
+## Stage S1 — R1 pre-barrier writer evidence, record 2 (2026-11-07)
+
+- **Evidence commit:** [`427f1668f1dec4fd1b1defdd56d55518d1a9b303`](https://github.com/Fadhel-docom/DevMate/commit/427f1668f1dec4fd1b1defdd56d55518d1a9b303) (parent `8742c3e20b8175b6ded1e82b3db4a994ece31907`), carrying record 1 and the test files.
+- **CI on that exact SHA:** [run 42409531559](https://github.com/Fadhel-docom/DevMate/actions/runs/42409531559), event `push`, completed / success. Job `verify` (id 128514438014) reports `head_sha` `427f166…`; steps checkout, setup-node, `npm ci`, dependency audit report, `npm test`, `npm run build` all succeeded. The job log shows 11 test files and 319 tests passed, and the Vite build completed.
+- **Verdict (supersedes nothing in record 1; adds CI evidence):** evidence is CI-verified on `427f166`. **R1 remains UNRESOLVED.** S1 status: **Open** — an independent review of this exact SHA has not happened; no production fence exists; real-browser confirmation is pending (S2).
+- This record's own commit is documentation-only; exact-head CI for it is recorded separately if it differs.
