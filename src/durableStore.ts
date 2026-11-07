@@ -376,7 +376,7 @@ export function createDurableStore<T>(options: DurableStoreOptions<T>) {
       return locked.ok ? locked.value : "unreadable";
     },
     async migrateLegacyWorkspace(
-      transform: (legacyRaw: string | null, currentRecords: Readonly<Record<string, T>>) => Record<string, T>
+      transform: (legacyRaw: string | null, currentRecords: Readonly<Record<string, T>>, readStorage: Pick<Storage, "getItem">) => Record<string, T>
     ): Promise<DurableWriteResult> {
       const locked = await runExclusive(() => {
         if (!storage) return { ok: false as const, reason: "unavailable" as const, message: "Browser storage is unavailable." };
@@ -413,7 +413,7 @@ export function createDurableStore<T>(options: DurableStoreOptions<T>) {
           catch (error) { return { ok: false as const, reason: "write-failed" as const, message: String(error) }; }
         }
         let nextRecords: Record<string, T>;
-        try { nextRecords = clone(transform(legacyRaw, clone(current.records))); }
+        try { nextRecords = clone(transform(legacyRaw, clone(current.records), storage)); }
         catch (error) { return { ok: false as const, reason: "invalid-data" as const, message: `Legacy migration transform failed: ${String(error)}` }; }
         if (!isObject(nextRecords) || !Object.keys(nextRecords).every(safeId) ||
           !Object.keys(current.records).every((id) => Object.prototype.hasOwnProperty.call(nextRecords, id)))
