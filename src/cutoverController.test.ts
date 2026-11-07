@@ -136,7 +136,7 @@ describe("marker schema (R2, R6)", () => {
 describe("legacy writer quiescence gate", () => {
   it("fails closed before intent unless a host proves every pre-barrier writer is quiesced", async () => {
     const storage = new MemStorage(); storage.values.set(STORAGE_KEY, LEGACY);
-    const controller = createCutoverController({ storage, stages: fakeStages({ calls: [], hooks: {} }) });
+    const controller = createCutoverController({ storage, stages: fakeStages({ calls: [], hooks: {} }), runExclusive: async (work) => ({ ok: true, value: await work() }) });
     const plan = controller.preflight(); if (!plan.ok) throw new Error("preflight failed");
     expect(await controller.begin(plan.plan)).toMatchObject({ ok: false, reason: "legacy-writers-not-quiesced", state: { mode: "legacy" } });
     expect(storage.sets).toEqual([]);
@@ -152,6 +152,7 @@ describe("legacy writer quiescence gate", () => {
       const storage = new MemStorage(); storage.values.set(STORAGE_KEY, LEGACY);
       const controller = createCutoverController({
         storage, stages: fakeStages({ calls: [], hooks: {} }),
+        runExclusive: async (work) => ({ ok: true, value: await work() }),
         confirmLegacyWritersQuiesced: verifier
       });
       const plan = controller.preflight(); if (!plan.ok) throw new Error("preflight failed");
