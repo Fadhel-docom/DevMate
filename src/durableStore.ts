@@ -349,15 +349,17 @@ export function createDurableStore<T>(options: DurableStoreOptions<T>) {
         if (!options.validateUpdate)
           return { ok: false as const, reason: "invalid-data" as const, message: "Restore requires the store-specific update guard; an unguarded restore is refused." };
         if (!currentEnvelope || !restored ||
-          !Object.entries(currentEnvelope.records).every(([id, item]) => safeId(id) && options.validateRecord(id, clone(item))))
+          !Object.entries(currentEnvelope.records).every(([id, item]) => safeId(id) && options.validateRecord(id, clone(item)))) {
+          snapshotCorruptRaw();
           return { ok: false as const, reason: "corrupt" as const, message: "Current data failed validation; restore was refused without changing it." };
+        }
         const nextRecord = restored.records[projectId];
         if (nextRecord === undefined || !options.validateRecord(projectId, clone(nextRecord)))
           return { ok: false as const, reason: "not-found" as const, message: "The selected snapshot has no valid record for this project." };
         const previous = currentEnvelope.records[projectId] ?? null;
         const records = clone(currentEnvelope.records);
         records[projectId] = clone(nextRecord);
-        if (!options.validateUpdate(projectId, previous === null ? null : clone(previous), clone(nextRecord), clone(currentEnvelope.records), clone(records), storage!))
+        if (!options.validateUpdate(projectId, previous === null ? null : clone(previous), clone(nextRecord), clone(currentEnvelope.records), clone(records), readStorageView))
           return { ok: false as const, reason: "invalid-data" as const, message: "The project-specific update guard rejected this restore." };
         if (currentRaw !== null) {
           try { if (!snapshotRaw(currentRaw, "pre-restore")) return { ok: false as const, reason: "snapshot-full" as const, message: "No free snapshot slot; restore was cancelled." }; }
