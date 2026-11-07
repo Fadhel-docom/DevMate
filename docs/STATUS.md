@@ -718,3 +718,8 @@ Run the full Vitest suite, TypeScript/Vite production build, and dependency audi
 ### PR-B CI evidence update — 2026-11-07
 - Exact PR #27 head `d35c60979fd1a4b587a8817ebd76db9d19ea7be2` passed Actions run #349 (`42378198287`): 8/8 test files, 205/205 tests, npm audit summary 0 vulnerabilities, TypeScript and Vite build successful; logs inspected.
 - This documentation-only evidence update changes the PR head. The next contributor must verify the live head and corresponding exact-head run before merge; do not reuse run #349 as proof for a later SHA.
+
+
+### PR-B latest exact-head check — 2026-11-07
+- PR #27 head `6811da259b4bdf2b743d3d3f3ad75a914096383f` passed Actions run #351 (`42378286215`): 8 test files / 205 tests, npm ci 155 packages, audit summary 0 vulnerabilities, TypeScript and Vite build all successful; job logs inspected.
+- This final operations/status checkpoint changes the branch head; the exact new PR head and its CI must be rechecked before merge.
