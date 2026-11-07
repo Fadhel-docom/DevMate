@@ -552,3 +552,28 @@ Run the full Vitest suite, TypeScript/Vite production build, and dependency audi
 ### Owner's standing merge instruction — 2026-11-07
 - The owner explicitly instructed that routine PR merges must not wait for the owner's availability. Merge when all applicable constitution/project rules, quality gates, independent review, and evidence requirements are satisfied.
 - Stop only when an applicable rule is not met or an owner-reserved decision is genuinely required. This delegation does not override constitution §14, the explicit PR #1 hold, or approval requirements for architecture, security, permissions, costs, destructive actions, licensing, and production/public release.
+
+
+## Current state update — 2026-11-07 — PR #12 approval and PR #17 schema checkpoint
+
+### Verified repository state
+- Foundation base remains `feature/phase-1-foundation` at `6a402ce6f94dae14bf8c4d5bc7459b3180c94625`; PR #16 is the documentation checkpoint that established this base.
+- PR #12 is open, Ready for review, based on `feature/phase-1-foundation`, latest head `4ae15ba5de1b2af75e1dbb48073ce73dbf60ca4f`. The owner approved this architecture proposal on 2026-11-07; approval is recorded in the PR description. It does not amend constitution v1.1 or authorize provider calls, API keys, costs, external data sharing, new permissions, publishing, or work on other repositories.
+- PR #12 still requires an independent review of its exact latest head under constitution v1.1 before merge. The earlier ChatGPT review applies only to the earlier head `2ec0f8365c736c33a7bd1f072df191cef4608333`.
+- PR #17 is open, Ready for review, based on `feature/phase-1-foundation`; latest head `dcd0d900ed811759487b01ed61ba50a41cfe65ac`.
+- PR #17 adds pure versioned Project Profile and Task Ledger validators plus tests. It does not yet persist profiles or ledger records, import legacy tasks, or change the UI/storage layer.
+- PR #17 initial combined head `1d452bb37a27e6103c579ab7047c69ecb239d858` failed TypeScript build because `requiredString` did not narrow `unknown` values. The helper was corrected to a type predicate in commit `dcd0d900ed811759487b01ed61ba50a41cfe65ac`.
+- GitHub Actions run #170 (ID `42348321315`) passed on the exact latest PR #17 head: npm ci, dependency audit 0 vulnerabilities, 6 test files / 140 tests, TypeScript check, and Vite production build.
+- No independent review is recorded yet for PR #17's exact latest head.
+
+### Current product truth and boundaries
+- DevMate still uses the existing browser-local workspace storage; the new profile and ledger modules are pure validation/data-contract code only.
+- No provider, API key, server-side model adapter, external data transfer, new permission, paid service, or in-app GitHub integration has been added.
+- No browser/device verification is claimed for the new schemas or the existing multi-tab storage behavior.
+- AI-provider connections remain deferred until the approved pre-provider gates are implemented and verified.
+
+### Next exact actions
+1. Obtain independent review of PR #12 exact head `4ae15ba5de1b2af75e1dbb48073ce73dbf60ca4f`; if the review and all gates pass, merge only into `feature/phase-1-foundation`.
+2. Obtain independent review of PR #17 exact head `dcd0d900ed811759487b01ed61ba50a41cfe65ac`; address only evidenced findings, then merge under the standing routine-merge delegation when all gates pass.
+3. After schema review/merge, implement persistence as a separate bounded PR: preserve the legacy workspace, back up before migration, validate, persist, read back, verify, and roll back on failure; add durable task-ledger persistence and recovery tests.
+4. Do not connect AI providers yet. Do not touch `main`, PR #1, RateNest, or any other repository.
