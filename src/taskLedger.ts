@@ -286,7 +286,7 @@ export function canTransitionTaskState(from: TaskState, to: TaskState, reconcili
   if (!reconciliation) return false;
   const task = reconciliation.ledger.records.find((item) => item.taskId === reconciliation.taskId && item.projectId === reconciliation.projectId);
   const event = reconciliation.ledger.events.find((item) => item.eventId === reconciliation.eventId);
-  if (!task || !event || event.taskId !== reconciliation.taskId || event.projectId !== reconciliation.projectId ||
+  if (!task || task.state !== "indeterminate" || !event || event.taskId !== reconciliation.taskId || event.projectId !== reconciliation.projectId ||
     event.type !== "task.reconciled" || event.outcome !== "succeeded" || !requiredString(event.details.evidenceReference)) return false;
   const resolution = event.details.resolution;
   return (to === "ready" && resolution === "not-applied") ||
