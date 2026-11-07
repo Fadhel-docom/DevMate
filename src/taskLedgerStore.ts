@@ -53,11 +53,20 @@ function readCurrentProfiles(readStorage: Pick<Storage, "getItem">): ProjectProf
   if (raw === null) return null;
   try {
     const parsed: unknown = JSON.parse(raw);
+    if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) return null;
     const envelope = parsed as { schemaVersion?: unknown; revision?: unknown; updatedAt?: unknown; records?: unknown };
-    if (envelope.schemaVersion !== 1 || !Number.isSafeInteger(envelope.revision) ||
-      typeof envelope.updatedAt !== "number" || !Number.isFinite(envelope.updatedAt) ||
+    if (Object.keys(envelope).length !== 4 ||
+      !["schemaVersion", "revision", "updatedAt", "records"].every((key) =>
+        Object.prototype.hasOwnProperty.call(envelope, key)) ||
+      envelope.schemaVersion !== 1 || !Number.isSafeInteger(envelope.revision) ||
+      (envelope.revision as number) < 0 ||
+      typeof envelope.updatedAt !== "number" || !Number.isFinite(envelope.updatedAt) || envelope.updatedAt < 0 ||
       typeof envelope.records !== "object" || envelope.records === null || Array.isArray(envelope.records)) return null;
-    const records = Object.values(envelope.records as Record<string, unknown>);
+    const recordEntries = Object.entries(envelope.records as Record<string, unknown>);
+    if (!recordEntries.every(([projectId, profile]) =>
+      typeof profile === "object" && profile !== null && !Array.isArray(profile) &&
+      (profile as { projectId?: unknown }).projectId === projectId)) return null;
+    const records = recordEntries.map(([, profile]) => profile);
     const profiles: ProjectProfilesStore = {
       schemaVersion: 1,
       revision: envelope.revision as number,
