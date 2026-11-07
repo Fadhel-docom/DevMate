@@ -298,17 +298,17 @@ describe("task ledger schema v1", () => {
       ...baseTask, taskId: `t${index}`, state: "completed" as const,
       updatedAt: 200, evidenceReferences: [`artifact:${index}`]
     }));
-    const events = Array.from({ length: 10000 }, (_, index) => {
+    const events: TaskLedgerStore["events"] = Array.from({ length: 10000 }, (_, index) => {
       const taskIndex = Math.floor(index / 5);
       const taskId = `t${taskIndex}`;
       return index % 5 === 0 ? {
         eventId: `e${index}`, taskId, projectId: "p1", type: "task.acceptance-verified",
         actor: "coordinator", createdAt: 101, outcome: "succeeded" as const,
         details: { evidenceReference: `artifact:${taskIndex}`, verifiedCriteria: [...baseTask.acceptanceCriteria] }
-      } : {
+      } as TaskLedgerStore["events"][number] : {
         eventId: `e${index}`, taskId, projectId: "p1", type: "task.note",
         actor: "coordinator", createdAt: 102 + index, details: {}
-      };
+      } as TaskLedgerStore["events"][number];
     });
     const full = { schemaVersion: 1 as const, revision: 1, updatedAt: 11000, records: tasks, events };
     expect(validateTaskLedgerStore(full).ok).toBe(true);
