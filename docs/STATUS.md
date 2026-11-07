@@ -1,6 +1,6 @@
 # DevMate Status
 
-> Current state: see "## Current state — 2026-11-06" at the end of this file. Earlier dated checkpoints, and sections marked "historical snapshot", are preserved as history and do not describe the present.
+> Current state: see "## Current state — 2026-11-07" near the end of this file. Earlier dated checkpoints, and sections marked "historical snapshot", are preserved as history and do not describe the present.
 
 ## Current milestone
 Phase 1 — foundation and local demo.
@@ -521,3 +521,34 @@ Run the full Vitest suite, TypeScript/Vite production build, and dependency audi
 - **Remaining follow-ups (not done, outside this task):** the top-of-file pointer says the current state is "at the end of this file" but the "Current state — 2026-11-06" section is mid-file and stale; other historical entries that mention the removed panel (the readiness-classification and PR #13 verification entries) are not marked historical.
 
 - **Exact-head CI for the follow-up commit:** GitHub Actions run #152 (ID `42303911193`, event `push`, job `128188333779`) succeeded on `4f2ffe70927ce1db18e77a9f8f9591a9895b1ea8`. The job log shows 155 packages installed, audit summary 0 at every severity, 4 test files / 125 tests passed (registry 10), TypeScript and Vite build passed (29 modules). The documentation commit that records this result changes no source. No browser or device test is claimed.
+
+
+## Current state — 2026-11-07
+
+### Verified repository checkpoint
+- Repository: `Fadhel-docom/DevMate`.
+- Active foundation branch: `feature/phase-1-foundation`.
+- Latest verified base commit after the storage and tool-registry sequence: `8117ab98c4a86f44e45dcfc1cb7a313f6f771d95`.
+- PR #10 merged at `18e4e97eccd4c8927b1a4f60ae9642f655bc5ac4`.
+- PR #13 merged at `5ffb5339e147d524e40511e0f04ce331624cb4b2`.
+- PR #15 merged at `8117ab98c4a86f44e45dcfc1cb7a313f6f771d95`.
+- GitHub Actions run #159 on the exact PR #15 merge commit succeeded: `npm ci` installed 155 packages; dependency audit reported 0 vulnerabilities; 4 test files and 125/125 tests passed; `tsc --noEmit` and Vite production build passed. Run: https://github.com/Fadhel-docom/DevMate/actions/runs/42346327411.
+- PR #1 remains explicitly excluded from standing merge delegation by constitution §7 and requires separate explicit owner approval. No merge to `main` occurred.
+
+### Current product truth
+- DevMate remains a React + TypeScript + Vite browser application.
+- Project/task records currently use browser-local storage. The storage layer has validation, cross-tab locking, backup/recovery, and conflict checks, but real browser/device behavior is not yet verified.
+- The tool registry is an inventory and deterministic capability selector only. It does not execute tasks, call external services, connect GitHub inside the app, or invoke AI models.
+- The conversation remains a local mock. No provider, API key, server-side adapter, or orchestrator is connected.
+- Real browser/mobile rendering, keyboard/screen-reader behavior, and real multi-tab Web Locks behavior remain unverified.
+
+### Open design and next milestone
+- PR #12 (`docs/PROJECT-GOVERNANCE-MODEL.md`) remains Draft and unmerged. Its documentation-only model was reviewed as consistent with constitution v1.1, with follow-ups to define project-profile schema versioning, validation/migration policy, and the evidence/authority that marks a profile owner-approved.
+- PR #12 is an architecture/design proposal for owner review, not an amendment to the constitution and not authorization for provider connections, external data sharing, costs, new permissions, or work on another repository.
+- Before implementing a profile loader, define a versioned project-profile schema, validation rules, migration/unknown-field policy, and verifiable approval metadata. Define the durable task-ledger record/state model, checkpoint/recovery behavior, and project isolation tests.
+- Next implementation milestone, after the design boundary is accepted: build Project Profiles and a Durable Task Ledger using deterministic/local test doubles first; register DevMate itself as a managed project; then prove resume/recovery and reduced owner interruption.
+- Do not connect AI providers yet. Do not modify RateNest or any other repository. Do not add paid services, secrets, external data transfers, deployment, or permissions.
+
+### Owner's standing merge instruction — 2026-11-07
+- The owner explicitly instructed that routine PR merges must not wait for the owner's availability. Merge when all applicable constitution/project rules, quality gates, independent review, and evidence requirements are satisfied.
+- Stop only when an applicable rule is not met or an owner-reserved decision is genuinely required. This delegation does not override constitution §14, the explicit PR #1 hold, or approval requirements for architecture, security, permissions, costs, destructive actions, licensing, and production/public release.
