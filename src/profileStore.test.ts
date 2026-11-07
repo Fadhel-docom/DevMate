@@ -58,6 +58,10 @@ describe("durable project profile adapter", () => {
     storage.seed(STORAGE_KEY, legacy);
     expect(await store.migrateLegacyProfiles()).toMatchObject({ ok: true, revision: 1 });
     expect(await store.migrationStatus()).toBe("migrated");
+    const legacySnapshot = (await store.listSnapshots()).find((snapshot) => snapshot.reason === "pre-migration");
+    expect(legacySnapshot).toBeDefined();
+    expect(await store.restoreSnapshot("p1", legacySnapshot!.key, legacySnapshot!.fingerprint))
+      .toMatchObject({ ok: false, reason: "invalid-data" });
     expect(storage.getItem(STORAGE_KEY)).toBe(legacy);
     expect((await store.readProfile("p1")).ok).toBe(true);
     expect((await store.readProfile("p2")).ok).toBe(true);
