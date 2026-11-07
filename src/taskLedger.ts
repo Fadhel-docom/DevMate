@@ -105,7 +105,7 @@ function isJson(value: unknown, depth = 0): value is JsonValue {
 function error(errors: LedgerValidationError[], path: string, message: string) {
   errors.push({ path, message });
 }
-function requiredString(value: unknown): boolean {
+function requiredString(value: unknown): value is string {
   return typeof value === "string" && value.trim().length > 0;
 }
 
