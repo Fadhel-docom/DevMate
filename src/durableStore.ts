@@ -287,7 +287,8 @@ export function createDurableStore<T>(options: DurableStoreOptions<T>) {
       });
       return locked.ok ? locked.value : [];
     },
-    async restoreSnapshot(key: string, expectedFingerprint: string): Promise<DurableWriteResult> {
+    async restoreSnapshot(projectId: string, key: string, expectedFingerprint: string): Promise<DurableWriteResult> {
+      if (!safeId(projectId)) return { ok: false, reason: "invalid-data", message: "A valid projectId is required." };
       const allowed = Array.from({ length: maxBackups }, (_, index) => durableBackupKey(options.name, index + 1));
       if (!allowed.includes(key)) return { ok: false, reason: "not-found", message: "Snapshot key is not part of this store." };
       const locked = await runExclusive(() => {
@@ -296,21 +297,29 @@ export function createDurableStore<T>(options: DurableStoreOptions<T>) {
         if (raw === null) return { ok: false as const, reason: "not-found" as const, message: "Snapshot not found." };
         if (fingerprint(raw) !== expectedFingerprint) return { ok: false as const, reason: "conflict" as const, message: "Snapshot content changed; refresh the snapshot list." };
         const currentRaw = readRaw();
+        const currentEnvelope = currentRaw === null
+          ? { schemaVersion: 1 as const, revision: 0, updatedAt: now(), records: {} as Record<string, T> }
+          : envelopeFromRaw<T>(currentRaw);
         const restored = envelopeFromRaw<T>(raw);
         if (!options.validateUpdate)
           return { ok: false as const, reason: "invalid-data" as const, message: "Restore requires the store-specific update guard; an unguarded restore is refused." };
-        const currentEnvelope = currentRaw === null ? { schemaVersion: 1 as const, revision: 0, updatedAt: now(), records: {} as Record<string, T> } : envelopeFromRaw<T>(currentRaw);
-        if (!currentEnvelope || !restored || !Object.entries(restored.records).every(([id, item]) =>
-          safeId(id) && options.validateRecord(id, item) &&
-          options.validateUpdate!(id, currentEnvelope.records[id] ?? null, item, currentEnvelope.records)) ||
-          !Object.keys(currentEnvelope.records).every((id) => Object.prototype.hasOwnProperty.call(restored.records, id)))
-          return { ok: false as const, reason: "corrupt" as const, message: "Snapshot failed validation; current data was not changed." };
+        if (!currentEnvelope || !restored ||
+          !Object.entries(currentEnvelope.records).every(([id, item]) => safeId(id) && options.validateRecord(id, item)))
+          return { ok: false as const, reason: "corrupt" as const, message: "Current data failed validation; restore was refused without changing it." };
+        const nextRecord = restored.records[projectId];
+        if (nextRecord === undefined || !options.validateRecord(projectId, nextRecord))
+          return { ok: false as const, reason: "not-found" as const, message: "The selected snapshot has no valid record for this project." };
+        const previous = currentEnvelope.records[projectId] ?? null;
+        if (!options.validateUpdate(projectId, previous, nextRecord, currentEnvelope.records))
+          return { ok: false as const, reason: "invalid-data" as const, message: "The project-specific update guard rejected this restore." };
         if (currentRaw !== null) {
           try { if (!snapshotRaw(currentRaw, "pre-restore")) return { ok: false as const, reason: "snapshot-full" as const, message: "No free snapshot slot; restore was cancelled." }; }
           catch (error) { return { ok: false as const, reason: "write-failed" as const, message: String(error) }; }
         }
-        const next = { ...restored, revision: Math.max(restored.revision, 0) + 1, updatedAt: now() };
-        return transactLocked("restore", next);
+        const records = clone(currentEnvelope.records);
+        records[projectId] = clone(nextRecord);
+        const next: DurableEnvelope<T> = { schemaVersion: 1, revision: currentEnvelope.revision + 1, updatedAt: now(), records };
+        return transactLocked(projectId, next);
       });
       return locked.ok ? locked.value : lockFailure(locked.reason, locked.message);
     },
