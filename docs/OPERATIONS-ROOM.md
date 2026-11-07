@@ -1444,3 +1444,28 @@ Remote sandbox, Node v24.22.1, npm 10.8.2 (CI uses Node 20.20.2), files fetched 
 - Last verified foundation commit: `8117ab98c4a86f44e45dcfc1cb7a313f6f771d95`.
 - Next: complete owner review of PR #12's architecture proposal. In parallel, prepare a bounded schema/ledger design that explicitly defines profile versioning, validation, migrations, approval evidence, task states, checkpoints, recovery, and project isolation. Do not connect providers or begin external-repository work.
 - Handoff owner: ChatGPT coordinator.
+
+
+---
+
+## 54. PR #12 architecture baseline accepted; PR #17 schema review findings and execution handoff — 2026-11-07 — ChatGPT coordinator
+
+### Verified starting point
+- Active branch: `feature/phase-1-foundation`.
+- PR #12 merged at `f38475485268d212eddc906ee06f762648070d37`; its parent is `6a402ce6f94dae14bf8c4d5bc7459b3180c94625`.
+- PR #17 is open at `dcd0d900ed811759487b01ed61ba50a41cfe65ac`; CI run #170 passed (6 files / 140 tests, audit 0, TypeScript and Vite build).
+- PR #18 is open and unmerged. Its earlier snapshot has stale PR #12 state and a D-001 provenance description that needs correction; this entry and the new STATUS checkpoint supersede its current-state claims.
+- Independent review of PR #12 recommended APPROVE WITH FOLLOW-UP. Non-blocking follow-ups include canonical constitution identity, per-task permission boundaries, provider-gate precision, backup/storage quota risks, state-machine completeness, and append-only enforcement.
+- Independent review of PR #17 recommended REQUEST CHANGES. Findings include approval not bound to profile content, non-additive migration, loose enum validation, unknown fields outside `extensions`, insufficient PR SHA validation, loss of revoked-approval history, and incomplete ledger evidence/recovery tests. The reviewer could not inspect `taskLedger.ts`; its review is therefore incomplete.
+
+### Decisions and execution boundaries
+- The owner approved PR #12's architecture baseline; the PR was merged only into `feature/phase-1-foundation`. This does not amend constitution v1.1 or authorize provider calls, API keys, paid services, external data transfers, new permissions, production release, or changes to other repositories.
+- PR #17 must remain unmerged until the blocking schema-contract issues are fixed and the corrected exact head receives an independent review.
+- The storage plan is staged as four bounded PRs: A (durable I/O and fault injection), B (profile persistence and additive migration), C (ledger persistence, append-only events and isolation), D (careful UI integration and recovery visibility). Multi-key localStorage writes are not atomic merely because a Web Lock is held; recovery must handle process termination between writes.
+- Preserve the legacy `devmate-workspace-v1` bytes. New stores must use separate keys/namespaces and must not consume the legacy 20-slot backup namespace.
+- No provider integration until project isolation, durable recovery, DevMate self-management, deterministic tool routing, server-side secrets, data/permission review, usage/cost controls, and independent quality gates are demonstrated.
+
+### Next exact action
+- Implement PR #17 corrections on a fresh branch from the current foundation head; do not base new work on the stale PR #17 or PR #18 heads.
+- Ask the independent reviewer (second Claude model) to inspect the corrected PR #17 head once, including `taskLedger.ts`, after CI succeeds.
+- Continue with the smallest safe change set; do not combine storage integration with schema repair.
