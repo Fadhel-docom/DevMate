@@ -144,16 +144,20 @@ function addError(errors: LedgerValidationError[], path: string, message: string
 
 export function validateTaskLedgerStore(input: unknown, profiles?: ProjectProfilesStore): LedgerValidationResult {
   const errors: LedgerValidationError[] = [];
+  const profilesValid = profiles === undefined || validateProjectProfilesStore(profiles).ok;
   if (!isRecord(input)) return { ok: false, errors: [{ path: "", message: "Expected a versioned task-ledger envelope." }] };
   if (!exactKeys(input, storeKeys)) addError(errors, "", "Unexpected or missing task-ledger fields.");
   if (input.schemaVersion !== TASK_LEDGER_SCHEMA_VERSION) return { ok: false, errors: [{ path: "schemaVersion", message: `Unsupported schema version: ${String(input.schemaVersion)}.` }] };
   if (!isTimestamp(input.revision) || input.revision < 1) addError(errors, "revision", "Expected a positive store revision.");
   if (!isTimestamp(input.updatedAt)) addError(errors, "updatedAt", "Expected a non-negative timestamp.");
+  if (!profilesValid) addError(errors, "profiles", "Supplied project profile store is invalid.");
   if (profiles !== undefined && !validateProjectProfilesStore(profiles).ok) {
     addError(errors, "profiles", "Supplied project profile store is invalid.");
   }
   if (!Array.isArray(input.records)) addError(errors, "records", "Expected a task array.");
   if (!Array.isArray(input.events)) addError(errors, "events", "Expected an event array.");
+  if (Array.isArray(input.records) && !input.records.every((_, index) => Object.prototype.hasOwnProperty.call(input.records, index))) addError(errors, "records", "Sparse task arrays are not allowed.");
+  if (Array.isArray(input.events) && !input.events.some((_, index) => !Object.prototype.hasOwnProperty.call(input.events, index)) && input.events.length !== [...input.events].length) addError(errors, "events", "Sparse event arrays are not allowed.");
   if (Array.isArray(input.records) && input.records.length > 2000) addError(errors, "records", "Task ledger exceeds the 2,000-task validation limit.");
   if (Array.isArray(input.events) && input.events.length > 10000) addError(errors, "events", "Task ledger exceeds the 10,000-event validation limit.");
   const taskById = new Map<string, Record<string, unknown>>();
@@ -218,7 +222,7 @@ export function validateTaskLedgerStore(input: unknown, profiles?: ProjectProfil
       task.evidenceReferences.length > 0 && isStringList(task.acceptanceCriteria) &&
       task.acceptanceCriteria.length > 0, "evidenceReferences",
       "Completed tasks require acceptance criteria and at least one evidence reference.");
-    if (profiles && requiredString(task.projectId)) {
+    if (profiles && profilesValid && requiredString(task.projectId)) {
       const profile = profiles.records.find((item) => item.projectId === task.projectId);
       check(Boolean(profile), "projectId", "Task project does not exist in the supplied profile store.");
       // This is a historical snapshot. A later profile edit or revocation must
@@ -269,6 +273,19 @@ export function validateTaskLedgerStore(input: unknown, profiles?: ProjectProfil
     }
     const task = taskById.get(String(event.taskId));
     if (!task || task.projectId !== event.projectId) addError(errors, path, "Event must reference an existing task in the same project.");
+  });
+  if (Array.isArray(input.records)) input.records.forEach((task, index) => {
+    if (!isRecord(task) || task.state !== "completed") return;
+    const verified = Array.isArray(input.events) && input.events.some((event) =>
+      isRecord(event) && event.taskId === task.taskId && event.projectId === task.projectId &&
+      event.type === "task.acceptance-verified" && event.outcome === "succeeded" &&
+      isTimestamp(event.createdAt) && event.createdAt <= task.updatedAt &&
+      isRecord(event.details) && requiredString(event.details.evidenceReference) &&
+      isStringList(event.details.verifiedCriteria) && isStringList(task.acceptanceCriteria) &&
+      task.acceptanceCriteria.every((criterion) => event.details.verifiedCriteria.includes(criterion)) &&
+      isStringList(task.evidenceReferences) && task.evidenceReferences.includes(event.details.evidenceReference)
+    );
+    if (!verified) addError(errors, `records[${index}].state`, "Completed tasks require a successful acceptance-verification event covering every criterion and linking stored evidence.");
   });
   // Node/depth budgets are enforced independently for each task and event.
   return errors.length ? { ok: false, errors } : { ok: true, value: input as unknown as TaskLedgerStore };
