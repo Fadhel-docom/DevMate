@@ -67,9 +67,12 @@ const clone = <V>(value: V): V => JSON.parse(JSON.stringify(value)) as V;
 function envelopeFromRaw<T>(raw: string): DurableEnvelope<T> | null {
   let parsed: unknown;
   try { parsed = JSON.parse(raw); } catch { return null; }
-  if (!isObject(parsed) || parsed.schemaVersion !== 1 || !Number.isSafeInteger(parsed.revision) ||
+  if (!isObject(parsed) || Object.keys(parsed).length !== 4 ||
+      !["schemaVersion", "revision", "updatedAt", "records"].every((key) => Object.prototype.hasOwnProperty.call(parsed, key)) ||
+      parsed.schemaVersion !== 1 || !Number.isSafeInteger(parsed.revision) ||
       (parsed.revision as number) < 0 || typeof parsed.updatedAt !== "number" ||
-      !Number.isFinite(parsed.updatedAt) || !isObject(parsed.records)) return null;
+      !Number.isFinite(parsed.updatedAt) || parsed.updatedAt < 0 || !isObject(parsed.records) ||
+      !Object.keys(parsed.records).every(safeId)) return null;
   return parsed as unknown as DurableEnvelope<T>;
 }
 function lockFailure(reason: "lock-unavailable" | "lock-timeout" | "lock-error", message: string): DurableWriteResult {
@@ -143,7 +146,14 @@ export function createDurableStore<T>(options: DurableStoreOptions<T>) {
     try { journal = JSON.parse(journalRaw); } catch {
       return { ok: false, reason: "indeterminate", message: "The transaction journal is unreadable; writes are locked pending recovery." };
     }
-    if (!isObject(journal) || journal.version !== 1 || typeof journal.phase !== "string") {
+    if (!isObject(journal) || Object.keys(journal).length !== 7 ||
+      !["version", "transactionId", "projectId", "beforeRaw", "afterRaw", "phase", "createdAt"].every((key) => Object.prototype.hasOwnProperty.call(journal, key)) ||
+      journal.version !== 1 || typeof journal.transactionId !== "string" || !journal.transactionId ||
+      typeof journal.projectId !== "string" || !safeId(journal.projectId) ||
+      !(journal.beforeRaw === null || typeof journal.beforeRaw === "string") ||
+      typeof journal.afterRaw !== "string" || typeof journal.createdAt !== "number" ||
+      !Number.isFinite(journal.createdAt) ||
+      !["intent", "committed", "rolled-back", "indeterminate"].includes(String(journal.phase))) {
       return { ok: false, reason: "indeterminate", message: "The transaction journal has an unknown shape; writes are locked pending recovery." };
     }
     if (journal.phase === "indeterminate") return { ok: false, reason: "indeterminate", message: "A previous write could not be safely reconciled; writes remain locked." };
@@ -343,7 +353,9 @@ export function createDurableStore<T>(options: DurableStoreOptions<T>) {
           const raw = storage.getItem(migrationKey);
           if (raw === null) return "never-migrated" as const;
           const marker = JSON.parse(raw) as MigrationMarker;
-          return marker.version === 1 && typeof marker.sourceFingerprint === "string" ? "migrated" as const : "unreadable" as const;
+          return marker.version === 1 && Number.isFinite(marker.migratedAt) &&
+            typeof marker.sourceFingerprint === "string" && /^[0-9a-f]{8}$/.test(marker.sourceFingerprint)
+            ? "migrated" as const : "unreadable" as const;
         } catch { return "unreadable" as const; }
       });
       return locked.ok ? locked.value : "unreadable";
@@ -354,6 +366,8 @@ export function createDurableStore<T>(options: DurableStoreOptions<T>) {
         try {
           const existing = storage.getItem(migrationKey);
           if (existing !== null) return false;
+          const committedRaw = readRaw();
+          if (committedRaw === null || !envelopeFromRaw<T>(committedRaw)) return false;
           if (!snapshotRaw(sourceRaw, "pre-migration")) return false;
           const marker: MigrationMarker = { version: 1, migratedAt: now(), sourceFingerprint: fingerprint(sourceRaw) };
           storage.setItem(migrationKey, JSON.stringify(marker));
