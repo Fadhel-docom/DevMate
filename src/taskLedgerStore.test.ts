@@ -107,6 +107,28 @@ describe("durable task-ledger adapter", () => {
     expect(await store.readLedger("p1")).toMatchObject({ ok: true, value: next });
   });
 
+  it("rejects multiple appended events bundled with one task mutation", async () => {
+    const { store, profiles } = makeStore();
+    const initial = draftLedger(profiles);
+    await store.writeLedger("p1", initial, 0);
+    const queued = {
+      ...initial.records[0], state: "queued" as const, updatedAt: 102
+    };
+    const next: TaskLedgerStore = {
+      ...initial, revision: 3, updatedAt: 102, records: [queued],
+      events: [...initial.events,
+        { eventId: "note-before-transition", taskId: "t1", projectId: "p1",
+          type: "task.note", actor: "coordinator", createdAt: 101, details: {} },
+        { eventId: "transition", taskId: "t1", projectId: "p1",
+          type: "task.state-changed", actor: "coordinator", createdAt: 102,
+          details: { fromState: "draft", toState: "queued" } }
+      ]
+    };
+    expect(await store.writeLedger("p1", next, 1))
+      .toMatchObject({ ok: false, reason: "invalid-data" });
+    expect(await store.readLedger("p1")).toMatchObject({ ok: true, value: initial });
+  });
+
   it("rejects stale durable revisions without overwriting newer data", async () => {
     const { store, profiles } = makeStore();
     const initial = draftLedger(profiles);
