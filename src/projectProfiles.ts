@@ -291,7 +291,6 @@ function validateProfile(value: unknown, index: number, errors: ProfileValidatio
       ]) && isPositiveInteger(entry.approvedRevision) && validateEvidence(entry.evidence) &&
       isNonNegativeInteger(entry.approvedAt) && isNonNegativeInteger(entry.revokedAt) &&
       entry.revokedAt >= entry.approvedAt &&
-      true &&
       typeof entry.approvedContentHash === "string" && /^[0-9a-f]{16}$/i.test(entry.approvedContentHash) &&
       typeof entry.revocationReason === "string" && entry.revocationReason.trim().length > 0
     ), "approval.revocationHistory", "Expected an ordered array of complete, valid prior revocation records.");
