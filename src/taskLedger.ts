@@ -324,9 +324,10 @@ export function validateAppendOnlyLedgerUpdate(previous: TaskLedgerStore, next: 
   const appendedEvents = next.events.slice(previous.events.length);
   for (const priorTask of previous.records) {
     const updatedTask = nextTasks.get(priorTask.taskId);
-    if (!updatedTask || updatedTask.state === priorTask.state) continue;
+    if (!updatedTask) return false;
     const taskChanged = JSON.stringify(priorTask) !== JSON.stringify(updatedTask);
-    if (taskChanged && updatedTask.updatedAt <= priorTask.updatedAt) return false;
+    if (!taskChanged) continue;
+    if (updatedTask.updatedAt <= priorTask.updatedAt) return false;
     const matchingEvents = appendedEvents.filter((item) => item.taskId === priorTask.taskId && item.projectId === priorTask.projectId);
     const event = matchingEvents[matchingEvents.length - 1];
     if (taskChanged && (!event || event.actor !== priorTask.accountableCoordinator ||
