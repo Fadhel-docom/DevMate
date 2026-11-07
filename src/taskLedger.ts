@@ -387,12 +387,17 @@ export function validateAppendOnlyLedgerUpdate(
     let context: TaskTransitionContext | undefined;
     if (priorTask.state !== updatedTask.state) {
       if (priorTask.state === "indeterminate") {
-        if (event.type !== "task.reconciled" || updatedTask.updatedAt <= event.createdAt) return false;
-        const reconciliationLedger: TaskLedgerStore = {
-          ...next,
-          records: next.records.map((item) => item.taskId === priorTask.taskId ? priorTask : item)
-        };
-        context = { eventId: event.eventId, taskId: priorTask.taskId, projectId: priorTask.projectId, ledger: reconciliationLedger };
+        // Validate reconciliation against the already-indexed task/event pair.
+        // Calling the public helper here would revalidate the entire ledger for
+        // every indeterminate task transition, producing quadratic work.
+        const resolution = event.details.resolution;
+        if (event.type !== "task.reconciled" || event.outcome !== "succeeded" ||
+          event.createdAt < priorTask.updatedAt || updatedTask.updatedAt <= event.createdAt ||
+          !requiredString(event.details.evidenceReference) ||
+          !priorTask.evidenceReferences.includes(event.details.evidenceReference) ||
+          !((updatedTask.state === "ready" && resolution === "not-applied") ||
+            (updatedTask.state === "failed" && resolution === "failed") ||
+            (updatedTask.state === "cancelled" && resolution === "cancelled"))) return false;
       } else if (updatedTask.state === "completed") {
         if (event.type !== "task.acceptance-verified") return false;
         context = { task: priorTask, event };
@@ -410,7 +415,8 @@ export function validateAppendOnlyLedgerUpdate(
         return false;
       }
     }
-    if (priorTask.state !== updatedTask.state && !canTransitionTaskState(priorTask.state, updatedTask.state, context)) return false;
+    if (priorTask.state !== updatedTask.state && priorTask.state !== "indeterminate" &&
+      !canTransitionTaskState(priorTask.state, updatedTask.state, context)) return false;
   }
   return true;
 }
