@@ -193,4 +193,16 @@ describe("task ledger schema v1", () => {
     expect(validateAppendOnlyLedgerUpdate(previous, unconsumed)).toBe(false);
   });
 
+
+  it("requires an append-only state-change event and a newer task timestamp", () => {
+    const previous = storeWith([baseTask], []);
+    const readyTask = { ...baseTask, state: "ready" as const, updatedAt: 102 };
+    const stateEvent = { eventId: "state-1", taskId: "t1", projectId: "p1", type: "task.state-changed",
+      actor: "coordinator", createdAt: 101, details: { fromState: "queued", toState: "ready" } };
+    expect(validateAppendOnlyLedgerUpdate(previous, { ...storeWith([readyTask], [stateEvent]), revision: 2 })).toBe(true);
+    expect(validateAppendOnlyLedgerUpdate(previous, { ...storeWith([readyTask], []), revision: 2 })).toBe(false);
+    expect(validateAppendOnlyLedgerUpdate(previous, { ...storeWith([readyTask], [stateEvent]), revision: 2,
+      records: [{ ...readyTask, updatedAt: 100 }] })).toBe(false);
+  });
+
 });
