@@ -1517,3 +1517,25 @@ Remote sandbox, Node v24.22.1, npm 10.8.2 (CI uses Node 20.20.2), files fetched 
 - PR #22 is open as Draft: https://github.com/Fadhel-docom/DevMate/pull/22. It targets `feature/phase-1-foundation`; PR #22 exact current documentation head `dca72a801faa313a7ac632caf51e89fc276de276` passed run #308. The subsequent status/operations reconciliation commits update the PR head and require their own exact-head CI run. The implementation remains on `feature/durable-store-foundation`.
 - Next: verify CI on the exact PR #22 head after this final evidence reconciliation, update the PR body with the resulting SHA and run, then request an independent review of that exact head. Do not merge before review.
 - PR-B profile persistence, PR-C ledger persistence, and PR-D App integration remain separate bounded changes. No provider integration or owner-reserved permission/cost decision is implied.
+
+
+---
+
+## 57. PR #23 first independent review and corrective revision — 2026-11-07 — ChatGPT coordinator
+
+### Review outcome
+- Independent review of PR #23 exact head `96ace96d3d6434e7f12352ea675a50e7065dce61` returned **REQUEST CHANGES**.
+- Two blockers: §17 incorrectly stated v1.1 was current; the approved v1.1 text was not preserved as a standalone immutable file (the old `v1.1-DRAFT.md` is only a stub).
+- No changes were made by the reviewer. The reviewer found the delegated authority exclusions broadly sound and no unintended permission expansion.
+
+### Corrections applied
+- Added `docs/CHARTER-AND-QUALITY-RULES-v1.1.md` using the exact content of the approved v1.1 source at commit `50126a159961b71faf88025a8695cb7e734d63b7`. A byte-for-byte content comparison against the source returned true.
+- Updated §17 to state that v1.2 becomes the current governing version only after the amendment is merged, while v1.1 and v1.0 remain preserved at standalone versioned paths.
+- Clarified §7 that changes to the constitution and approval boundaries remain owner-reserved; uncertainty about whether an action is covered requires asking the owner.
+- Corrected D-002 from "must merge" to "may merge without asking" when all gates pass; recorded the owner's literal 2026-11-07 instruction as evidence. This does not authenticate GitHub shared-account attribution independently.
+- Updated STATUS to state that v1.1 remains effective until PR #23 merges. PR #23's new exact head still requires independent review. No CI pass is claimed: this docs-only PR's branch/base combination does not trigger the configured workflow, so CI is Not verified.
+- PR #23 remains Draft and unmerged pending second independent review and exact diff check.
+
+### Related work
+- PR #24 remains Draft and awaits the second Claude review requested by the owner. No merge or approval inference.
+- No change to `main`, RateNest, other repositories, provider access, costs, secrets, permissions, or public release.
