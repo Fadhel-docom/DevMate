@@ -1663,3 +1663,31 @@ Remote sandbox, Node v24.22.1, npm 10.8.2 (CI uses Node 20.20.2), files fetched 
 - Verified PR #27 live head `6811da259b4bdf2b743d3d3f3ad75a914096383f` against Actions run #351 (`42378286215`). Job logs inspected: npm ci installed 155 packages; audit summary 0 vulnerabilities; 8 test files / 205 tests passed; TypeScript check and Vite production build succeeded.
 - PR #27 remains open, mergeable, and awaiting one independent review. The review request is in the PR discussion and requires the reviewer to confirm the exact live SHA.
 - This evidence/handoff entry is the final docs update in this sequence; it advances the branch head, so run CI once more on the resulting exact head. Do not add further commits merely to restate the same evidence. Then complete the one independent review and merge if all applicable gates pass.
+
+
+---
+
+## 66. PR-B merged; PR-C durable task-ledger adapter — 2026-11-07 — ChatGPT coordinator
+
+### PR-B merge
+- Claude reviewed PR #27 exact head `cc44f6e72e3610fa5a6dd534042da6354564cb28` and returned **APPROVE WITH FOLLOW-UP**, no blocking defects. Claude confirmed the exact-head `verify` check completed successfully; it did not inspect the job logs. No CI details beyond the verified check conclusion are inferred from that review.
+- The owner merged PR #27. GitHub reports merge commit `3665c694d29966188096c534dc7221b84f723dd4` into `feature/phase-1-foundation`.
+- PR #24 and PR #26 remain superseded; do not merge them.
+
+### PR-C implementation opened
+- Created branch `feature/task-ledger-durable-store` from merge commit `3665c694d29966188096c534dc7221b84f723dd4`.
+- Opened [PR #28](https://github.com/Fadhel-docom/DevMate/pull/28), targeting `feature/phase-1-foundation`.
+- Added `src/taskLedgerStore.ts` and `src/taskLedgerStore.test.ts`.
+- Adapter stores one ledger per project, requires expected durable-envelope revision, validates the current project-profile envelope using the read-only storage view inside the generic shared lock, applies `validateAppendOnlyLedgerUpdate` in the locked update guard, and checks reads against the current project profile.
+- Additional guard requires exactly one appended event for each task mutation in a write, preventing a batch of unrelated events from being hidden before the final transition event.
+- Adapter deliberately exposes no legacy task migration. The old task representation has no policy snapshot, risk classification, acceptance criteria, accountable coordinator, allowed actions/resources, or evidence references. No automatic mapping or inferred authorization is permitted.
+
+### Verification history and correction
+- Initial CI on early PR-C commits found a TypeScript test error: `TaskLedgerStore` type was used without import. Fixed by commit `46ed6cb57e7c4705b8b98a5671f89194b5181c13`.
+- Added transition-event batching hardening and regression coverage in commits `b3f1e550509aea765ccc02b08b7ff185d1890978` and `0bca0c6064893fd31cce697b2ae58c15db366826`.
+- The first test-only CI run completed 213 tests successfully but the build failed on the missing type import. The subsequent run for the next SHA was still in progress at the time of the check. These are not evidence of passing CI for the final PR head.
+- Documentation updates now describe the PR-C integration contract and its migration boundary. This operations-room update itself changes the PR head; exact-head CI must be rechecked after the final docs commit.
+
+### Boundaries and next action
+- No App/UI integration, no legacy migration invocation, no storage cutover, no execution, no provider/network connection, no costs, no permission changes, no deployment, and no changes to `main` or RateNest.
+- Next: verify CI on the exact live PR #28 head, then obtain one focused independent review. If no blockers and applicable checks pass, merge under the standing delegation. Continue migration/cutover only in the separately gated PR-D.
