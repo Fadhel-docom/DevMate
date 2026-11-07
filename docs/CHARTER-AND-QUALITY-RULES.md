@@ -2,11 +2,11 @@
 
 **Document:** Permanent project constitution  
 **Version:** 1.2  
-**Status:** Version 1.1 was approved on 2026-11-05. Version 1.2 is an owner-approved amendment dated 2026-11-07 and becomes governing when merged.  
-**Predecessor:** Version 1.0, preserved at `docs/CHARTER-AND-QUALITY-RULES-v1.0.md`.  
+**Status:** Version 1.1 was approved on 2026-11-05. Version 1.2 is a proposed amendment dated 2026-11-07; it is not approved or governing unless and until the owner explicitly approves this amendment and it is merged.  
+**Predecessor:** Version 1.1, preserved at `docs/CHARTER-AND-QUALITY-RULES-v1.1.md` (with version 1.0 retained at `docs/CHARTER-AND-QUALITY-RULES-v1.0.md`).  
 **Applies to:** All contributors, assistants, agents, integrations, and project work in DevMate.
 
-> **Authority:** Version 1.2 amends version 1.1; versions 1.1 and 1.0 remain preserved for historical reference. This amendment does not authorize a merge of PR #1, code changes beyond approved scope, or production publishing. It becomes the governing version when merged.
+> **Authority:** This proposed version 1.2 would amend version 1.1 if explicitly approved by the owner and merged. Until both conditions are met, version 1.1 remains the governing constitution. Versions 1.1 and 1.0 remain preserved. This proposal does not authorize a merge of PR #1, code changes beyond approved scope, or production publishing.
 
 ## 1. Mission and vision
 
@@ -200,7 +200,7 @@ A line-count threshold alone does not make a change routine. Documentation-only 
 
 ### Owner's standing merge delegation — 2026-11-07
 
-The owner explicitly directs contributors not to interrupt them for routine merge permission. A PR may be merged without a new per-PR owner confirmation when every applicable condition in this section and the relevant quality gates is satisfied, including bounded and reversible data-format or migration work. For such work, the PR must include a migration/compatibility assessment, verified backup and rollback or recovery path, tests for idempotence and data preservation, exact-head CI evidence, and independent review with no blocking findings.
+The owner explicitly directs contributors not to interrupt them for routine merge permission. A PR may be merged without a new per-PR owner confirmation when every applicable condition in this section and the relevant quality gates is satisfied, including bounded and reversible data-format or migration work. For such work, the PR must include a migration/compatibility assessment, explicit Sensitive-level threat assessment and least-privilege/data-handling review, verified backup and rollback or recovery path, tests for idempotence and data preservation, exact-head CI evidence, and independent review with no blocking findings.
 
 This standing delegation does **not** authorize: PR #1; amendments to this constitution or changes to approval boundaries; unresolved owner-reserved decisions under §14; new costs; secret disclosure or sensitive permission expansion; destructive or difficult-to-reverse operations; material security-risk acceptance; licensing decisions; changes to mission or scope; or production/public release not already explicitly authorized. If there is any doubt whether an action is covered by this delegation or is owner-reserved, stop that action and ask the owner; do not infer authorization. If a migration cannot be made bounded and recoverable, or any required gate is unmet, stop only that affected action and continue safe unrelated work. Do not ask the owner again for a merge already covered by this delegation.
 
