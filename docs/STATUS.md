@@ -672,3 +672,13 @@ Run the full Vitest suite, TypeScript/Vite production build, and dependency audi
 - The independent review of head `594603d64cb7670509e5a652d91d7c709da0eb56` returned **APPROVE WITH FOLLOW-UP**, no blockers. Three documentation follow-ups were applied in the subsequent corrective commits.
 - No owner approval of v1.2 is recorded. Before merge, require a separate explicit owner approval identifying both this exact constitutional amendment and the final PR head SHA, recorded durably with date and attributable evidence. A shared-account GitHub comment alone is insufficient identity evidence.
 - v1.1 remains the only effective version; PR #23 remains Draft and unmerged. CI on the previous review head was Not verified; verify the final head separately.
+
+
+## Current state — 2026-11-07 (PR #23 final review follow-ups)
+
+- The latest independent review of PR #23 returned **APPROVE WITH FOLLOW-UP**, with no blocking defects, on head `2f6e9c4edd2814a064339b08ebfb525eab5a8912`. The subsequent documentation corrections are recorded in OPERATIONS-ROOM §61; this historical review SHA is not the new review target after those commits.
+- PR description must refer to the live PR head rather than a stale hard-coded SHA. The next independent review must state the exact SHA it inspected.
+- CI: **Not verified** unless workflow/check evidence is observed for the exact current head. The factual historical wording is “no workflow runs were observed”; no cause is inferred.
+- Owner-approval evidence standard: a separate, explicit message from the owner in this ChatGPT conversation, independent of the shared GitHub account, naming both the exact v1.2 amendment and exact final PR head SHA. Before merge, quote the owner's message verbatim here with its date. A shared-account comment alone, silence, the standing routine delegation, or a technical review does not qualify.
+- Recheck exact-head CI immediately before requesting owner approval and before merge if the head changes. No CI success is claimed without exact-head evidence.
+- PR #23 remains Draft and unmerged; v1.1 remains the sole effective constitution. Do not apply routine merge delegation to this constitutional amendment.
