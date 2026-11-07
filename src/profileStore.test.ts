@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { createProjectProfileStore } from "./profileStore";
-import { migrateLegacyProjectsToProfiles, type ProjectProfile } from "./projectProfiles";
+import { computeProfileContentHash, migrateLegacyProjectsToProfiles, type ProjectProfile } from "./projectProfiles";
 import { STORAGE_KEY } from "./storage";
 import type { ProfileStoreOptions } from "./profileStore";
 
@@ -9,6 +9,14 @@ class MemoryStorage {
   getItem(key: string): string | null { return this.values.get(key) ?? null; }
   setItem(key: string, value: string): void { this.values.set(key, value); }
   removeItem(key: string): void { this.values.delete(key); }
+  failMigrationMarkerWrites = 0;
+  setItem(key: string, value: string): void {
+    if (key === "devmate-migrations-v1:project-profiles" && this.failMigrationMarkerWrites > 0) {
+      this.failMigrationMarkerWrites--;
+      throw new Error("injected marker write failure");
+    }
+    this.values.set(key, value);
+  }
   seed(key: string, value: string): void { this.values.set(key, value); }
 }
 
@@ -114,6 +122,7 @@ describe("durable project profile adapter", () => {
     storage.seed(STORAGE_KEY, legacy);
     expect(await store.migrateLegacyProfiles()).toMatchObject({ ok: false, reason: "invalid-data" });
     expect(await store.migrationStatus()).toBe("never-migrated");
+    expect((await store.listSnapshots()).filter((snapshot) => snapshot.reason === "pre-migration")).toHaveLength(0);
     expect(storage.getItem(STORAGE_KEY)).toBe(legacy);
     expect(await store.readProfile("p1")).toMatchObject({ ok: true, status: "empty" });
   });
