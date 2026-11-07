@@ -753,3 +753,7 @@ Run the full Vitest suite, TypeScript/Vite production build, and dependency audi
 1. Obtain one focused independent review of PR #28 exact head `2c7d798...`; if no blockers and the exact-head CI remains green, merge under the standing delegation.
 2. Obtain the required second-contributor review of PR #29; then merge if its scope and links are sound.
 3. After PR-C merge, implement PR-D in bounded steps using `docs/PR-D-RECOVERY-DESIGN.md`. Do not invoke migration/cutover during implementation or CI.
+
+
+### PR-D restart-safety correction
+- Design review identified a restart gap between profile migration and final cutover marker. PR-D design now requires a durable cutover-intent marker before any migration, checked under the shared lock by every legacy write path. An intent/intermediate marker forces read-only recovery mode across reloads and tabs; it cannot silently fall back to legacy writes.
