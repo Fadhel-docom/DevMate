@@ -147,6 +147,14 @@ export function createDurableStore<T>(options: DurableStoreOptions<T>) {
       return { ok: false, reason: "indeterminate", message: "The transaction journal has an unknown shape; writes are locked pending recovery." };
     }
     if (journal.phase === "indeterminate") return { ok: false, reason: "indeterminate", message: "A previous write could not be safely reconciled; writes remain locked." };
+    if (journal.phase === "committed" && (typeof journal.afterRaw !== "string" || currentRaw !== journal.afterRaw)) {
+      try { writeJournal({ ...(journal as TransactionJournal), phase: "indeterminate" }); } catch { /* fail closed even if journal cannot be updated */ }
+      return { ok: false, reason: "indeterminate", message: "The committed transaction no longer matches stored bytes; writes are locked pending recovery." };
+    }
+    if (journal.phase === "rolled-back" && currentRaw !== journal.beforeRaw) {
+      try { writeJournal({ ...(journal as TransactionJournal), phase: "indeterminate" }); } catch { /* fail closed even if journal cannot be updated */ }
+      return { ok: false, reason: "indeterminate", message: "The rolled-back transaction no longer matches stored bytes; writes are locked pending recovery." };
+    }
     if (journal.phase !== "intent") return { ok: true, revision: 0, updatedAt: now() };
     const beforeRaw = journal.beforeRaw;
     const afterRaw = journal.afterRaw;
