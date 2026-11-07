@@ -1,4 +1,4 @@
-import { STORAGE_LOCK_NAME, withStorageLock } from "./storage";
+import { DEFAULT_LOCK_TIMEOUT_MS, STORAGE_LOCK_NAME, withStorageLock } from "./storage";
 
 export type DurableStoreName = "project-profiles" | "task-ledger";
 export type DurableSnapshotReason = "pre-migration" | "pre-restore" | "corrupt" | "future-version";
@@ -54,7 +54,7 @@ const MIGRATION_PREFIX = "devmate-migrations-v1";
 const BACKUP_PREFIX = "devmate-durable-backups-v1";
 const DEFAULT_MAX_BACKUPS = 5;
 const safeId = (value: string): boolean =>
-  value.length > 0 && value.length <= 160 && !["__proto__", "prototype", "constructor"].includes(value);
+  value.trim().length > 0 && value.length <= 160 && !["__proto__", "prototype", "constructor"].includes(value);
 const isObject = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
 const fingerprint = (raw: string): string => {
@@ -95,7 +95,7 @@ export function createDurableStore<T>(options: DurableStoreOptions<T>) {
   const createId = options.createId ?? (() => `tx-${now()}-${Math.random().toString(36).slice(2)}`);
   const maxBackups = Math.min(DEFAULT_MAX_BACKUPS, Math.max(1, options.maxBackups ?? DEFAULT_MAX_BACKUPS));
   const runExclusive: LockRunner = options.runExclusive ?? (async (work) => {
-    const result = await withStorageLock(work, { timeoutMs: 8000 });
+    const result = await withStorageLock(work, { timeoutMs: DEFAULT_LOCK_TIMEOUT_MS });
     return result;
   });
   const dataKey = durableStoreKey(options.name);
@@ -123,7 +123,8 @@ export function createDurableStore<T>(options: DurableStoreOptions<T>) {
       const existing = storage.getItem(key);
       if (existing === raw) {
         const metaRaw = storage.getItem(`${key}:meta`);
-        const meta = metaRaw ? JSON.parse(metaRaw) as { createdAt?: number; reason?: DurableSnapshotReason } : {};
+        let meta: { createdAt?: number; reason?: DurableSnapshotReason } = {};
+        try { if (metaRaw) meta = JSON.parse(metaRaw) as typeof meta; } catch { /* raw snapshot remains preserved */ }
         return { key, slot, createdAt: meta.createdAt ?? now(), reason: meta.reason ?? reason, fingerprint: fingerprint(raw), raw };
       }
       if (existing === null) {
