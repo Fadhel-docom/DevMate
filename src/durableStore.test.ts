@@ -157,6 +157,8 @@ describe("durable store foundation", () => {
     const { store, storage } = setup();
     expect(await store.migrationStatus()).toBe("never-migrated");
     const legacy = '[{"id":"legacy"}]';
+    expect(await store.markMigrated(legacy)).toBe(false);
+    await store.writeProject("p1", { projectId: "p1", value: "migrated" });
     expect(await store.markMigrated(legacy)).toBe(true);
     expect(await store.migrationStatus()).toBe("migrated");
     expect(storage.getItem(durableBackupKey("project-profiles", 1))).toBe(legacy);
