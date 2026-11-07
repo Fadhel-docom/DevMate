@@ -699,7 +699,7 @@ Run the full Vitest suite, TypeScript/Vite production build, and dependency audi
 - Rebased cumulative PR-B implementation onto the current foundation in branch `feature/project-profile-durable-integration-rebased`.
 - The cumulative implementation includes PR #24, PR #26, and two additional regression fixes: empty/missing legacy source now commits an empty durable envelope before writing the migration marker; actual restore tests verify that older draft and approved snapshots cannot roll back profile revision or approval/revocation history.
 - Original stacked-branch fix commits: `d0f41cd7ddc54da3a03923afbefc22d04b2644dc`, `f38e49b7923abdac0e81ee3ef73790fbd89c53e2`, `5af764c7f3a7ad702c110b09abc81ab011cd720e`.
-- Exact rebased PR #27 head `ac54cfda217489867e058a06f85d350e1e921306` passed Actions run #347, ID `42378120896`: npm ci installed 155 packages, audit summary 0 vulnerabilities, 8 test files / 205 tests passed, TypeScript check and Vite production build passed. Job logs were inspected.
+- PR #27 head `d35c60979fd1a4b587a8817ebd76db9d19ea7be2` passed exact-head Actions run #349, ID `42378198287`: npm ci installed 155 packages, audit summary 0 vulnerabilities, 8 test files / 205 tests passed, TypeScript check and Vite production build passed. Job logs were inspected. This record-only reconciliation changes the branch head; verify the live PR head and its CI again before merge.
 - No App/UI cutover, legacy migration invocation, provider integration, deployment, or PR-D recovery implementation has been performed.
 
 ### Next actions
@@ -713,3 +713,8 @@ Run the full Vitest suite, TypeScript/Vite production build, and dependency audi
 - Exact head: `ac54cfda217489867e058a06f85d350e1e921306`; base: `2f7f9c69e80863b3720c269cc33a36b33a841209`.
 - GitHub Actions run #347 (`42378120896`) completed successfully on this exact head: 8 test files / 205 tests passed, npm ci installed 155 packages, audit summary 0 vulnerabilities, TypeScript check passed, Vite production build passed.
 - PR #27 is open and ready for one focused independent review; no merge has occurred.
+
+
+### PR-B CI evidence update — 2026-11-07
+- Exact PR #27 head `d35c60979fd1a4b587a8817ebd76db9d19ea7be2` passed Actions run #349 (`42378198287`): 8/8 test files, 205/205 tests, npm audit summary 0 vulnerabilities, TypeScript and Vite build successful; logs inspected.
+- This documentation-only evidence update changes the PR head. The next contributor must verify the live head and corresponding exact-head run before merge; do not reuse run #349 as proof for a later SHA.
