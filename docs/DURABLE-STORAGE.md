@@ -92,3 +92,17 @@ PR-B adds `src/profileStore.ts` as the only profile-facing adapter over the gene
 - Restore remains subject to the profile update guard. A snapshot that would roll back profile revision or approval/revocation history is intentionally refused; restoring older approved state must never erase newer approval or revocation evidence. A forward-compatible profile recovery workflow that preserves this history is a PR-D prerequisite and is not claimed by this adapter.
 - The generic migration validates every transformed record and the store update guard before allocating a pre-migration snapshot slot. Repeated rejected attempts therefore do not consume the bounded snapshot slots. The snapshot is still persisted and verified before the durable data commit.
 - The generic durable envelope revision is a store-level compare-and-swap counter. The profile validator currently receives synthetic store revisions (1 then 2) solely to satisfy its monotonic-store contract; these values are not the durable envelope revision and must not be treated as an audit or concurrency signal. The envelope revision and `expectedRevision` provide the actual durable compare-and-swap protection.
+
+
+### Preliminary migration threat and recovery assessment (PR-B; not a PR-D authorization)
+
+| Threat or failure | Existing control | Residual requirement before PR-D |
+| --- | --- | --- |
+| Legacy workspace changes while migration is being prepared | Source bytes are read under the shared lock; marker records a source fingerprint; later source drift returns conflict | The App's legacy writer must be stopped at a coordinated cutover; no concurrent legacy writer may remain |
+| Malformed, sparse, duplicate, unsafe, or partially invalid legacy projects | Entire transform is rejected; every resulting record and locked update is validated before commit | Exercise the full legacy corpus and retain a human-readable rejection/export path |
+| Process interruption after durable data commit but before marker | Retry is idempotent; unchanged records do not trigger a second data commit; marker is written only after verified data commit | Test actual browser termination/restart at each write boundary |
+| Storage quota or snapshot-slot exhaustion | Snapshot is verified before data commit; no automatic pruning; failure is closed | Verify real browser quota behavior and ensure the owner can export/recover raw source bytes |
+| Stale or corrupted snapshot selection | Fingerprint is checked under lock; expected durable revision is checked under lock; profile update guard remains active | Fingerprint is non-cryptographic; do not treat it as tamper-proof or authorization evidence |
+| Restore would erase approval/revocation evidence or decrease profile revision | Profile update guard refuses the restore; restore requires expected durable revision | PR-D needs a forward-only recovery UX that preserves approval evidence, or an explicit owner-governed recovery procedure; rollback of approved state is not supported |
+
+This is a preliminary engineering threat assessment, not a formal security sign-off. Migration must remain uninvoked until PR-D demonstrates the cutover, backup/export, restart recovery, and owner-visible failure handling. No migration permission is granted by this document.
