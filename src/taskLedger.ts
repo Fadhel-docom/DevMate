@@ -102,6 +102,15 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return Reflect.ownKeys(value).every((key) => typeof key === "string" &&
     Object.prototype.hasOwnProperty.call(Object.getOwnPropertyDescriptor(value, key) ?? {}, "value"));
 }
+function isDenseDataArray(value: unknown): value is unknown[] {
+  if (!Array.isArray(value)) return false;
+  if (Reflect.ownKeys(value).some((key) => typeof key !== "string" ||
+    (key !== "length" && (!/^(0|[1-9][0-9]*)$/.test(key) || Number(key) >= value.length)))) return false;
+  return Array.from({ length: value.length }, (_, index) => {
+    const descriptor = Object.getOwnPropertyDescriptor(value, String(index));
+    return Boolean(descriptor && Object.prototype.hasOwnProperty.call(descriptor, "value"));
+  }).every(Boolean);
+}
 function exactKeys(value: Record<string, unknown>, keys: readonly string[], optional: readonly string[] = []): boolean {
   const allowed = new Set([...keys, ...optional]);
   return keys.every((key) => Object.prototype.hasOwnProperty.call(value, key)) && Object.keys(value).every((key) => allowed.has(key));
@@ -154,13 +163,12 @@ export function validateTaskLedgerStore(input: unknown, profiles?: ProjectProfil
   if (!isTimestamp(input.revision) || input.revision < 1) addError(errors, "revision", "Expected a positive store revision.");
   if (!isTimestamp(input.updatedAt)) addError(errors, "updatedAt", "Expected a non-negative timestamp.");
   if (!profilesValid) addError(errors, "profiles", "Supplied project profile store is invalid.");
-  if (!Array.isArray(input.records)) addError(errors, "records", "Expected a task array.");
-  if (!Array.isArray(input.events)) addError(errors, "events", "Expected an event array.");
-  if (Array.isArray(input.records) && !Array.from({ length: input.records.length }, (_, index) => Object.prototype.hasOwnProperty.call(input.records, index)).every(Boolean)) addError(errors, "records", "Sparse task arrays are not allowed.");
-  if (Array.isArray(input.events) && !Array.from({ length: input.events.length }, (_, index) => Object.prototype.hasOwnProperty.call(input.events, index)).every(Boolean)) addError(errors, "events", "Sparse event arrays are not allowed.");
+  if (!isDenseDataArray(input.records)) addError(errors, "records", "Expected a dense data-only task array.");
+  if (!isDenseDataArray(input.events)) addError(errors, "events", "Expected a dense data-only event array.");
   if (Array.isArray(input.records) && input.records.length > 2000) addError(errors, "records", "Task ledger exceeds the 2,000-task validation limit.");
   if (Array.isArray(input.events) && input.events.length > 10000) addError(errors, "events", "Task ledger exceeds the 10,000-event validation limit.");
   const taskById = new Map<string, Record<string, unknown>>();
+  if (isTimestamp(input.updatedAt) && input.updatedAt < latestLedgerTimestamp) addError(errors, "updatedAt", "Ledger timestamp cannot precede a task or event update.");
   if (Array.isArray(input.records)) input.records.forEach((task, index) => {
     const path = `records[${index}]`;
     if (!isRecord(task)) { addError(errors, path, "Expected a plain task object."); return; }
@@ -251,6 +259,10 @@ export function validateTaskLedgerStore(input: unknown, profiles?: ProjectProfil
   };
   for (const id of graph.keys()) if (!visit(id)) { addError(errors, "records.dependencies", "Dependency cycle detected."); break; }
 
+  let latestLedgerTimestamp = 0;
+  if (Array.isArray(input.records)) input.records.forEach((task) => {
+    if (isRecord(task) && isTimestamp(task.updatedAt)) latestLedgerTimestamp = Math.max(latestLedgerTimestamp, task.updatedAt);
+  });
   const eventIds = new Set<string>(), idempotencyKeys = new Set<string>();
   if (Array.isArray(input.events)) input.events.forEach((event, index) => {
     const path = `events[${index}]`;
@@ -262,6 +274,7 @@ export function validateTaskLedgerStore(input: unknown, profiles?: ProjectProfil
       (event.outcome !== undefined && !actionOutcomes.has(event.outcome as TaskActionOutcome)) ||
       (event.idempotencyKey !== undefined && !requiredString(event.idempotencyKey)) ||
       !isRecord(event.details) || !isJson(event.details)) addError(errors, path, "Invalid event record.");
+    if (isTimestamp(event.createdAt)) latestLedgerTimestamp = Math.max(latestLedgerTimestamp, event.createdAt);
     if (requiredString(event.eventId)) {
       if (eventIds.has(event.eventId)) addError(errors, `${path}.eventId`, "Duplicate event ID.");
       eventIds.add(event.eventId);
