@@ -1469,3 +1469,47 @@ Remote sandbox, Node v24.22.1, npm 10.8.2 (CI uses Node 20.20.2), files fetched 
 - Implement PR #17 corrections on a fresh branch from the current foundation head; do not base new work on the stale PR #17 or PR #18 heads.
 - Ask the independent reviewer (second Claude model) to inspect the corrected PR #17 head once, including `taskLedger.ts`, after CI succeeds.
 - Continue with the smallest safe change set; do not combine storage integration with schema repair.
+
+
+---
+
+## 55. PR #21 accepted and merged; PR-A durable-store foundation — 2026-11-07 — ChatGPT coordinator
+
+### PR #21 final decision and merge
+- The third independent review returned **APPROVE** for exact PR #21 head `24eb8a6b222d57741672641013a161ddc31aae16`. It found no blocker in the `allowedResources` / `risk` freeze correction or its regression tests.
+- The reviewer explicitly classified six remaining notes as non-blocking integration/policy follow-ups for PR-A/PR-B. They are retained in `docs/DURABLE-STORAGE.md` and must not be silently dropped.
+- Before merge, GitHub PR metadata was re-fetched and confirmed open, mergeable, based on `feature/phase-1-foundation`, and still at the exact reviewed SHA. Squash merge used an expected-head SHA guard.
+- PR #21 merged successfully at `393cb6795e14c1d14b4dc6d3ec0fe443fa2736f9`.
+- PR #17 was closed as superseded by PR #21. No direct write to `main`, no other repository, and no RateNest change.
+- Post-merge Actions run #253 (ID `42363984934`) ran on the exact merge SHA and succeeded. Job logs confirm `npm ci`, audit 0 vulnerabilities, 6 test files / 169 tests passed, `tsc --noEmit`, and Vite production build.
+
+### PR-A implementation boundary
+- Created branch `feature/durable-store-foundation` from the PR #21 merge commit `393cb6795e14c1d14b4dc6d3ec0fe443fa2736f9`.
+- Added `src/durableStore.ts`, `src/durableStore.test.ts`, and `docs/DURABLE-STORAGE.md`.
+- The generic store uses per-store data/journal/migration/backup namespaces and the existing shared Web Lock. It performs locked read-modify-write, optional revision compare-and-swap, projectId-scoped record operations, detached validator inputs, read-back verification, rollback, restart recovery for pending intent, and fail-closed handling when the journal and stored bytes disagree.
+- Snapshots are separate per store, preserve raw bytes, are limited to five slots, and are not created on ordinary writes. Migration completion has a separate marker and requires a pre-migration snapshot.
+- Snapshot restore is project-scoped and requires a store-specific update guard; it snapshots current data first and leaves other project records unchanged.
+- `src/storage.ts`, legacy `devmate-workspace-v1`, legacy backup slots, App integration, and actual data migration were not modified.
+- The transaction journal is one latest-transaction recovery record, not an append-only audit stream. PR-C must retain the task ledger's own append-only domain event history.
+- `runExclusive` is an injected deterministic test seam; production callers must omit it and use the shared Web Lock.
+
+### Review follow-ups preserved for integration
+- PR-A/PR-C: ensure the durable task-ledger write boundary calls `validateAppendOnlyLedgerUpdate` while locked and always supplies the current profile store for cross-validation.
+- PR-A/PR-C: decide whether `objective`, `scope`, `accountableCoordinator`, `specialistAssignments`, `dependencies`, `priority`, and `dueAt` remain mutable after task creation.
+- PR-A/PR-C: validate `allowedResources` paths/globs at task creation and execution; a list-of-strings check is not a resource authorization policy.
+- PR-A/PR-C: decide whether to retain order-sensitive JSON serialization comparisons or introduce deliberate canonical comparison; current behavior safely rejects reordering.
+- PR-A/PR-C: ensure intermediate appended events cannot smuggle unrelated transitions when a task update contains more than one event.
+- PR-B: call `validateProjectProfilesStoreUpdate` inside the same shared-lock write boundary.
+- The durable layer deliberately refuses restore without a store-specific update guard. This is required to avoid bypassing approval history or append-only ledger invariants.
+
+### CI history and exact evidence
+- An early run exposed a test-injection timing error: the fake storage returned the wrong value during the pre-write read instead of after the data write. The test seam was corrected to inject the mismatch after the write.
+- A later run passed all 180 tests but surfaced a TypeScript narrowing error in the internal read-result type. The failure type was narrowed explicitly.
+- GitHub Actions run #266 (ID `42364309730`) passed on exact code head `af233a3c1961a775ce5baf630d65436a1301dba5`: audit 0 vulnerabilities; 7 files / 181 tests passed; TypeScript and Vite production build passed. Run: https://github.com/Fadhel-docom/DevMate/actions/runs/42364309730.
+- Subsequent documentation-only changes to STATUS, OPERATIONS-ROOM, and this durable-storage contract require CI on the resulting final PR head. No result is claimed for that later head until checked.
+- Not verified: real browser multi-tab lock contention, browser process termination at each write boundary, real quota exhaustion, Android/Safari, and accessibility.
+
+### Current PR and next action
+- PR-A has not yet been opened. The implementation remains on `feature/durable-store-foundation` while documentation and exact-head CI are completed.
+- Next: verify CI on the final documentation head, open PR-A as Draft against `feature/phase-1-foundation`, and request an independent review of that exact head. Do not merge before review.
+- PR-B profile persistence, PR-C ledger persistence, and PR-D App integration remain separate bounded changes. No provider integration or owner-reserved permission/cost decision is implied.
