@@ -1663,3 +1663,31 @@ Remote sandbox, Node v24.22.1, npm 10.8.2 (CI uses Node 20.20.2), files fetched 
 - Verified PR #27 live head `6811da259b4bdf2b743d3d3f3ad75a914096383f` against Actions run #351 (`42378286215`). Job logs inspected: npm ci installed 155 packages; audit summary 0 vulnerabilities; 8 test files / 205 tests passed; TypeScript check and Vite production build succeeded.
 - PR #27 remains open, mergeable, and awaiting one independent review. The review request is in the PR discussion and requires the reviewer to confirm the exact live SHA.
 - This evidence/handoff entry is the final docs update in this sequence; it advances the branch head, so run CI once more on the resulting exact head. Do not add further commits merely to restate the same evidence. Then complete the one independent review and merge if all applicable gates pass.
+
+
+---
+
+## 68. PR-C exact-head verification and PR-D forward-only recovery design — 2026-11-07 — ChatGPT coordinator
+
+### PR-C exact-head CI
+- Rechecked live PR #28 head: `2c7d798d2a07d5c8ec6d6a4b3e871bd164c2f17a`, base `feature/phase-1-foundation`.
+- Actions run #371 / ID `42380821309` was retrieved from GitHub's run endpoint because the commit-run helper filters to pull-request-triggered runs and therefore did not surface this push-triggered run.
+- The run's checkout log confirms it checked out the exact PR #28 head SHA. The `verify` job completed successfully.
+- Inspected logs: npm ci installed 155 packages; npm audit reported 0 vulnerabilities; 9/9 test files and 216/216 tests passed; `npm run build` ran `tsc --noEmit && vite build` and succeeded.
+- This closes the exact-head CI gate for PR #28. It does not replace the required independent review.
+
+### PR #29 handoff protocol
+- PR #29 remains open at `924241df0f5a12906c720fe6e9494c77c2ab1ef7`.
+- Inspected the complete two-file diff for the handoff protocol and session-start link.
+- No Actions run was returned for this head. The current workflow runs PR checks only for PRs targeting `main`, while push checks cover `main` and `feature/**`; the docs branch name does not match the push filter. The change is docs-only, but constitution §2 still requires a second contributor to review shared operating instructions. No independent review is claimed.
+
+### PR-D design
+- Created `docs/PR-D-RECOVERY-DESIGN.md` on branch `docs/pr-d-recovery-design`, based on PR-B merge commit `3665c694d29966188096c534dc7221b84f723dd4`.
+- The design defines preflight, quiescing legacy writes, preserving raw source bytes, idempotent profile preparation, read-only legacy task archive, verification before a cutover marker, no dual writers, and forward-only recovery.
+- It specifies validated raw export, non-overwriting quarantine, store-specific history preservation, CAS, idempotence, user-visible failure states, browser-level multi-tab/quota/restart tests, and Sensitive-level merge/cutover gates.
+- This is design-only. No migration, cutover, task promotion, UI write-path change, or operation against real user data was performed.
+
+### Current blockers and next action
+- PR #28: independent exact-head review pending.
+- PR #29: second-contributor review pending.
+- PR-D implementation must wait until PR-C is merged; the design can be reviewed independently. Do not run migration/cutover as part of implementation or CI.
