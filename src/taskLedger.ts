@@ -157,6 +157,7 @@ function addError(errors: LedgerValidationError[], path: string, message: string
 export function validateTaskLedgerStore(input: unknown, profiles?: ProjectProfilesStore): LedgerValidationResult {
   const errors: LedgerValidationError[] = [];
   const profilesValid = profiles === undefined || validateProjectProfilesStore(profiles).ok;
+  const profilesById = profilesValid && profiles ? new Map(profiles.records.map((profile) => [profile.projectId, profile])) : undefined;
   if (!isRecord(input)) return { ok: false, errors: [{ path: "", message: "Expected a versioned task-ledger envelope." }] };
   if (!exactKeys(input, storeKeys)) addError(errors, "", "Unexpected or missing task-ledger fields.");
   if (input.schemaVersion !== TASK_LEDGER_SCHEMA_VERSION) return { ok: false, errors: [{ path: "schemaVersion", message: `Unsupported schema version: ${String(input.schemaVersion)}.` }] };
@@ -230,7 +231,7 @@ export function validateTaskLedgerStore(input: unknown, profiles?: ProjectProfil
       task.acceptanceCriteria.length > 0, "evidenceReferences",
       "Completed tasks require acceptance criteria and at least one evidence reference.");
     if (profiles && profilesValid && requiredString(task.projectId)) {
-      const profile = profiles.records.find((item) => item.projectId === task.projectId);
+      const profile = profilesById?.get(task.projectId);
       check(Boolean(profile), "projectId", "Task project does not exist in the supplied profile store.");
       // This is a historical snapshot. A later profile edit or revocation must
       // not invalidate tasks that were valid when they started.
@@ -337,6 +338,7 @@ export function validateAppendOnlyLedgerUpdate(
   })) return false;
   if (!previous.events.every((event, index) => JSON.stringify(event) === JSON.stringify(next.events[index]))) return false;
   const appendedEvents = next.events.slice(previous.events.length);
+  const profilesById = profiles ? new Map(profiles.records.map((profile) => [profile.projectId, profile])) : undefined;
   const appendedEventsByTask = new Map<string, TaskLedgerEvent[]>();
   for (const event of appendedEvents) {
     const bucket = appendedEventsByTask.get(event.taskId) ?? [];
@@ -351,7 +353,7 @@ export function validateAppendOnlyLedgerUpdate(
     if (!profiles || task.state !== "draft" || task.attemptCount !== 0 ||
       task.evidenceReferences.length !== 0 || task.checkpoint !== null ||
       task.failureReason !== null || task.createdAt !== task.updatedAt) return false;
-    const profile = profiles.records.find((item) => item.projectId === task.projectId);
+    const profile = profilesById?.get(task.projectId);
     if (!profile || task.policySnapshot.projectProfileRevision !== profile.profileRevision ||
       task.policySnapshot.profileApprovalStatus !== profile.approval.status) return false;
     const creationEvents = appendedEventsByTask.get(task.taskId) ?? [];
