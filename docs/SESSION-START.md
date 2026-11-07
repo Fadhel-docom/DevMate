@@ -4,6 +4,8 @@ This file is a navigation and checklist aid. It does not create rules, change au
 
 ## Read in this order
 
+Before delegating work to another agent or starting an independent review, read [the unified agent handoff protocol](./AGENT-HANDOFF.md). It defines the task packet and evidence handoff format; it does not change the constitution or authority hierarchy.
+
 1. Read this file and verify that its links resolve and that any commit SHA cited here or in the handoff you rely on matches the commit you are actually working from. This file currently cites no commit SHA.
 2. Read [STATUS](./STATUS.md) for the current snapshot, blockers, and next task.
 3. Read the latest relevant entries in [OPERATIONS-ROOM](./OPERATIONS-ROOM.md); use earlier entries as chronological history, not as a competing current-state source.

@@ -51,8 +51,8 @@ Snapshot restoration is deliberately fail-closed: it requires a store-specific u
 ## Integration contract for PR-B and PR-C
 
 - PR-B must call `validateProjectProfilesStoreUpdate` from the durable write guard while the shared lock is held. Approval/revocation history must remain append-only, and approval must remain bound to profile content.
-- PR-C must call `validateAppendOnlyLedgerUpdate` inside the durable write guard, use the supplied read-only storage view in both the migration transform and update guard to load and validate the current profile store under the same shared lock, then pass those current profiles for policy snapshots and cross-validation. It must not omit the `profiles` argument in a way that skips project/profile checks.
-- Both integrations must use projectId-scoped calls, deterministic clocks/IDs in tests, and `migrateLegacyWorkspace` for locked legacy reads and marker sequencing. A store validator is mandatory at the integration boundary; schema-only validation outside the lock is insufficient.
+- PR-C must call `validateAppendOnlyLedgerUpdate` inside the durable write guard and use the supplied read-only storage view to load and validate the current profile-store envelope under the same shared lock. It must pass those current profiles for policy snapshots and cross-validation; omitting the `profiles` argument would skip project/profile checks. If a later task-ledger migration is designed, it must separately use the locked migration protocol and prove idempotence; PR-C intentionally exposes no legacy task migration because the old workspace task shape lacks the governance/evidence fields required for safe reconstruction.
+- Both integrations must use projectId-scoped calls and deterministic clocks/IDs in tests. PR-B uses `migrateLegacyWorkspace` for its locked legacy-project read and marker sequencing; PR-C deliberately exposes no legacy task migration. A store validator is mandatory at the integration boundary; schema-only validation outside the lock is insufficient.
 - The optional `runExclusive` injection is a deterministic test seam only. Production callers must omit it so the shared Web Lock is used.
 
 ## Known limitations and follow-ups
@@ -107,6 +107,24 @@ PR-B adds `src/profileStore.ts` as the only profile-facing adapter over the gene
 
 This is a preliminary engineering threat assessment, not a formal security sign-off. Migration must remain uninvoked until PR-D demonstrates the cutover, backup/export, restart recovery, and owner-visible failure handling. No migration permission is granted by this document.
 
+
+## PR-C — durable task-ledger adapter
+
+PR-C adds `src/taskLedgerStore.ts` as a project-scoped adapter over the generic durable store:
+
+- Each project has an independent `TaskLedgerStore` partition under the `task-ledger` namespace. Every task and event in a partition must carry the same requested `projectId`.
+- Every write requires the caller's expected durable-envelope revision. A stale caller receives a conflict and cannot overwrite newer data.
+- The locked update guard reads the current `project-profiles` durable envelope through the read-only storage view supplied by the generic store. It validates that envelope and requires the requested project profile to exist before accepting the ledger.
+- The adapter validates the full task-ledger schema with the current profiles and enforces `validateAppendOnlyLedgerUpdate` inside the shared lock.
+- For a task mutation, the adapter requires exactly one appended event for that task in the same write. This closes the gap where an earlier unrelated event could be bundled before a final transition event and ignored by the domain validator.
+- Reads re-check the stored project partition and its relationship to the current profile store. A missing or invalid profile relationship fails closed.
+- The adapter exposes recovery and snapshot inspection. It deliberately does not expose legacy migration.
+
+**Legacy-data boundary:** The existing workspace task shape (`id`, `title`, `done`, `createdAt`) does not contain the policy snapshot, risk, acceptance criteria, accountable coordinator, permission lists, or evidence references required by the task-ledger schema. PR-C therefore does not guess these values, import legacy tasks, invoke migration, or change the legacy workspace writer. Any conversion requires a separately designed, explicit recovery/mapping flow under PR-D and must not silently elevate old tasks into executable governed work.
+
+**Initial ledger revision:** The append-only domain validator requires a positive revision. A new project's first ledger payload uses domain revision 2 against an empty revision-1 baseline; the generic durable envelope has its own independent revision and CAS counter, initially 0. Do not confuse the domain ledger revision with the durable-envelope revision passed as `expectedRevision`.
+
+**Remaining PR-D gates:** no App/UI cutover, no automatic migration, no real browser restart/quota/multi-tab verification, no forward-only recovery workflow, and no task execution are included in PR-C.
 
 ## PR-D recovery design reference
 
