@@ -1,4 +1,4 @@
-import type { ProjectProfilesStore } from "./projectProfiles";
+import { validateProjectProfilesStore, type ProjectProfilesStore } from "./projectProfiles";
 
 export const TASK_LEDGER_STORAGE_KEY = "devmate-task-ledger-v1";
 export const TASK_LEDGER_SCHEMA_VERSION = 1 as const;
@@ -94,10 +94,13 @@ const taskKeys = [
   "allowedActions", "policySnapshot", "state", "createdAt", "updatedAt", "attemptCount", "checkpoint",
   "evidenceReferences", "nextAction", "failureReason", "recoveryInstructions"
 ];
+const MAX_JSON_DEPTH = 100;
 function isRecord(value: unknown): value is Record<string, unknown> {
   if (typeof value !== "object" || value === null || Array.isArray(value)) return false;
   const prototype = Object.getPrototypeOf(value);
-  return prototype === Object.prototype || prototype === null;
+  if (prototype !== Object.prototype && prototype !== null) return false;
+  return Reflect.ownKeys(value).every((key) => typeof key === "string" &&
+    Object.prototype.hasOwnProperty.call(Object.getOwnPropertyDescriptor(value, key) ?? {}, "value"));
 }
 function exactKeys(value: Record<string, unknown>, keys: readonly string[], optional: readonly string[] = []): boolean {
   const allowed = new Set([...keys, ...optional]);
@@ -109,9 +112,9 @@ function isTimestamp(value: unknown): value is number {
 function isStringList(value: unknown): value is string[] {
   return Array.isArray(value) && value.every((item) => typeof item === "string");
 }
-function isJson(value: unknown, seen = new WeakSet<object>(), budget = { nodes: 0 }): value is JsonValue {
+function isJson(value: unknown, seen = new WeakSet<object>(), budget = { nodes: 0 }, depth = 0): value is JsonValue {
   budget.nodes += 1;
-  if (budget.nodes > 10000) return false;
+  if (budget.nodes > 10000 || depth > MAX_JSON_DEPTH) return false;
   if (value === null || typeof value === "string" || typeof value === "boolean") return true;
   if (typeof value === "number") return Number.isFinite(value);
   if (typeof value !== "object" || seen.has(value)) return false;
@@ -119,11 +122,11 @@ function isJson(value: unknown, seen = new WeakSet<object>(), budget = { nodes: 
   let valid = true;
   if (Array.isArray(value)) {
     for (let i = 0; i < value.length; i += 1) {
-      if (!Object.prototype.hasOwnProperty.call(value, i) || !isJson(value[i], seen, budget)) { valid = false; break; }
+      if (!Object.prototype.hasOwnProperty.call(value, i) || !isJson(value[i], seen, budget, depth + 1)) { valid = false; break; }
     }
   } else if (isRecord(value)) {
     for (const key of Object.keys(value)) {
-      if (unsafeKeys.has(key) || !isJson(value[key], seen, budget)) { valid = false; break; }
+      if (unsafeKeys.has(key) || !isJson(value[key], seen, budget, depth + 1)) { valid = false; break; }
     }
   } else valid = false;
   seen.delete(value);
@@ -131,6 +134,11 @@ function isJson(value: unknown, seen = new WeakSet<object>(), budget = { nodes: 
 }
 function requiredString(value: unknown): value is string {
   return typeof value === "string" && value.trim().length > 0;
+}
+function safeId(value: unknown): value is string {
+  return requiredString(value) && value.trim() === value &&
+    value.length <= 128 && /^[A-Za-z0-9][A-Za-z0-9._:-]*$/.test(value) &&
+    !unsafeKeys.has(value);
 }
 function addError(errors: LedgerValidationError[], path: string, message: string) { errors.push({ path, message }); }
 
@@ -141,6 +149,9 @@ export function validateTaskLedgerStore(input: unknown, profiles?: ProjectProfil
   if (input.schemaVersion !== TASK_LEDGER_SCHEMA_VERSION) return { ok: false, errors: [{ path: "schemaVersion", message: `Unsupported schema version: ${String(input.schemaVersion)}.` }] };
   if (!isTimestamp(input.revision) || input.revision < 1) addError(errors, "revision", "Expected a positive store revision.");
   if (!isTimestamp(input.updatedAt)) addError(errors, "updatedAt", "Expected a non-negative timestamp.");
+  if (profiles !== undefined && !validateProjectProfilesStore(profiles).ok) {
+    addError(errors, "profiles", "Supplied project profile store is invalid.");
+  }
   if (!Array.isArray(input.records)) addError(errors, "records", "Expected a task array.");
   if (!Array.isArray(input.events)) addError(errors, "events", "Expected an event array.");
   if (Array.isArray(input.records) && input.records.length > 2000) addError(errors, "records", "Task ledger exceeds the 2,000-task validation limit.");
@@ -150,9 +161,10 @@ export function validateTaskLedgerStore(input: unknown, profiles?: ProjectProfil
     const path = `records[${index}]`;
     if (!isRecord(task)) { addError(errors, path, "Expected a plain task object."); return; }
     if (!exactKeys(task, taskKeys)) addError(errors, path, "Unexpected or missing task fields.");
+    if (!isJson(task)) addError(errors, path, "Task contains unsafe, accessor, sparse, cyclic, non-JSON, or over-deep values.");
     const check = (condition: boolean, field: string, message: string) => { if (!condition) addError(errors, `${path}.${field}`, message); };
-    check(requiredString(task.taskId), "taskId", "Expected a non-empty task ID.");
-    check(requiredString(task.projectId), "projectId", "Every task must belong to a project.");
+    check(safeId(task.taskId), "taskId", "Expected a safe, trimmed task ID of at most 128 characters.");
+    check(safeId(task.projectId), "projectId", "Every task must belong to a safe, trimmed project ID.");
     check(requiredString(task.objective), "objective", "Expected a bounded objective.");
     check(typeof task.scope === "string", "scope", "Expected a scope string.");
     check(isStringList(task.acceptanceCriteria), "acceptanceCriteria", "Expected acceptance criteria as strings.");
@@ -202,14 +214,16 @@ export function validateTaskLedgerStore(input: unknown, profiles?: ProjectProfil
         task.acceptanceCriteria.length > 0, "state", "This state requires objective, project, coordinator, and acceptance criteria.");
     }
     if (task.state === "indeterminate") check(requiredString(task.failureReason), "failureReason", "Indeterminate tasks must explain what needs reconciliation.");
+    if (task.state === "completed") check(isStringList(task.evidenceReferences) &&
+      task.evidenceReferences.length > 0 && isStringList(task.acceptanceCriteria) &&
+      task.acceptanceCriteria.length > 0, "evidenceReferences",
+      "Completed tasks require acceptance criteria and at least one evidence reference.");
     if (profiles && requiredString(task.projectId)) {
       const profile = profiles.records.find((item) => item.projectId === task.projectId);
       check(Boolean(profile), "projectId", "Task project does not exist in the supplied profile store.");
-      if (profile && isRecord(task.policySnapshot)) {
-        check(task.policySnapshot.projectProfileRevision === profile.profileRevision &&
-          task.policySnapshot.profileApprovalStatus === profile.approval.status,
-        "policySnapshot", "Policy snapshot does not match the current project profile revision and approval status.");
-      }
+      // This is a historical snapshot. A later profile edit or revocation must
+      // not invalidate tasks that were valid when they started.
+      if (profile && !isRecord(task.policySnapshot)) check(false, "policySnapshot", "Missing historical policy snapshot.");
     }
   });
   const graph = new Map<string, string[]>();
@@ -238,7 +252,8 @@ export function validateTaskLedgerStore(input: unknown, profiles?: ProjectProfil
     const path = `events[${index}]`;
     if (!isRecord(event)) { addError(errors, path, "Expected a plain event object."); return; }
     if (!exactKeys(event, ["eventId", "taskId", "projectId", "type", "actor", "createdAt", "details"], ["outcome", "idempotencyKey"])) addError(errors, path, "Unexpected or missing event fields.");
-    if (!requiredString(event.eventId) || !requiredString(event.taskId) || !requiredString(event.projectId) ||
+    if (!isJson(event)) addError(errors, path, "Event contains unsafe, accessor, sparse, cyclic, non-JSON, or over-deep values.");
+    if (!safeId(event.eventId) || !safeId(event.taskId) || !safeId(event.projectId) ||
       !requiredString(event.type) || !requiredString(event.actor) || !isTimestamp(event.createdAt) ||
       (event.outcome !== undefined && !actionOutcomes.has(event.outcome as TaskActionOutcome)) ||
       (event.idempotencyKey !== undefined && !requiredString(event.idempotencyKey)) ||
@@ -248,13 +263,14 @@ export function validateTaskLedgerStore(input: unknown, profiles?: ProjectProfil
       eventIds.add(event.eventId);
     }
     if (requiredString(event.idempotencyKey)) {
-      if (idempotencyKeys.has(event.idempotencyKey)) addError(errors, `${path}.idempotencyKey`, "Duplicate idempotency key.");
-      idempotencyKeys.add(event.idempotencyKey);
+      const scopedKey = String(event.projectId) + "\u0000" + event.idempotencyKey;
+      if (idempotencyKeys.has(scopedKey)) addError(errors, `${path}.idempotencyKey`, "Duplicate idempotency key within project.");
+      idempotencyKeys.add(scopedKey);
     }
     const task = taskById.get(String(event.taskId));
     if (!task || task.projectId !== event.projectId) addError(errors, path, "Event must reference an existing task in the same project.");
   });
-  if (!isJson(input)) addError(errors, "", "Ledger contains unsafe keys, prototypes, sparse arrays, cycles, or non-JSON values.");
+  // Node/depth budgets are enforced independently for each task and event.
   return errors.length ? { ok: false, errors } : { ok: true, value: input as unknown as TaskLedgerStore };
 }
 
@@ -265,31 +281,59 @@ export function validateAppendOnlyLedgerUpdate(previous: TaskLedgerStore, next: 
 }
 
 const transitions: Record<TaskState, ReadonlySet<TaskState>> = {
-  draft: new Set(["queued", "cancelled"]),
-  queued: new Set(["ready", "blocked", "cancelled"]),
+  draft: new Set(["queued"]),
+  queued: new Set(["ready", "cancelled"]),
   ready: new Set(["in_progress", "blocked", "awaiting_owner", "cancelled"]),
   in_progress: new Set(["review", "blocked", "awaiting_owner", "failed", "indeterminate"]),
-  review: new Set(["completed", "ready", "blocked", "awaiting_owner"]),
+  review: new Set(["ready", "blocked", "awaiting_owner", "completed"]),
   blocked: new Set(["ready", "cancelled"]),
-  awaiting_owner: new Set(["ready", "cancelled"]),
+  awaiting_owner: new Set(["ready"]),
   indeterminate: new Set(["ready", "failed", "cancelled"]),
   failed: new Set(), completed: new Set(), cancelled: new Set()
 };
-/**
- * An indeterminate task can leave its hold state only when the supplied event
- * is present in the ledger, is scoped to that task/project, and records an
- * explicit reconciliation resolution plus an evidence reference.
- */
-export function canTransitionTaskState(from: TaskState, to: TaskState, reconciliation?: ReconciliationEvidence): boolean {
+export type TaskCompletionEvidence = { task: LedgerTask; event: TaskLedgerEvent };
+export type TaskTransitionEventEvidence = { task: LedgerTask; event: TaskLedgerEvent };
+export type TaskTransitionContext = ReconciliationEvidence | TaskCompletionEvidence | TaskTransitionEventEvidence;
+function eventSupportsTransition(task: LedgerTask, event: TaskLedgerEvent, expectedType: string): boolean {
+  if (event.taskId !== task.taskId || event.projectId !== task.projectId ||
+    event.type !== expectedType || event.outcome !== "succeeded" ||
+    event.actor !== task.accountableCoordinator || event.createdAt < task.updatedAt ||
+    !isRecord(event.details) || !requiredString(event.details.evidenceReference)) return false;
+  return task.evidenceReferences.includes(event.details.evidenceReference);
+}
+/** Evidence-gated state transitions aligned with governance contract §14.2. */
+export function canTransitionTaskState(from: TaskState, to: TaskState, context?: TaskTransitionContext): boolean {
   if (!transitions[from].has(to)) return false;
-  if (from !== "indeterminate") return true;
-  if (!reconciliation) return false;
-  const task = reconciliation.ledger.records.find((item) => item.taskId === reconciliation.taskId && item.projectId === reconciliation.projectId);
-  const event = reconciliation.ledger.events.find((item) => item.eventId === reconciliation.eventId);
-  if (!task || task.state !== "indeterminate" || !event || event.taskId !== reconciliation.taskId || event.projectId !== reconciliation.projectId ||
-    event.type !== "task.reconciled" || event.outcome !== "succeeded" || !requiredString(event.details.evidenceReference)) return false;
-  const resolution = event.details.resolution;
-  return (to === "ready" && resolution === "not-applied") ||
-    (to === "failed" && resolution === "failed") ||
-    (to === "cancelled" && resolution === "cancelled");
+  if (from === "indeterminate") {
+    if (!context || !("ledger" in context)) return false;
+    const reconciliation = context as ReconciliationEvidence;
+    if (!validateTaskLedgerStore(reconciliation.ledger).ok) return false;
+    const task = reconciliation.ledger.records.find((item) => item.taskId === reconciliation.taskId && item.projectId === reconciliation.projectId);
+    const event = reconciliation.ledger.events.find((item) => item.eventId === reconciliation.eventId);
+    if (!task || task.state !== "indeterminate" || !event ||
+      event.actor !== task.accountableCoordinator || event.createdAt < task.updatedAt ||
+      event.type !== "task.reconciled" || event.outcome !== "succeeded" ||
+      !isRecord(event.details) || !requiredString(event.details.evidenceReference) ||
+      !task.evidenceReferences.includes(event.details.evidenceReference)) return false;
+    const resolution = event.details.resolution;
+    return (to === "ready" && resolution === "not-applied") ||
+      (to === "failed" && resolution === "failed") ||
+      (to === "cancelled" && resolution === "cancelled");
+  }
+  if (to === "completed") {
+    if (!context || !("task" in context) || !("event" in context)) return false;
+    const { task, event } = context as TaskCompletionEvidence;
+    return task.state === "review" && task.acceptanceCriteria.length > 0 &&
+      task.evidenceReferences.length > 0 &&
+      eventSupportsTransition(task, event, "task.acceptance-verified") &&
+      Array.isArray(event.details.verifiedCriteria) &&
+      task.acceptanceCriteria.every((criterion) => event.details.verifiedCriteria.includes(criterion));
+  }
+  if ((from === "blocked" || from === "awaiting_owner") && to === "ready") {
+    if (!context || !("task" in context) || !("event" in context)) return false;
+    const { task, event } = context as TaskTransitionEventEvidence;
+    const expected = from === "blocked" ? "task.blocker-resolved" : "task.owner-decision-recorded";
+    return eventSupportsTransition(task, event, expected);
+  }
+  return true;
 }
