@@ -155,9 +155,11 @@ describe("durable store foundation", () => {
     const snap = await store.createSnapshot("pre-migration");
     expect(snap).not.toBeNull();
     await store.writeProject("p1", { projectId: "p1", value: "changed" });
-    const result = await store.restoreSnapshot(snap!.key, snap!.fingerprint);
+    await store.writeProject("p2", { projectId: "p2", value: "keep" });
+    const result = await store.restoreSnapshot("p1", snap!.key, snap!.fingerprint);
     expect(result.ok).toBe(true);
     expect(await store.readProject("p1")).toMatchObject({ ok: true, value: { value: "original" } });
+    expect(await store.readProject("p2")).toMatchObject({ ok: true, value: { value: "keep" } });
     expect((await store.listSnapshots()).length).toBeGreaterThanOrEqual(2);
     expect(storage.getItem(durableStoreKey("project-profiles"))).not.toBeNull();
   });
