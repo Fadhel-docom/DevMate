@@ -262,8 +262,11 @@ describe("task ledger schema v1", () => {
     expect(validateAppendOnlyLedgerUpdate(previous, update({ ...baseTask, taskId: "renamed", updatedAt: 102 }))).toBe(false);
     expect(validateAppendOnlyLedgerUpdate(previous, update({ ...baseTask, createdAt: 99, updatedAt: 102 }))).toBe(false);
     expect(validateAppendOnlyLedgerUpdate(previous, update({ ...baseTask, acceptanceCriteria: ["weakened"], updatedAt: 102 }))).toBe(false);
+    expect(validateAppendOnlyLedgerUpdate(previous, update({ ...baseTask, projectId: "p2", updatedAt: 102 }))).toBe(false);
     expect(validateAppendOnlyLedgerUpdate(previous, update({ ...baseTask, allowedTools: [], updatedAt: 102 }))).toBe(false);
+    expect(validateAppendOnlyLedgerUpdate(previous, update({ ...baseTask, allowedResources: ["src/**", "/etc", "secrets/*"], updatedAt: 102 }))).toBe(false);
     expect(validateAppendOnlyLedgerUpdate(previous, update({ ...baseTask, allowedActions: ["delete"], updatedAt: 102 }))).toBe(false);
+    expect(validateAppendOnlyLedgerUpdate(previous, update({ ...baseTask, risk: "sensitive", updatedAt: 102 }))).toBe(false);
     expect(validateAppendOnlyLedgerUpdate(previous, update({ ...baseTask, attemptCount: 0, updatedAt: 102 }))).toBe(true);
     const attempted = { ...baseTask, attemptCount: 1, updatedAt: 102 };
     expect(validateAppendOnlyLedgerUpdate(previous, update(attempted))).toBe(true);
