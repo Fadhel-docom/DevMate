@@ -1,6 +1,6 @@
 # DevMate Status
 
-> Current state: see "## Current state — 2026-11-07 (PR #23 merged; PR-B rebased for final review)" at the end of this file. Earlier dated checkpoints are historical snapshots and do not describe the present.
+> Current state: see "## Current state — 2026-11-07 (PR #27 merged; PR-C task-ledger adapter in review)" at the end of this file. Earlier dated checkpoints are historical snapshots and do not describe the present.
 
 ## Current milestone
 Phase 1 — foundation and local demo.
@@ -723,3 +723,32 @@ Run the full Vitest suite, TypeScript/Vite production build, and dependency audi
 ### PR-B latest exact-head check — 2026-11-07
 - PR #27 head `6811da259b4bdf2b743d3d3f3ad75a914096383f` passed Actions run #351 (`42378286215`): 8 test files / 205 tests, npm ci 155 packages, audit summary 0 vulnerabilities, TypeScript and Vite build all successful; job logs inspected.
 - This final operations/status checkpoint changes the branch head; the exact new PR head and its CI must be rechecked before merge.
+
+
+## Current state — 2026-11-07 (PR #27 merged; PR-C task-ledger adapter in review)
+
+### Verified foundation
+- PR #23 merged; constitution v1.2 is the approved governing version. Merge commit: `2f7f9c69e80863b3720c269cc33a36b33a841209`.
+- PR #27 merged into `feature/phase-1-foundation`. Merge commit: `3665c694d29966188096c534dc7221b84f723dd4`.
+- PR #27 exact reviewed head was `cc44f6e72e3610fa5a6dd534042da6354564cb28`. Claude returned **APPROVE WITH FOLLOW-UP**, no blockers. Exact-head check `verify` completed successfully; Claude independently confirmed the check conclusion but did not inspect job logs. The owner merged PR #27 after this review.
+- PRs #24 and #26 are superseded and must not be merged.
+
+### PR-C task-ledger durable adapter
+- Opened [PR #28](https://github.com/Fadhel-docom/DevMate/pull/28) from `feature/task-ledger-durable-store` to `feature/phase-1-foundation`.
+- Adapter: `src/taskLedgerStore.ts`; tests: `src/taskLedgerStore.test.ts`.
+- The adapter stores one ledger partition per project, requires expected durable-envelope revision on writes, validates against the current project-profile envelope through the locked read-only storage view, and enforces append-only event history inside the shared durable lock.
+- A changed task must have exactly one appended event in the same update; tests cover rejection of bundled transition events.
+- No legacy task migration is exposed. The old task format lacks governance, risk, acceptance, coordinator, permission, and evidence fields; no values are fabricated.
+- No App/UI integration, cutover, migration invocation, provider, execution, or deployment is included.
+
+### PR-C verification and current status
+- Initial CI exposed a TypeScript-only test import error (`TaskLedgerStore` type not imported). This was corrected in commit `46ed6cb57e7c4705b8b98a5671f89194b5181c13`.
+- An additional hardening check and test for multiple events bundled with one task mutation were added in commits `b3f1e550509aea765ccc02b08b7ff185d1890978` and `0bca0c6064893fd31cce697b2ae58c15db366826`.
+- PR #28 live head and exact-head CI must be rechecked after the final documentation commit. Earlier runs include a failed build on the earlier SHA due the missing test type import; do not count it as a passing run.
+- No independent review or merge of PR #28 has occurred.
+
+### Next actions
+1. Verify exact-head CI on the final PR #28 head, including tests, TypeScript, build, and dependency audit.
+2. Obtain one focused independent review of the exact live SHA.
+3. If no blockers and all applicable gates pass, merge under the standing delegation.
+4. Continue only after merge with the next planned foundation task; keep migration/cutover reserved for PR-D.
