@@ -295,6 +295,7 @@ export function createDurableStore<T>(options: DurableStoreOptions<T>) {
         const raw = storage.getItem(key);
         if (raw === null) return { ok: false as const, reason: "not-found" as const, message: "Snapshot not found." };
         if (fingerprint(raw) !== expectedFingerprint) return { ok: false as const, reason: "conflict" as const, message: "Snapshot content changed; refresh the snapshot list." };
+        const currentRaw = readRaw();
         const restored = envelopeFromRaw<T>(raw);
         if (!options.validateUpdate)
           return { ok: false as const, reason: "invalid-data" as const, message: "Restore requires the store-specific update guard; an unguarded restore is refused." };
@@ -304,7 +305,6 @@ export function createDurableStore<T>(options: DurableStoreOptions<T>) {
           options.validateUpdate!(id, currentEnvelope.records[id] ?? null, item, currentEnvelope.records)) ||
           !Object.keys(currentEnvelope.records).every((id) => Object.prototype.hasOwnProperty.call(restored.records, id)))
           return { ok: false as const, reason: "corrupt" as const, message: "Snapshot failed validation; current data was not changed." };
-        const currentRaw = readRaw();
         if (currentRaw !== null) {
           try { if (!snapshotRaw(currentRaw, "pre-restore")) return { ok: false as const, reason: "snapshot-full" as const, message: "No free snapshot slot; restore was cancelled." }; }
           catch (error) { return { ok: false as const, reason: "write-failed" as const, message: String(error) }; }
