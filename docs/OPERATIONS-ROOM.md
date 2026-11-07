@@ -1393,3 +1393,54 @@ Remote sandbox, Node v24.22.1, npm 10.8.2 (CI uses Node 20.20.2), files fetched 
 ### Exact-head CI result
 - GitHub Actions run #152 (ID `42303911193`, event `push`, job `128188333779`) succeeded on exact head `4f2ffe70927ce1db18e77a9f8f9591a9895b1ea8` (the follow-up commit). Log: 155 packages, audit summary 0 at every severity, 4 files / 125 tests (storage 90, App 14, BackupManager 11, registry 10), TypeScript and Vite build passed (29 modules). This replaces the "pending" status above for that head.
 - The commit that records this evidence is documentation-only; its own CI run is the next push event on the branch.
+
+
+---
+
+## 53. PR #10/#13/#15 merge verification and project-foundation handoff — 2026-11-07 — ChatGPT coordinator
+
+### Starting checkpoint and governing sources
+- Starting foundation branch head: `8117ab98c4a86f44e45dcfc1cb7a313f6f771d95`, the PR #15 merge commit.
+- Approved constitution v1.1: `50126a159961b71faf88025a8695cb7e734d63b7`.
+- Session-start guide: `a1a06cff72403a81c7b1d728a84ee4d82acddc84`.
+- Starting STATUS: `3b079a87862fda2e5d41a14df420c98e3e7bfd6a`.
+- Starting operations room: `d7437d650e96e0486d65bf857bf6f2f2cae24e37`.
+- PR #12 design head inspected: `2ec0f8365c736c33a7bd1f072df191cef4608333`.
+
+### Verified merge and CI evidence
+- PR #10 merged into `feature/phase-1-foundation`: `18e4e97eccd4c8927b1a4f60ae9642f655bc5ac4`.
+- PR #13 merged into the same branch: `5ffb5339e147d524e40511e0f04ce331624cb4b2`.
+- PR #15 merged into the same branch: `8117ab98c4a86f44e45dcfc1cb7a313f6f771d95`.
+- GitHub Actions run #159 (ID `42346327411`) completed successfully on exact merge commit `8117ab98c4a86f44e45dcfc1cb7a313f6f771d95`. Job `verify` (ID `128324762344`) logs confirm: `npm ci` installed 155 packages; audit 0 vulnerabilities; Vitest 4 files / 125 tests passed (storage 90, BackupManager 11, App 14, registry 10); `tsc --noEmit` and Vite build passed (29 modules).
+- No deployment, `main` merge, or external integration occurred.
+
+### Work inspected
+- Read `docs/SESSION-START.md`, constitution v1.1, STATUS, OPERATIONS-ROOM, ARCHITECTURE, and the PR #12 governance-model design.
+- Inspected `src/App.tsx`, `src/storage.ts`, storage tests, tool registry and registry tests.
+- Verified current product limits: local browser storage, mock chat, registry-only capability inventory; no in-app GitHub connector, task orchestrator, or AI provider.
+- Existing `Project` and `Task` types in `src/storage.ts` are permissive records with extra fields; the current workspace persistence uses a legacy project-array shape and does not yet provide a versioned project-profile schema or a separate durable task ledger.
+
+### PR #12 review and boundary
+- PR #12 remains Draft, unmerged, and mergeable against the current foundation branch.
+- The design document is consistent with constitution v1.1 and preserves global/project rule precedence, isolation, auditability, and the pre-provider gate. ChatGPT's review at exact head `2ec0f8365c736c33a7bd1f072df191cef4608333` was recorded as APPROVE WITH FOLLOW-UP.
+- Follow-ups before implementing a profile loader: schema versioning, validation/migration policy, and the evidence/authority for owner-approved profile status. The design is not a constitution amendment and does not authorize new permissions, provider calls, external data transfer, cost, or work on another repository.
+- PR #12 is kept Draft for owner review because accepting its detailed governance/architecture model as the implementation baseline is a material architecture decision under constitution §7/§14. No routine merge delegation is used to bypass that gate.
+
+### Owner's standing merge instruction
+- On 2026-11-07 the owner explicitly instructed that routine merges must not wait for owner availability; merge when all applicable rules and quality gates pass. Stop only for an unmet rule or a genuinely owner-reserved decision.
+- This instruction does not override constitution §14, the explicit PR #1 hold, or approval requirements for material architecture, security, permissions, costs, destructive actions, licensing, and production/public release.
+
+### Files changed in this checkpoint
+- `docs/STATUS.md`: corrected the current-state pointer and added a verified current snapshot.
+- `docs/OPERATIONS-ROOM.md`: appended this chronological checkpoint.
+- These are documentation-only changes. No application source, dependencies, workflow, permissions, or project repositories were changed.
+
+### Verification labels and remaining unknowns
+- **Verified:** PR merge states and merge SHAs; run #159 result and job logs; current source structure described above.
+- **Not verified:** real browser/mobile rendering, keyboard/screen-reader behavior, real multi-tab Web Locks behavior, and any deployment.
+- **Not built:** project profile loader, durable task ledger, GitHub integration inside DevMate, task orchestrator, AI-provider adapters.
+
+### Last verified checkpoint and next exact action
+- Last verified foundation commit: `8117ab98c4a86f44e45dcfc1cb7a313f6f771d95`.
+- Next: complete owner review of PR #12's architecture proposal. In parallel, prepare a bounded schema/ledger design that explicitly defines profile versioning, validation, migrations, approval evidence, task states, checkpoints, recovery, and project isolation. Do not connect providers or begin external-repository work.
+- Handoff owner: ChatGPT coordinator.
