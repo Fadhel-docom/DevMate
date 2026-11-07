@@ -53,8 +53,13 @@ const JOURNAL_PREFIX = "devmate-durable-journal-v1";
 const MIGRATION_PREFIX = "devmate-migrations-v1";
 const BACKUP_PREFIX = "devmate-durable-backups-v1";
 const DEFAULT_MAX_BACKUPS = 5;
+const UNSAFE_IDS = new Set([
+  "__proto__", "prototype", "constructor", "toString", "toLocaleString", "valueOf",
+  "hasOwnProperty", "isPrototypeOf", "propertyIsEnumerable", "__defineGetter__",
+  "__defineSetter__", "__lookupGetter__", "__lookupSetter__"
+]);
 const safeId = (value: string): boolean =>
-  value.trim().length > 0 && value.length <= 160 && !["__proto__", "prototype", "constructor"].includes(value);
+  value.trim().length > 0 && value.length <= 160 && !UNSAFE_IDS.has(value);
 const isObject = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
 const fingerprint = (raw: string): string => {
@@ -263,7 +268,7 @@ export function createDurableStore<T>(options: DurableStoreOptions<T>) {
         if (loaded.failure) return loaded.failure;
         const value = loaded.envelope!.records[projectId];
         if (value === undefined) return { ok: true as const, status: "empty" as const, revision: loaded.envelope!.revision, value: null };
-        if (!options.validateRecord(projectId, clone(value))) {
+        if (options.validateRecord(projectId, clone(value)) !== true) {
           snapshotCorruptRaw();
           return { ok: false as const, reason: "corrupt" as const, message: "The project-scoped record failed its validator." };
         }
@@ -278,7 +283,7 @@ export function createDurableStore<T>(options: DurableStoreOptions<T>) {
       try { candidate = clone(value); } catch {
         return { ok: false, reason: "invalid-data", message: "The project-scoped record must be JSON-serializable." };
       }
-      if (!options.validateRecord(projectId, clone(candidate)))
+      if (options.validateRecord(projectId, clone(candidate)) !== true)
         return { ok: false, reason: "invalid-data", message: "The projectId or project-scoped record is invalid." };
       const locked = await runExclusive(() => {
         const recovered = recoverLocked();
@@ -286,7 +291,7 @@ export function createDurableStore<T>(options: DurableStoreOptions<T>) {
         const loaded = loadEnvelopeLocked();
         if (loaded.failure) return { ok: false as const, reason: loaded.failure.reason, message: loaded.failure.message };
         const current = loaded.envelope!;
-        if (!Object.entries(current.records).every(([id, item]) => safeId(id) && options.validateRecord(id, clone(item)))) {
+        if (!Object.entries(current.records).every(([id, item]) => safeId(id) && options.validateRecord(id, clone(item)) === true)) {
           snapshotCorruptRaw();
           return { ok: false as const, reason: "corrupt" as const, message: "An existing project record failed validation; no write was attempted." };
         }
@@ -295,7 +300,7 @@ export function createDurableStore<T>(options: DurableStoreOptions<T>) {
         const previous = current.records[projectId] ?? null;
         const records = clone(current.records);
         records[projectId] = clone(candidate);
-        if (options.validateUpdate && !options.validateUpdate(projectId, previous === null ? null : clone(previous), clone(candidate), clone(current.records), clone(records), readStorageView))
+        if (options.validateUpdate && options.validateUpdate(projectId, previous === null ? null : clone(previous), clone(candidate), clone(current.records), clone(records), readStorageView) !== true)
           return { ok: false as const, reason: "invalid-data" as const, message: "The project-scoped update violated its store contract." };
         const next: DurableEnvelope<T> = { schemaVersion: 1, revision: current.revision + 1, updatedAt: now(), records };
         return transactLocked(projectId, next);
@@ -330,7 +335,7 @@ export function createDurableStore<T>(options: DurableStoreOptions<T>) {
       });
       return locked.ok ? locked.value : [];
     },
-    async restoreSnapshot(projectId: string, key: string, expectedFingerprint: string): Promise<DurableWriteResult> {
+    async restoreSnapshot(projectId: string, key: string, expectedFingerprint: string, expectedRevision?: number): Promise<DurableWriteResult> {
       if (!safeId(projectId)) return { ok: false, reason: "invalid-data", message: "A valid projectId is required." };
       const allowed = Array.from({ length: maxBackups }, (_, index) => durableBackupKey(options.name, index + 1));
       if (!allowed.includes(key)) return { ok: false, reason: "not-found", message: "Snapshot key is not part of this store." };
@@ -349,17 +354,19 @@ export function createDurableStore<T>(options: DurableStoreOptions<T>) {
         if (!options.validateUpdate)
           return { ok: false as const, reason: "invalid-data" as const, message: "Restore requires the store-specific update guard; an unguarded restore is refused." };
         if (!currentEnvelope || !restored ||
-          !Object.entries(currentEnvelope.records).every(([id, item]) => safeId(id) && options.validateRecord(id, clone(item)))) {
+          !Object.entries(currentEnvelope.records).every(([id, item]) => safeId(id) && options.validateRecord(id, clone(item)) === true)) {
           snapshotCorruptRaw();
           return { ok: false as const, reason: "corrupt" as const, message: "Current data failed validation; restore was refused without changing it." };
         }
+        if (expectedRevision !== undefined && currentEnvelope.revision !== expectedRevision)
+          return { ok: false as const, reason: "conflict" as const, message: "The durable store revision changed; reload before restoring." };
         const nextRecord = restored.records[projectId];
-        if (nextRecord === undefined || !options.validateRecord(projectId, clone(nextRecord)))
+        if (nextRecord === undefined || options.validateRecord(projectId, clone(nextRecord)) !== true)
           return { ok: false as const, reason: "not-found" as const, message: "The selected snapshot has no valid record for this project." };
         const previous = currentEnvelope.records[projectId] ?? null;
         const records = clone(currentEnvelope.records);
         records[projectId] = clone(nextRecord);
-        if (!options.validateUpdate(projectId, previous === null ? null : clone(previous), clone(nextRecord), clone(currentEnvelope.records), clone(records), readStorageView))
+        if (options.validateUpdate(projectId, previous === null ? null : clone(previous), clone(nextRecord), clone(currentEnvelope.records), clone(records), readStorageView) !== true)
           return { ok: false as const, reason: "invalid-data" as const, message: "The project-specific update guard rejected this restore." };
         if (currentRaw !== null) {
           try { if (!snapshotRaw(currentRaw, "pre-restore")) return { ok: false as const, reason: "snapshot-full" as const, message: "No free snapshot slot; restore was cancelled." }; }
@@ -394,7 +401,7 @@ export function createDurableStore<T>(options: DurableStoreOptions<T>) {
         const loaded = loadEnvelopeLocked();
         if (loaded.failure) return { ok: false as const, reason: loaded.failure.reason, message: loaded.failure.message };
         const current = loaded.envelope!;
-        if (!Object.entries(current.records).every(([id, item]) => safeId(id) && options.validateRecord(id, clone(item)))) {
+        if (!Object.entries(current.records).every(([id, item]) => safeId(id) && options.validateRecord(id, clone(item)) === true)) {
           snapshotCorruptRaw();
           return { ok: false as const, reason: "corrupt" as const, message: "Existing durable records failed validation; migration was refused." };
         }
@@ -417,10 +424,6 @@ export function createDurableStore<T>(options: DurableStoreOptions<T>) {
         }
         if (!options.validateUpdate)
           return { ok: false as const, reason: "invalid-data" as const, message: "Migration requires a store-specific update guard." };
-        if (legacyRaw !== null) {
-          try { if (!snapshotRaw(legacyRaw, "pre-migration")) return { ok: false as const, reason: "snapshot-full" as const, message: "No free pre-migration snapshot slot; migration was cancelled." }; }
-          catch (error) { return { ok: false as const, reason: "write-failed" as const, message: String(error) }; }
-        }
         let nextRecords: Record<string, T>;
         try { nextRecords = clone(transform(legacyRaw, clone(current.records), readStorageView)); }
         catch (error) { return { ok: false as const, reason: "invalid-data" as const, message: `Legacy migration transform failed: ${String(error)}` }; }
@@ -428,15 +431,23 @@ export function createDurableStore<T>(options: DurableStoreOptions<T>) {
           !Object.keys(current.records).every((id) => Object.prototype.hasOwnProperty.call(nextRecords, id)))
           return { ok: false as const, reason: "invalid-data" as const, message: "Migration must preserve all existing project records and use valid project IDs." };
         for (const [id, nextRecord] of Object.entries(nextRecords)) {
-          if (!options.validateRecord(id, clone(nextRecord)))
+          if (options.validateRecord(id, clone(nextRecord)) !== true)
             return { ok: false as const, reason: "invalid-data" as const, message: `Migrated record for project ${id} failed validation.` };
           const previous = current.records[id] ?? null;
           if ((previous === null || JSON.stringify(previous) !== JSON.stringify(nextRecord)) &&
-            !options.validateUpdate(id, previous === null ? null : clone(previous), clone(nextRecord), clone(current.records), clone(nextRecords), readStorageView))
+            options.validateUpdate(id, previous === null ? null : clone(previous), clone(nextRecord), clone(current.records), clone(nextRecords), readStorageView) !== true)
             return { ok: false as const, reason: "invalid-data" as const, message: `The update guard rejected migrated project ${id}.` };
         }
-        const next: DurableEnvelope<T> = { schemaVersion: 1, revision: current.revision + 1, updatedAt: now(), records: nextRecords };
-        const written = transactLocked("migration", next);
+        // Validate the complete transformed payload before consuming a bounded snapshot slot.
+        if (legacyRaw !== null) {
+          try { if (!snapshotRaw(legacyRaw, "pre-migration")) return { ok: false as const, reason: "snapshot-full" as const, message: "No free pre-migration snapshot slot; migration was cancelled." }; }
+          catch (error) { return { ok: false as const, reason: "write-failed" as const, message: String(error) }; }
+        }
+        const unchanged = storage.getItem(dataKey) !== null &&
+          JSON.stringify(nextRecords) === JSON.stringify(current.records);
+        const written = unchanged
+          ? { ok: true as const, revision: current.revision, updatedAt: current.updatedAt }
+          : transactLocked("migration", { schemaVersion: 1, revision: current.revision + 1, updatedAt: now(), records: nextRecords });
         if (!written.ok) return written;
         const marker = { version: 1, migratedAt: now(), sourceFingerprint: fingerprint(legacyRaw ?? "") };
         try {
