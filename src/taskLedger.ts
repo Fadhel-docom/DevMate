@@ -302,7 +302,25 @@ export function validateAppendOnlyLedgerUpdate(previous: TaskLedgerStore, next: 
     const retained = nextTasks.get(task.taskId);
     return Boolean(retained && retained.projectId === task.projectId);
   })) return false;
-  return previous.events.every((event, index) => JSON.stringify(event) === JSON.stringify(next.events[index]));
+  if (!previous.events.every((event, index) => JSON.stringify(event) === JSON.stringify(next.events[index]))) return false;
+  const appendedEvents = next.events.slice(previous.events.length);
+  for (const priorTask of previous.records) {
+    const updatedTask = nextTasks.get(priorTask.taskId);
+    if (!updatedTask || updatedTask.state === priorTask.state) continue;
+    const event = appendedEvents.filter((item) => item.taskId === priorTask.taskId && item.projectId === priorTask.projectId).at(-1);
+    let context: TaskTransitionContext | undefined;
+    if (priorTask.state === "indeterminate" && event) {
+      const reconciliationLedger: TaskLedgerStore = {
+        ...next,
+        records: next.records.map((item) => item.taskId === priorTask.taskId ? priorTask : item)
+      };
+      context = { eventId: event.eventId, taskId: priorTask.taskId, projectId: priorTask.projectId, ledger: reconciliationLedger };
+    } else if (event) {
+      context = { task: priorTask, event };
+    }
+    if (!canTransitionTaskState(priorTask.state, updatedTask.state, context)) return false;
+  }
+  return true;
 }
 
 const transitions: Record<TaskState, ReadonlySet<TaskState>> = {
