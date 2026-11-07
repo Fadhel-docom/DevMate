@@ -156,7 +156,7 @@ describe("durable task-ledger adapter", () => {
     const profile = profiles.records[0];
     storage.seed(durableStoreKey("project-profiles"), JSON.stringify({
       schemaVersion: 1, revision: 1, updatedAt: profiles.updatedAt,
-      records: { orphaned-key: profile }
+      records: { "orphaned-key": profile }
     }));
     expect(await store.writeLedger("p1", draftLedger(profiles), 0))
       .toMatchObject({ ok: false, reason: "invalid-data" });
