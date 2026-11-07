@@ -326,6 +326,24 @@ export function validateProjectProfilesStore(input: unknown): ProfileValidationR
 }
 
 /**
+ * Pure optimistic update guard for the profile store. Existing project identities
+ * cannot disappear or change scope, and every approval transition is checked.
+ * The durable profile-store adapter must invoke this inside its serialized write.
+ */
+export function validateProjectProfilesStoreUpdate(previous: ProjectProfilesStore, next: ProjectProfilesStore): boolean {
+  if (!validateProjectProfilesStore(previous).ok || !validateProjectProfilesStore(next).ok ||
+    next.revision <= previous.revision || next.updatedAt < previous.updatedAt) return false;
+  const nextById = new Map(next.records.map((profile) => [profile.projectId, profile]));
+  for (const prior of previous.records) {
+    const updated = nextById.get(prior.projectId);
+    if (!updated || updated.createdAt !== prior.createdAt ||
+      updated.profileRevision < prior.profileRevision ||
+      !validateProfileApprovalHistoryUpdate(prior.approval, updated.approval)) return false;
+  }
+  return true;
+}
+
+/**
  * Additive, pure migration. Existing profiles are never replaced. Invalid
  * legacy entries are reported individually; the legacy source is untouched.
  * The caller must use a stable migration timestamp and persist/read-back safely.
