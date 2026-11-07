@@ -101,7 +101,7 @@ function isSafeJson(value: unknown, seen = new WeakSet<object>(), budget = { nod
   seen.add(value);
   let valid = true;
   if (Array.isArray(value)) {
-    if (Object.keys(value).some((key) => !/^(0|[1-9][0-9]*)$/.test(key) || Number(key) >= value.length)) valid = false;
+    if (Reflect.ownKeys(value).some((key) => typeof key !== "string" || (key !== "length" && (!/^(0|[1-9][0-9]*)$/.test(key) || Number(key) >= value.length)))) valid = false;
     for (let i = 0; valid && i < value.length; i += 1) {
       const descriptor = Object.getOwnPropertyDescriptor(value, String(i));
       if (!descriptor || !Object.prototype.hasOwnProperty.call(descriptor, "value") ||
@@ -306,6 +306,7 @@ export function validateProjectProfilesStore(input: unknown): ProfileValidationR
   if (!isPositiveInteger(input.revision)) addError(errors, "revision", "Expected a positive integer.");
   if (!isNonNegativeInteger(input.updatedAt)) addError(errors, "updatedAt", "Expected a non-negative timestamp.");
   if (!Array.isArray(input.records)) addError(errors, "records", "Expected an array of project profiles.");
+  if (Array.isArray(input.records) && !Array.from({ length: input.records.length }, (_, index) => Object.prototype.hasOwnProperty.call(input.records, index)).every(Boolean)) addError(errors, "records", "Sparse profile arrays are not allowed.");
   const ids = new Set<string>();
   let latestProfileUpdate = 0;
   if (Array.isArray(input.records)) {
