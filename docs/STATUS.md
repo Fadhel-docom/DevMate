@@ -1,6 +1,6 @@
 # DevMate Status
 
-> Current state: see "## Current state — 2026-11-07 (PR #27 merged; PR-C task-ledger adapter in review)" at the end of this file. Earlier dated checkpoints are historical snapshots and do not describe the present.
+> Current state: see "## Current state — 2026-11-07 (PR #27 merged; PR-C validation hardening in review)" at the end of this file. Earlier dated checkpoints are historical snapshots and do not describe the present.
 
 ## Current milestone
 Phase 1 — foundation and local demo.
@@ -738,17 +738,21 @@ Run the full Vitest suite, TypeScript/Vite production build, and dependency audi
 - Adapter: `src/taskLedgerStore.ts`; tests: `src/taskLedgerStore.test.ts`.
 - The adapter stores one ledger partition per project, requires expected durable-envelope revision on writes, validates against the current project-profile envelope through the locked read-only storage view, and enforces append-only event history inside the shared durable lock.
 - A changed task must have exactly one appended event in the same update; tests cover rejection of bundled transition events.
+- `readCurrentProfiles` now enforces the exact durable-envelope field set and requires every profile map key to equal the contained profile's `projectId`; this prevents the ledger adapter accepting profile data that the profile store's own durable validator would reject.
 - No legacy task migration is exposed. The old task format lacks governance, risk, acceptance, coordinator, permission, and evidence fields; no values are fabricated.
 - No App/UI integration, cutover, migration invocation, provider, execution, or deployment is included.
 
 ### PR-C verification and current status
 - Initial CI exposed a TypeScript-only test import error (`TaskLedgerStore` type not imported). This was corrected in commit `46ed6cb57e7c4705b8b98a5671f89194b5181c13`.
 - An additional hardening check and test for multiple events bundled with one task mutation were added in commits `b3f1e550509aea765ccc02b08b7ff185d1890978` and `0bca0c6064893fd31cce697b2ae58c15db366826`.
-- PR #28 live head and exact-head CI must be rechecked after the final documentation commit. Earlier runs include a failed build on the earlier SHA due the missing test type import; do not count it as a passing run.
-- No independent review or merge of PR #28 has occurred.
+- Latest PR #28 head after the profile-envelope hardening and documentation correction: `565e3b8dd6af3214d51d6de01688a5e80b4dc64b`.
+- The previous successful Actions run `42379448584` was inspected directly on earlier head `d5589a8de6d0b65534692d2e08fa575dbb4d813a`: npm ci, audit 0 vulnerabilities, 9 test files / 214 tests, TypeScript, and Vite build all passed. This does not verify the later hardening commits.
+- Exact-head CI for `565e3b8...` is **not yet verified**. Do not reuse the earlier run as evidence for this SHA.
+- Coordinator review identified the profile-envelope key/identity gap; it has been fixed and regression tests added. A separate independent review of the final head remains outstanding.
+- PR #28 remains open and unmerged.
 
 ### Next actions
-1. Verify exact-head CI on the final PR #28 head, including tests, TypeScript, build, and dependency audit.
-2. Obtain one focused independent review of the exact live SHA.
+1. Obtain exact-head CI evidence for `565e3b8...` (or a later final head), including tests, TypeScript, build, and dependency audit.
+2. Obtain one focused independent review of that exact SHA.
 3. If no blockers and all applicable gates pass, merge under the standing delegation.
-4. Continue only after merge with the next planned foundation task; keep migration/cutover reserved for PR-D.
+4. Then continue with PR-D's forward-only recovery design; do not invoke migration or cutover until its gates are met.
