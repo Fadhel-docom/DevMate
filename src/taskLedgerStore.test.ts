@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createTaskLedgerStore, type TaskLedgerStoreOptions } from "./taskLedgerStore";
 import { durableStoreKey } from "./durableStore";
 import { migrateLegacyProjectsToProfiles, type ProjectProfilesStore } from "./projectProfiles";
+import type { TaskLedgerStore } from "./taskLedger";
 
 class MemoryStorage {
   private values = new Map<string, string>();
