@@ -5,6 +5,7 @@ import {
   migrateLegacyProjectsToProfiles,
   validateProjectProfilesStore,
   validateProfileApprovalHistoryUpdate,
+  validateProjectProfilesStoreUpdate,
   type ProjectProfile,
   type ProjectProfilesStore
 } from "./projectProfiles";
@@ -236,6 +237,24 @@ describe("project profile schema v1", () => {
     const store = draftStore();
     store.records[0].repositories = ["https://github.com/org/repo", "https://github.com/org/repo/"];
     expect(validateProjectProfilesStore(store).ok).toBe(false);
+  });
+
+
+  it("requires the profile-store update boundary to preserve project identity and approval history", () => {
+    const previous = draftStore();
+    const added = migrateLegacyProjectsToProfiles([{ id: "p1", name: "One" }, { id: "p2", name: "Two" }], 1300, previous).store;
+    expect(validateProjectProfilesStoreUpdate(previous, added)).toBe(true);
+    expect(validateProjectProfilesStoreUpdate(previous, { ...added, records: [] })).toBe(false);
+    const approvedStore = draftStore();
+    approve(approvedStore.records[0]);
+    const nextProfile = JSON.parse(JSON.stringify(approvedStore.records[0]));
+    nextProfile.approval = { ...nextProfile.approval, status: "revoked", revokedAt: 1400,
+      revokedRevision: nextProfile.approval.approvedRevision, revocationReason: "Scope changed" };
+    const revokedStore = { ...approvedStore, revision: 2, updatedAt: 1400, records: [nextProfile] };
+    expect(validateProjectProfilesStoreUpdate(approvedStore, revokedStore)).toBe(true);
+    const forged = { ...revokedStore, records: [{ ...nextProfile,
+      approval: { ...nextProfile.approval, evidence: { ...nextProfile.approval.evidence, reference: "forged" } } }] };
+    expect(validateProjectProfilesStoreUpdate(approvedStore, forged)).toBe(false);
   });
 
 });
