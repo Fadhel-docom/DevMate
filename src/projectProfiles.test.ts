@@ -150,4 +150,92 @@ describe("project profile schema v1", () => {
     withDate.records[0].extensions = { date: new Date() };
     expect(validateProjectProfilesStore(withDate).ok).toBe(false);
   });
+
+  it("guards every approval transition and prevents rewriting or dropping prior evidence", () => {
+    const store = draftStore();
+    approve(store.records[0]);
+    const approved = JSON.parse(JSON.stringify(store.records[0].approval));
+    const revoked = {
+      ...approved, status: "revoked" as const, revokedAt: 1400,
+      revokedRevision: approved.approvedRevision, revocationReason: "Policy changed"
+    };
+    expect(validateProfileApprovalHistoryUpdate(approved, revoked)).toBe(true);
+    expect(validateProfileApprovalHistoryUpdate(approved, { ...revoked, evidence: { ...approved.evidence, reference: "forged" } })).toBe(false);
+    expect(validateProfileApprovalHistoryUpdate(approved, { ...revoked, approvedContentHash: "ffffffffffffffff" })).toBe(false);
+    expect(validateProfileApprovalHistoryUpdate(revoked, { ...revoked, revocationReason: "rewritten" })).toBe(false);
+    const archived = {
+      approvedRevision: approved.approvedRevision, evidence: approved.evidence,
+      approvedAt: approved.approvedAt, approvedContentHash: approved.approvedContentHash,
+      revokedAt: revoked.revokedAt, revocationReason: revoked.revocationReason
+    };
+    const unapproved = {
+      status: "unapproved" as const, approvedRevision: null, evidence: null, approvedAt: null,
+      approvedContentHash: null, revokedAt: null, revokedRevision: null, revocationReason: null,
+      revocationHistory: [archived]
+    };
+    expect(validateProfileApprovalHistoryUpdate(revoked, unapproved)).toBe(true);
+    expect(validateProfileApprovalHistoryUpdate(revoked, { ...unapproved, revocationHistory: [] })).toBe(false);
+    expect(validateProfileApprovalHistoryUpdate(revoked, { ...revoked, status: "approved" as const })).toBe(false);
+    expect(validateProfileApprovalHistoryUpdate(revoked, null as never)).toBe(false);
+  });
+  it("uses a per-profile validation budget so large collections remain valid", () => {
+    const base = draftStore().records[0];
+    const records = Array.from({ length: 300 }, (_, index) => ({
+      ...JSON.parse(JSON.stringify(base)),
+      projectId: `p${index}`,
+      identity: { name: `Project ${index}`, purpose: "" }
+    }));
+    expect(validateProjectProfilesStore({ schemaVersion: 1, revision: 1, updatedAt: 1234, records }).ok).toBe(true);
+  });
+  it("rejects accessors, sparse arrays, cycles, non-finite numbers, and excessive depth", () => {
+    const accessor = draftStore();
+    Object.defineProperty(accessor.records[0].identity, "name", { enumerable: true, get: () => "One" });
+    expect(validateProjectProfilesStore(accessor).ok).toBe(false);
+    const sparse = draftStore();
+    sparse.records[0].technology = new Array(1);
+    expect(validateProjectProfilesStore(sparse).ok).toBe(false);
+    const cyclic = draftStore();
+    const cycle: Record<string, unknown> = {};
+    cycle.self = cycle;
+    cyclic.records[0].extensions = { cycle } as never;
+    expect(validateProjectProfilesStore(cyclic).ok).toBe(false);
+    const nonFinite = draftStore();
+    nonFinite.records[0].extensions = { bad: Number.NaN };
+    expect(validateProjectProfilesStore(nonFinite).ok).toBe(false);
+    let deep: unknown = "leaf";
+    for (let index = 0; index < 120; index += 1) deep = { child: deep };
+    const tooDeep = draftStore();
+    tooDeep.records[0].extensions = { deep } as never;
+    expect(validateProjectProfilesStore(tooDeep).ok).toBe(false);
+    const tooLarge = draftStore();
+    tooLarge.records[0].extensions = { values: Array(10001).fill("x") };
+    expect(validateProjectProfilesStore(tooLarge).ok).toBe(false);
+  });
+  it("hashes controlled profile content, excludes approval and updatedAt, and rejects unsafe input", () => {
+    const original = draftStore().records[0];
+    const baseline = computeProfileContentHash(original);
+    expect(computeProfileContentHash({ ...original, updatedAt: original.updatedAt + 1 })).toBe(baseline);
+    expect(computeProfileContentHash({ ...original, approval: { ...original.approval, status: "revoked" } })).toBe(baseline);
+    expect(computeProfileContentHash({ ...original, profileRevision: original.profileRevision + 1 })).not.toBe(baseline);
+    expect(computeProfileContentHash({ ...original, createdAt: original.createdAt + 1 })).not.toBe(baseline);
+    expect(computeProfileContentHash({ ...original, extensions: { source: "test" } })).not.toBe(baseline);
+    expect(() => computeProfileContentHash({ ...original, extensions: { bad: Infinity } })).toThrow();
+    const reordered = JSON.parse(JSON.stringify(original));
+    reordered.identity = { purpose: reordered.identity.purpose, name: reordered.identity.name };
+    expect(computeProfileContentHash(reordered)).toBe(baseline);
+  });
+  it("reports sparse legacy entries and rejects corrupt existing stores without replacing them", () => {
+    const legacy: unknown[] = [{ id: "p1", name: "One" }, , { id: "p2", name: "Two" }];
+    const result = migrateLegacyProjectsToProfiles(legacy, 1234);
+    expect(result.store.records.map((record) => record.projectId)).toEqual(["p1", "p2"]);
+    expect(result.rejected).toContainEqual({ index: 1, reason: "Sparse legacy project entry." });
+    expect(() => migrateLegacyProjectsToProfiles([{ id: "p2", name: "Two" }], 1234,
+      { schemaVersion: 1, revision: 1, updatedAt: 1234, records: [null] } as never)).toThrow();
+  });
+  it("rejects duplicate repository identifiers", () => {
+    const store = draftStore();
+    store.records[0].repositories = ["https://github.com/org/repo", "https://github.com/org/repo/"];
+    expect(validateProjectProfilesStore(store).ok).toBe(false);
+  });
+
 });
