@@ -1507,11 +1507,13 @@ Remote sandbox, Node v24.22.1, npm 10.8.2 (CI uses Node 20.20.2), files fetched 
 - A later run passed all 180 tests but surfaced a TypeScript narrowing error in the internal read-result type. The failure type was narrowed explicitly.
 - GitHub Actions run #276 (ID `42364565092`) passed on code head `0ed9efa64bde0fce38f57048484eb861c6681a8d`: audit 0 vulnerabilities; 7 files / 182 tests; TypeScript and Vite production build passed.
 - GitHub Actions run #278 (ID `42364630016`) passed on documentation head `3dba2d849f0b8b93f7a0d8ebb5e54235317d908c`: audit 0 vulnerabilities; 7 files / 182 tests; TypeScript and Vite production build passed.
-- GitHub Actions run #282 (ID `42364734660`) passed on exact latest code/test head `55ed89577106fe45b09d9de52074411bd743ef9a`: audit 0 vulnerabilities; 7 files / 183 tests; TypeScript and Vite production build passed. Run: https://github.com/Fadhel-docom/DevMate/actions/runs/42364734660.
+- GitHub Actions run #282 (ID `42364734660`) passed on code/test head `55ed89577106fe45b09d9de52074411bd743ef9a`: audit 0 vulnerabilities; 7 files / 183 tests; TypeScript and Vite production build passed.
+- GitHub Actions run #306 (ID `42365441295`) passed on code/test head `cf74f54186e7bc2104f426f3263e0985cc57a0aa`: audit 0 vulnerabilities; 7 files / 186 tests; TypeScript and Vite production build passed.
+- GitHub Actions run #308 (ID `42365520794`) passed on exact PR documentation head `dca72a801faa313a7ac632caf51e89fc276de276`: audit 0 vulnerabilities; 7 files / 186 tests; TypeScript and Vite production build passed. Run: https://github.com/Fadhel-docom/DevMate/actions/runs/42365520794.
 - This operations/status evidence update itself is documentation-only; the resulting exact PR head must be rechecked before independent review.
 - Not verified: real browser multi-tab lock contention, browser process termination at each write boundary, real quota exhaustion, Android/Safari, and accessibility.
 
 ### Current PR and next action
-- PR #22 is open as Draft: https://github.com/Fadhel-docom/DevMate/pull/22. It targets `feature/phase-1-foundation`; PR #22 exact current code/test head `cf74f54186e7bc2104f426f3263e0985cc57a0aa` passed run #306. The subsequent evidence-only documentation commits update the PR head and require their own exact-head CI run. The implementation remains on `feature/durable-store-foundation`.
-- Next: verify CI on the exact PR #22 head after this evidence reconciliation, then request an independent review of that exact head. Do not merge before review.
+- PR #22 is open as Draft: https://github.com/Fadhel-docom/DevMate/pull/22. It targets `feature/phase-1-foundation`; PR #22 exact current documentation head `dca72a801faa313a7ac632caf51e89fc276de276` passed run #308. The subsequent status/operations reconciliation commits update the PR head and require their own exact-head CI run. The implementation remains on `feature/durable-store-foundation`.
+- Next: verify CI on the exact PR #22 head after this final evidence reconciliation, update the PR body with the resulting SHA and run, then request an independent review of that exact head. Do not merge before review.
 - PR-B profile persistence, PR-C ledger persistence, and PR-D App integration remain separate bounded changes. No provider integration or owner-reserved permission/cost decision is implied.
