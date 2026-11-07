@@ -1698,3 +1698,9 @@ Remote sandbox, Node v24.22.1, npm 10.8.2 (CI uses Node 20.20.2), files fetched 
 - Defined restart behavior for no marker, intermediate intent, committed marker, and malformed marker. Intermediate state resumes forward in read-only recovery mode; it never re-enables legacy writes.
 - Added explicit verification requirements for every marker phase and legacy-writer rejection across tabs/restarts; these tests are required for PR-D implementation and have not yet been written or run.
 - This closes a design-level crash/reload gap; no implementation or migration was run.
+
+
+### PR-D marker contract clarified
+- Defined the cutover marker key as `devmate-cutover-v1:workspace` and its exact phase set: `intent`, `profiles-verified`, `stores-verified`, `committed`.
+- All legacy mutators (workspace saves, backup restoration, and helpers that set/remove the legacy workspace key) must check this marker inside the existing shared lock. Any marker or unreadable marker blocks legacy mutation; legacy reads remain available for archive/export.
+- If marker persistence/read-back is uncertain, migration is not started and the app enters read-only recovery if any marker bytes exist.
