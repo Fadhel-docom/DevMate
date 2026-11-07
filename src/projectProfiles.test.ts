@@ -1,3 +1,4 @@
+// Regression coverage for the accepted profile contract and additive migration.
 import { describe, expect, it } from "vitest";
 import {
   computeProfileContentHash,
