@@ -45,3 +45,16 @@ No decisions have been inventoried into this log yet. This is intentional: histo
 - Rationale: The model preserves constitution v1.1 as the highest authority, keeps approval evidence distinct from authorization, and explicitly gates provider integrations.
 - Consequences / risks: The acceptance does not approve every future implementation detail, storage mechanism, provider connection, cost, external data transfer, permission expansion, deployment, or action on another repository. Sensitive implementation PRs still require their own independent review and any owner-reserved approval.
 - References: [PR #12](https://github.com/Fadhel-docom/DevMate/pull/12); merge commit `f38475485268d212eddc906ee06f762648070d37`; approved constitution v1.1 `50126a159961b71faf88025a8695cb7e734d63b7`.
+
+
+### D-002 — Standing merge delegation without repeated owner prompts
+
+- Date: 2026-11-07
+- Status: Accepted
+- Decided / approved by: Repository owner; explicit instruction in the project conversation on 2026-11-07.
+- Context: Repeatedly asking the owner to approve each merge after all required conditions are met creates unnecessary coordination and delays autonomous project management.
+- Alternatives considered: Continue requesting per-PR confirmation for every merge; extend standing delegation with explicit sensitive-work safeguards.
+- Decision: Contributors must merge a PR without another owner prompt when all applicable constitution conditions, quality gates, exact-head verification, and independent review pass. This includes bounded, reversible data-format and migration changes when the sensitive-level requirements are met.
+- Rationale: Owner time should be reserved for genuine decisions, not repeated authorization of work already covered by the standing delegation.
+- Consequences / risks: The delegation does not waive PR #1's hold, owner-reserved decisions, new costs, secret disclosure, sensitive permission expansion, destructive or difficult-to-reverse actions, material security-risk acceptance, licensing decisions, mission/scope changes, or unauthorized production/public release. If any required gate fails, block only the affected action and continue safe independent work.
+- References: Owner instruction dated 2026-11-07; proposed constitution amendment v1.2 in this branch.
