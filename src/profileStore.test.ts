@@ -76,6 +76,18 @@ describe("durable project profile adapter", () => {
     expect(storage.getItem(STORAGE_KEY)).toBe(legacy);
   });
 
+  it.each([["missing legacy key", null], ["empty legacy array", "[]"]])(
+    "writes an empty durable envelope and retries idempotently for %s",
+    async (_label, legacy) => {
+      const { store, storage } = makeStore();
+      if (legacy !== null) storage.seed(STORAGE_KEY, legacy);
+      expect(await store.migrateLegacyProfiles()).toMatchObject({ ok: true, revision: 1 });
+      expect(storage.getItem("devmate-durable-store-v1:project-profiles")).not.toBeNull();
+      expect(await store.migrateLegacyProfiles()).toMatchObject({ ok: true, revision: 1 });
+      expect(await store.migrationStatus()).toBe("migrated");
+    }
+  );
+
   it("refuses partial migration when any legacy project is invalid", async () => {
     const { store, storage } = makeStore();
     const legacy = JSON.stringify([{ id: "p1", name: "One" }, { id: "__proto__", name: "Unsafe" }]);
