@@ -36,7 +36,9 @@ export function loadNotice(result: LoadResult): string | null {
   }
 }
 export function canEditWorkspace(loaded: boolean, recoveryRequired: boolean, initialStatus: LoadResult["status"] | undefined, saveFailureReason?: string): boolean {
-  return loaded && !recoveryRequired && initialStatus !== "unavailable" && saveFailureReason !== "conflict" && saveFailureReason !== "verify";
+  return loaded && !recoveryRequired && initialStatus !== "unavailable" &&
+    saveFailureReason !== "conflict" && saveFailureReason !== "verify" &&
+    saveFailureReason !== "cutover-active" && saveFailureReason !== "cutover-indeterminate";
 }
 export function noticeAfterSave(current: string | null, initial: LoadResult, backupKey?: string): string | null {
   if (backupKey) {
@@ -54,6 +56,8 @@ export function saveMessage(failure: Extract<SaveResult, { ok: false }>): string
     failure.reason === "lock-unavailable" ? "The cross-tab lock is unavailable, so the write was refused." :
     failure.reason === "lock-timeout" ? "The cross-tab lock could not be acquired in time, so the write was refused." :
     failure.reason === "lock-error" ? "The cross-tab lock failed, so the write was refused." :
+    failure.reason === "cutover-active" ? "A storage cutover is in progress. Legacy writes are blocked; inspect recovery state before continuing." :
+    failure.reason === "cutover-indeterminate" ? "The cutover marker could not be verified. Legacy writes are blocked until storage state can be inspected." :
     failure.reason === "invalid-data" ? "The project data did not pass validation." :
     failure.reason === "conflict" ? "Another tab or session saved newer data. Reload the saved workspace before continuing." :
     "The data could not be written.";
