@@ -299,9 +299,14 @@ describe("project profile schema v1", () => {
     const added = migrateLegacyProjectsToProfiles([{ id: "p1", name: "One" }, { id: "p2", name: "Two" }], 1300, previous).store;
     expect(validateProjectProfilesStoreUpdate(previous, added)).toBe(true);
     expect(validateProjectProfilesStoreUpdate(previous, { ...added, records: [] })).toBe(false);
+    const improperlyApprovedAddition = JSON.parse(JSON.stringify(added));
+    improperlyApprovedAddition.records[1].lifecycle = "active";
+    improperlyApprovedAddition.records[1].approval.status = "approved";
+    expect(validateProjectProfilesStoreUpdate(previous, improperlyApprovedAddition)).toBe(false);
     const approvedStore = draftStore();
     approve(approvedStore.records[0]);
     const nextProfile = JSON.parse(JSON.stringify(approvedStore.records[0]));
+    nextProfile.updatedAt = 1400;
     nextProfile.approval = { ...nextProfile.approval, status: "revoked", revokedAt: 1400,
       revokedRevision: nextProfile.approval.approvedRevision, revocationReason: "Scope changed" };
     const revokedStore = { ...approvedStore, revision: approvedStore.revision + 1, updatedAt: 1400, records: [nextProfile] };
