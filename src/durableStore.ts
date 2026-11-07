@@ -101,6 +101,10 @@ export function createDurableStore<T>(options: DurableStoreOptions<T>) {
   const dataKey = durableStoreKey(options.name);
   const journalKey = durableJournalKey(options.name);
   const migrationKey = durableMigrationKey(options.name);
+  // Expose only the read capability required by cross-store validators and migration transforms.
+  const readStorageView: Pick<Storage, "getItem"> = Object.freeze({
+    getItem: (key: string) => storage?.getItem(key) ?? null
+  });
 
   const readRaw = (): string | null => {
     if (!storage) throw new Error("Browser storage is unavailable.");
@@ -291,7 +295,7 @@ export function createDurableStore<T>(options: DurableStoreOptions<T>) {
         const previous = current.records[projectId] ?? null;
         const records = clone(current.records);
         records[projectId] = clone(candidate);
-        if (options.validateUpdate && !options.validateUpdate(projectId, previous === null ? null : clone(previous), clone(candidate), clone(current.records), clone(records), storage!))
+        if (options.validateUpdate && !options.validateUpdate(projectId, previous === null ? null : clone(previous), clone(candidate), clone(current.records), clone(records), readStorageView))
           return { ok: false as const, reason: "invalid-data" as const, message: "The project-scoped update violated its store contract." };
         const next: DurableEnvelope<T> = { schemaVersion: 1, revision: current.revision + 1, updatedAt: now(), records };
         return transactLocked(projectId, next);
@@ -300,7 +304,8 @@ export function createDurableStore<T>(options: DurableStoreOptions<T>) {
     },
     async createSnapshot(reason: DurableSnapshotReason): Promise<DurableSnapshot | null> {
       const locked = await runExclusive(() => {
-        if (!storage) return null;
+        const recovered = recoverLocked();
+        if (!recovered.ok || !storage) return null;
         const raw = readRaw();
         if (raw === null) return null;
         return snapshotRaw(raw, reason);
@@ -330,6 +335,8 @@ export function createDurableStore<T>(options: DurableStoreOptions<T>) {
       const allowed = Array.from({ length: maxBackups }, (_, index) => durableBackupKey(options.name, index + 1));
       if (!allowed.includes(key)) return { ok: false, reason: "not-found", message: "Snapshot key is not part of this store." };
       const locked = await runExclusive(() => {
+        const recovered = recoverLocked();
+        if (!recovered.ok) return recovered;
         if (!storage) return { ok: false as const, reason: "unavailable" as const, message: "Browser storage is unavailable." };
         const raw = storage.getItem(key);
         if (raw === null) return { ok: false as const, reason: "not-found" as const, message: "Snapshot not found." };
@@ -342,7 +349,7 @@ export function createDurableStore<T>(options: DurableStoreOptions<T>) {
         if (!options.validateUpdate)
           return { ok: false as const, reason: "invalid-data" as const, message: "Restore requires the store-specific update guard; an unguarded restore is refused." };
         if (!currentEnvelope || !restored ||
-          !Object.entries(currentEnvelope.records).every(([id, item]) => safeId(id) && options.validateRecord(id, item)))
+          !Object.entries(currentEnvelope.records).every(([id, item]) => safeId(id) && options.validateRecord(id, clone(item))))
           return { ok: false as const, reason: "corrupt" as const, message: "Current data failed validation; restore was refused without changing it." };
         const nextRecord = restored.records[projectId];
         if (nextRecord === undefined || !options.validateRecord(projectId, clone(nextRecord)))
@@ -413,7 +420,7 @@ export function createDurableStore<T>(options: DurableStoreOptions<T>) {
           catch (error) { return { ok: false as const, reason: "write-failed" as const, message: String(error) }; }
         }
         let nextRecords: Record<string, T>;
-        try { nextRecords = clone(transform(legacyRaw, clone(current.records), storage)); }
+        try { nextRecords = clone(transform(legacyRaw, clone(current.records), readStorageView)); }
         catch (error) { return { ok: false as const, reason: "invalid-data" as const, message: `Legacy migration transform failed: ${String(error)}` }; }
         if (!isObject(nextRecords) || !Object.keys(nextRecords).every(safeId) ||
           !Object.keys(current.records).every((id) => Object.prototype.hasOwnProperty.call(nextRecords, id)))
@@ -423,7 +430,7 @@ export function createDurableStore<T>(options: DurableStoreOptions<T>) {
             return { ok: false as const, reason: "invalid-data" as const, message: `Migrated record for project ${id} failed validation.` };
           const previous = current.records[id] ?? null;
           if ((previous === null || JSON.stringify(previous) !== JSON.stringify(nextRecord)) &&
-            !options.validateUpdate(id, previous === null ? null : clone(previous), clone(nextRecord), clone(current.records), clone(nextRecords), storage!))
+            !options.validateUpdate(id, previous === null ? null : clone(previous), clone(nextRecord), clone(current.records), clone(nextRecords), readStorageView))
             return { ok: false as const, reason: "invalid-data" as const, message: `The update guard rejected migrated project ${id}.` };
         }
         const next: DurableEnvelope<T> = { schemaVersion: 1, revision: current.revision + 1, updatedAt: now(), records: nextRecords };
