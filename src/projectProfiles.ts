@@ -178,7 +178,7 @@ function validateProfile(value: unknown, index: number, errors: ProfileValidatio
       "approval", "Unapproved profiles cannot retain approval or revocation metadata.");
     } else if (a.status === "approved") {
       check(a.approvedRevision === value.profileRevision && a.evidence !== null && a.approvedAt !== null &&
-        a.approvedContentHash === computeProfileContentHash(value as unknown as ProjectProfile) &&
+        a.approvedContentHash === (isSafeJson(value) ? computeProfileContentHash(value as unknown as ProjectProfile) : null) &&
         a.revokedAt === null && a.revokedRevision === null && a.revocationReason === null,
       "approval", "Approved status must match the current profile revision and content fingerprint, with valid evidence and no revocation metadata.");
     } else {
