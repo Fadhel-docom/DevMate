@@ -317,7 +317,7 @@ export function migrateLegacyProjectsToProfiles(
       ],
       approval: {
         status: "unapproved", approvedRevision: null, evidence: null, approvedAt: null,
-        approvedContentHash: null, revokedAt: null, revokedRevision: null, revocationReason: null
+        approvedContentHash: null, revokedAt: null, revokedRevision: null, revocationReason: null, revocationHistory: []
       }
     });
   });
