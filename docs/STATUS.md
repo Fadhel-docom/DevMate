@@ -789,3 +789,34 @@ Run the full Vitest suite, TypeScript/Vite production build, and dependency audi
 
 ### PR-D restart-safety correction
 - Design review identified a restart gap between profile migration and final cutover marker. PR-D design now requires a durable cutover-intent marker before any migration, checked under the shared lock by every legacy write path. An intent/intermediate marker forces read-only recovery mode across reloads and tabs; it cannot silently fall back to legacy writes.
+
+## Current state — 2026-11-07 (PR #28, PR #29 and the PR-D design merged; PR-D implementation not started)
+
+This section supersedes the earlier dated "Current state" sections above, which described PR #28, PR #29 and the PR-D design as open or pending.
+
+### Merged into `feature/phase-1-foundation` (all verified live on GitHub)
+- PR #28 (PR-C durable task-ledger adapter): reviewed head `2c7d798d2a07d5c8ec6d6a4b3e871bd164c2f17a`; merge commit `9d03b9c426b06be8fb1dd4b4a54342def150ff83`. Independent review: APPROVE WITH FOLLOW-UP, no blocking findings (review https://github.com/Fadhel-docom/DevMate/pull/28#pullrequestreview-5813542086). Exact-head CI: Actions run #371 / ID `42380821309`, event push, head SHA `2c7d798...`, conclusion success; job `verify` steps npm ci, dependency-audit report, npm test and npm run build all succeeded (read through the GitHub API). The counts 216 tests / 0 vulnerabilities come from earlier coordinator log inspection; the independent reviewer did not re-count them and did not run the tests locally.
+- PR #29 (unified agent handoff protocol): reviewed head `924241df0f5a12906c720fe6e9494c77c2ab1ef7`; merge commit `f111f4d77b575b5313432b5911ed55f7566051fe`. Second-contributor review: APPROVE WITH FOLLOW-UP, no blocking findings (https://github.com/Fadhel-docom/DevMate/pull/29#pullrequestreview-5813542098). Documentation only; no CI run exists for this docs branch and none is claimed.
+- PR #30 (PR-D forward-only recovery and cutover design): reviewed head `ed2e70dcbfbd28de92b84c678664b16031f063a3`; merged head `b160156a0be610e393ea0a8c5a34de549ca2ad50` (mechanical conflict resolution in the three log files only; `docs/PR-D-RECOVERY-DESIGN.md` byte-identical, blob `212ebdcb290bc298c16aaecfa15346eb6d4342ba`); merge commit `3c60a8529ae99d869c3c98970c2df9ff37895d42`. Independent design review: APPROVE WITH FOLLOW-UP (https://github.com/Fadhel-docom/DevMate/pull/30#pullrequestreview-5813542076). No CI run exists for this docs branch and none is claimed.
+- All three reviews were posted as COMMENT reviews with the verdict in the body, because all contributors act through the owner's GitHub account and GitHub does not allow approving one's own PR.
+
+### What is not done
+- No App/UI integration, no migration, no cutover, no legacy-writer change, no recovery implementation, no browser (restart / quota / two-tab) tests, no provider or execution work. The PR-D design is a design baseline, not authorization for any of these.
+- Branch protection on `feature/phase-1-foundation` is reported by GitHub as not enabled (`protected: false`); the manual review protocol applies. This was not changed.
+
+### Conditions recorded for the PR-D implementation (from the design review; not yet implemented)
+- R1 Re-read and compare the legacy source at every cutover marker phase advance including `committed`; any divergence stops in indeterminate/read-only state with the new legacy bytes preserved (protects against a stale tab running an older bundle). Add a test for a legacy write after intent.
+- R2 Specify the fingerprint algorithm and compare full bytes with the preserved raw copy when proving the source unchanged.
+- R3 Raw-byte preservation must be idempotent (keyed by fingerprint; an exact existing copy counts as success) so a crash before the intent marker cannot block a retry.
+- R4 Define the abort-after-intent procedure precisely; the app never deletes the marker.
+- R5 Define an owner-approved slot-release or export-then-release path for the snapshot-full dead end, without destructive pruning.
+- R6 Keep the marker fixed-size; test marker-write failure at each phase in a real browser.
+
+### Non-blocking follow-ups from the PR #28 / PR #29 reviews
+- Document that a transient `invalid-data` from `readLedger` (profile envelope changed between the locked ledger read and the later profile read) is retryable and not corruption; the PR-D UI must present it as retry / re-inspect.
+- Consider rejecting appended events attached to an unchanged task in a later hardening step.
+- The CAS revision is store-wide, so cross-project conflicts are possible and must be handled by retry.
+- PR #29: record the independent reviewer identity in the task packet; state that document conflicts stop the affected action.
+
+### Next exact action
+Implement PR-D in small reviewed steps, starting with the cutover-intent barrier in `src/storage.ts` (all legacy mutators check `devmate-cutover-v1:workspace` under the shared lock) with tests, against R1 to R6. Do not run any migration or cutover against user data during development or CI. Do not start AI-provider integration.
