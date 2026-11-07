@@ -1645,3 +1645,12 @@ Remote sandbox, Node v24.22.1, npm 10.8.2 (CI uses Node 20.20.2), files fetched 
 - The cumulative PR includes the F1 empty-source migration-envelope fix and F2 actual restore guard tests for older draft and approved-after-revocation snapshots. No migration was invoked and no App/UI cutover was attempted.
 - One independent review remains. Request review of exact SHA `ac54cfda217489867e058a06f85d350e1e921306`, with one overall verdict, concrete blockers only, and a concise forward-only PR-D recovery design assessment. Do not reopen multiple review cycles for non-blocking style or documentation nits.
 - After review, if no blockers and exact-head checks remain green, merge PR #27 under the standing delegation. Then start PR-C durable task-ledger integration. PR #24 and #26 are superseded and must not be merged.
+
+
+---
+
+## 64. PR-B exact-head CI evidence — 2026-11-07 — ChatGPT coordinator
+
+- PR #27 exact head `d35c60979fd1a4b587a8817ebd76db9d19ea7be2` passed Actions run #349 (ID `42378198287`). Inspected job logs: npm ci installed 155 packages; audit summary 0 vulnerabilities; 8 test files / 205 tests passed; `tsc --noEmit`; Vite production build succeeded.
+- This operations/status evidence update itself is documentation-only and advances the branch head. Run #349 remains evidence for `d35c609...`, not for the new head created by this entry. Verify the live PR head and exact-head CI again before merge.
+- PR #27 remains open and ready for the one consolidated independent review requested in its PR discussion. PR #24 and #26 have been closed as superseded. No merge of PR-B has occurred.
