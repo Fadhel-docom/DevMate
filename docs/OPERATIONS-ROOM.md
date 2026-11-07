@@ -1264,3 +1264,132 @@ No merge; no change to Draft status, the PR base, CI or the workflow, `main`, PR
 - No browser/mobile/accessibility check, live external integration, permission expansion, provider connection, cost, deployment, or merge was performed.
 - This operations-room entry is documentation-only. The push CI run for its resulting head is checked separately; no application source changes are made after the verified PR #13 code head.
 - Next exact action: obtain independent review of PR #13's exact code head, including fail-closed selection semantics, capability-state accuracy, UI copy/accessibility, and test coverage. Preserve Draft status until the reviewer reports and the PR #10 dependency path is resolved.
+
+---
+
+## 48. PR #13 independent-review follow-up — 2026-11-06 — ChatGPT coordinator
+
+### Starting checkpoint and owner decision
+- Starting PR #13 head: `62003acbc9b6eb7166b4fa8eeadf86a45c6ed673`; PR #13 open/Draft, base `fix/storage-reliability` at `3b7efe6f4c6085d62c5fa3e5761fee23bab246ca`.
+- PR #10 rechecked: open/Draft, unmerged, head `3b7efe6f4c6085d62c5fa3e5761fee23bab246ca`, based on `feature/phase-1-foundation`.
+- Owner chose an internal/owner-only tool inventory. Since DevMate has no authentication or authorization layer, the panel must not be presented as securely owner-only; it has been removed from the general workspace until an authenticated admin surface exists.
+- Claude's independent review of PR #13 at `62003acb` reported no blocking findings and identified follow-ups for fail-closed selection, immutability, tests, runtime-state wording, accessibility/contrast, and documentation accuracy.
+
+### Changes performed
+- Created `fix/tool-registry-review-followup` from the exact PR #13 head.
+- Added a `satisfied` result to tool selection; it is true only when every required capability is backed by an available tool.
+- Made tool-definition properties readonly and froze the registry, entries, and nested capability arrays at runtime.
+- Added tests for full capability coverage, unique IDs, non-empty capabilities, and runtime freezing; corrected the test title that described a known-but-unavailable capability as unknown.
+- Changed the panel wording to identify implemented-but-runtime-gated capability; replaced the generic labelled div with a semantic list.
+- Removed the panel from the public workspace because owner-only access cannot be enforced before authentication exists. No authentication was invented or added.
+- Improved tool-panel text size and contrast; corrected the readiness wording and removed a link to a governance document not present in this branch.
+
+### Verification and boundaries
+- Exact-head CI is pending; no test/build success is claimed in this entry.
+- Real browser/mobile rendering, keyboard/screen-reader behavior, and a measured WCAG contrast audit are not yet independently verified.
+- No provider adapters, external connectors, network calls, API keys, new dependencies, permissions, costs, workflow changes, deployment, merge, main changes, or changes to PR #10/#1/#12/other repositories.
+- PR #13 remains Draft and unmerged. Its dependency on PR #10 remains separate and unresolved.
+
+### Last checkpoint and next exact action
+- Follow-up branch: `fix/tool-registry-review-followup`; source parent: PR #13 head `62003acbc9b6eb7166b4fa8eeadf86a45c6ed673`.
+- Next: inspect the complete diff and resulting commit; run/inspect CI for the exact head; correct any failures; then request an independent review of the follow-up head.
+- Handoff owner: ChatGPT coordinator for verification and review preparation; owner retains merge and other reserved decisions.
+
+
+---
+
+## 49. CI trigger-path correction for PR #13 follow-up — 2026-11-06 — ChatGPT coordinator
+
+- The repository workflow was inspected directly at `feature/tool-registry-foundation/.github/workflows/ci.yml`: pull-request checks target only `main`; push checks target only `main` and `feature/**`.
+- The initial follow-up branch `fix/tool-registry-review-followup` did not match either trigger, so no CI run was created for it. No success is claimed.
+- Created `feature/tool-registry-review-followup` from the exact follow-up code head `011d54cdd668936c9a946e9c05670e30e7bc2d7e`; added this documentation-only note to trigger the existing feature-branch push workflow without changing workflow configuration or application code.
+- The follow-up PR will target `feature/tool-registry-foundation` (PR #13's head branch), preserving the stack. The initial PR #14 used the fix-prefixed head and is to be closed as superseded by the feature-prefixed equivalent; no code changes are discarded.
+- Next: verify GitHub Actions on the exact feature-branch head, inspect job logs, then obtain independent review of that exact head. Keep the PR draft/unmerged; PR #13 and PR #10 remain separate dependencies.
+
+
+---
+
+## 50. PR #13 review follow-up — exact CI verification — 2026-11-06 — ChatGPT coordinator
+
+- PR #15 was re-fetched: open/Draft, base `feature/tool-registry-foundation` (PR #13 head), head at verification `5b8159b35e131998e26f7a006be713db254765b6`; no merge.
+- GitHub Actions run #137 (ID `42300207617`) completed successfully on that exact head.
+- Observed job steps: `npm ci`, dependency audit report, `npm test`, and `npm run build` all succeeded.
+- Job log evidence: 155 packages installed; audit reported 0 vulnerabilities; Vitest reported 4 test files and 123/123 tests passed; `tsc --noEmit` and Vite production build passed.
+- The 123 tests include the new fail-closed selection, readiness, unique-ID, non-empty-capability, runtime-freeze, and injected-tool coverage. No claim is made that the application dispatches work or invokes AI providers.
+- Contrast calculations for the updated registry text/background pairs are above WCAG AA's 4.5:1 threshold (computed ratios approximately 7.11:1, 6.63:1, 6.07:1, 7.91:1, and 6.14:1). Real browser rendering, keyboard navigation, and screen-reader behavior remain unverified.
+- No application source changes were made after the tested head. This entry is documentation-only and its resulting head must receive its own CI verification.
+- PR #15 remains Draft and unmerged; PR #13 remains Draft and unmerged; PR #10 remains open/Draft and unresolved. No provider, connector, API key, permission, dependency, cost, deployment, main change, or other-repository change.
+- Next: verify CI on the new documentation head, then request independent review of PR #15's exact final head. Keep the stacked PRs unmerged pending applicable gates and the PR #10 dependency path.
+
+
+---
+
+## 51. PR #15 second independent-review follow-up — 2026-11-06 — ChatGPT coordinator
+
+### Review outcome
+- Claude independently reviewed exact PR #15 head `fa96f0a7b092244f1ae342c67a5434b5ee66849f` and reported no blocking findings. Follow-ups were low-risk: define empty-request semantics, clarify the injected-registry seam, remove unused panel code/styles and stale copy, align readiness terminology, preserve list semantics if a panel is ever reintroduced, and correct historical SHA/status wording.
+- The reviewer confirmed run #139 on the exact reviewed head: 4 test files / 123 tests passed, 0 dependency vulnerabilities, TypeScript and Vite build passed.
+
+### Changes made after that review
+- `selectAvailableTools([])` now returns `satisfied: false`; an empty capability request is explicitly not executable work. Added a regression test.
+- Selection result containers and their arrays are frozen. The optional registry argument is documented as a deterministic test seam; production code must use the default frozen registry.
+- Removed `src/tools/ToolRegistryPanel.tsx` and all `.tool-*` CSS. The owner-only dashboard is deferred until real authentication and authorization exist; no owner-only claim is made.
+- Aligned readiness wording to “Implemented (runtime-gated)” in the registry documentation and corrected the historical status wording.
+- The historical section 43 inventory is superseded by sections 45–46; the authoritative current inventory remains 1 implemented runtime-gated browser-local storage capability, 0 built-but-disconnected adapters, and 6 not-built adapters.
+
+### Verification and boundary
+- New exact-head CI is pending. The prior run #139 does not verify these new code/test changes.
+- No local test, browser, keyboard, screen-reader, or real-device verification is claimed.
+- PR #15 remains Draft and unmerged, based on PR #13's head branch. PR #13 remains Draft and unmerged, based on PR #10's branch. PR #10 remains open/Draft and separately unresolved.
+- No workflow, package, dependency, provider, external connector, API key, permission, cost, deployment, `main`, or other repository was changed.
+
+### Next checkpoint
+- Branch: `feature/tool-registry-review-followup`.
+- Verify GitHub Actions against the exact latest branch SHA; inspect logs for tests, audit, TypeScript, and Vite build.
+- If successful, request independent review only if the final diff materially changes the reviewed scope; otherwise preserve the existing independent review as applying to its exact reviewed SHA and clearly record the narrow follow-up delta.
+
+
+- **Exact verification for section 51:** GitHub Actions run #147 (ID `42301856450`) passed on exact head `73075eba602b825181369f6f32057eda0718469e`. Job logs confirm `npm ci` (155 packages), dependency audit (0 vulnerabilities), Vitest (4 files, 124/124 tests, including 9 registry tests), TypeScript `tsc --noEmit`, and Vite production build. No real-browser or assistive-technology checks are claimed. PR #15 was re-fetched after the run: open/Draft, head matches the tested SHA, base `feature/tool-registry-foundation`, GitHub reports mergeable=true.
+
+
+- **Documentation-head CI:** run #149 (ID `42301948481`) completed successfully on exact head `12452cf86efac66ab2912426b653e24fdafbb3bb`. Logs confirm 155 packages installed, 0 vulnerabilities, 4 test files / 124 tests passed (90 storage, 11 backup manager, 14 App, 9 registry), TypeScript check and Vite production build passed. This verifies the documentation commits after tested code head `73075eba602b825181369f6f32057eda0718469e`; no source code changed after that code head.
+
+
+---
+
+## 52. PR #15 small follow-ups — 2026-11-06 — Claude (implemented at the owner's request)
+
+### Starting checkpoint and scope
+- Starting head: `feature/tool-registry-review-followup` at `2cbbffe3b5da7159301a034a63a350a34ad48acf` (read live from the GitHub API immediately before editing). PR #15 targets `feature/tool-registry-foundation`; PR #15, PR #13 and PR #10 are Draft and unmerged.
+- Task (owner's work order, reported in the chat session): implement the seven small follow-ups listed in Claude's independent review (APPROVE WITH FOLLOW-UP, no blocking findings), inside PR #15 only. Excluded by the order: constitution, selector behaviour or permissions, project structure, new PRs, merges.
+
+### Verified before changing
+- Tree at `2cbbffe…` (GitHub API): `src/tools/` holds only `registry.ts` and `registry.test.ts`; there is no `ToolRegistryPanel.tsx`. `src/App.tsx` does not reference it. Remaining mentions are in historical entries of this file and STATUS (43, 45 and 51 here).
+- `src/styles.css` still contained `.tools-panel`, `.tools-intro` and two `.tools-footnote` rules with their comments. Entry 51 and the PR text said all related CSS was removed; the earlier removal matched `.tool-*`, not `.tools-*`. That statement became true only with this change.
+- CI run #151 (ID `42302026868`, event `push`, job `128181924089`) succeeded on `2cbbffe…`. Claude read the job log through the GitHub API: 155 packages, audit 0 at every severity, 4 files / 124 tests, TypeScript and Vite build passed. The PR description had attributed #149 to `2cbbffe…`; #149 (ID `42301948481`) ran on `12452cf86efac66ab2912426b653e24fdafbb3bb`, as entry 51 records.
+
+### Changes
+- `src/styles.css`: removed the four unused `.tools-*` rules and their two comments.
+- `src/tools/registry.test.ts`: added "freezes selection results and the arrays they return" (result object, `tools`, `unavailableCapabilities`, returned production entries; pushing to either array throws `TypeError`). Added a type-only import of `ToolCapability`. No change to `src/tools/registry.ts`.
+- `docs/TOOL-REGISTRY.md`: selection contract item 2 states that coverage is evaluated across the union of available tools and no single tool must cover everything; acceptance checks now state that selection results are frozen and list exactly what the immutability tests assert, including that entries injected through the test seam are not covered.
+- `docs/STATUS.md`: the earlier "Tool registry review follow-up" section is headed as a historical checkpoint with a pointer to the PR #15 entries; a new "PR #15 small follow-ups" entry was added.
+- This file: this entry. PR #15 description: corrected CI references (#149 → `12452cf…`, #151 → `2cbbffe…`).
+
+### Checks run (observed; not GitHub Actions)
+Remote sandbox, Node v24.22.1, npm 10.8.2 (CI uses Node 20.20.2), files fetched by blob from `2cbbffe…`.
+- Before the change: `npm test` 4 files / 124 tests passed.
+- After the change: `npm test` 4 files / 125 tests passed (storage 90, App 14, BackupManager 11, registry 10); `npm run build` passed (`tsc --noEmit`, Vite, 29 modules); `npm audit` 0 vulnerabilities.
+- Mutation check on a throwaway edit, reverted afterwards: removing the freeze of the result object, of `tools`, or of `unavailableCapabilities` each made the new test fail (1 failed / 9 passed).
+
+### Not verified / not done
+- GitHub Actions on the new head: not yet observed; none is claimed. Real browsers, keyboard and screen-reader behaviour, Node 20 locally: not verified.
+- Not done: merge or retarget of any PR, new PR, workflow or constitution change, dependency or `package*.json` change, any change to `src/tools/registry.ts` or the selector's behaviour.
+- Remaining follow-ups: STATUS top pointer and its stale "Current state" section; older entries that mention the removed panel are not all marked historical (for example entries 43, 45 and 48 here).
+
+### Independence and handoff
+- Authored by Claude, who also reviewed the previous head; the delta needs review by another contributor (ChatGPT coordinator or the owner). Committed through the GitHub connector under the owner's delegation; GitHub shows the owner's account.
+- Next exact action: verify GitHub Actions on the new PR #15 head (the push to this `feature/**` branch triggers the existing workflow), then have a contributor other than Claude review the delta. Keep all stacked PRs Draft and unmerged.
+
+### Exact-head CI result
+- GitHub Actions run #152 (ID `42303911193`, event `push`, job `128188333779`) succeeded on exact head `4f2ffe70927ce1db18e77a9f8f9591a9895b1ea8` (the follow-up commit). Log: 155 packages, audit summary 0 at every severity, 4 files / 125 tests (storage 90, App 14, BackupManager 11, registry 10), TypeScript and Vite build passed (29 modules). This replaces the "pending" status above for that head.
+- The commit that records this evidence is documentation-only; its own CI run is the next push event on the branch.

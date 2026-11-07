@@ -422,7 +422,7 @@ Run the full Vitest suite, TypeScript/Vite production build, and dependency audi
 - **Merge boundary:** PR #11 remains stacked on PR #10 and may only be merged into its base branch, never independently to `main`. PR #10, PR #1, and `main` are untouched. No deployment.
 
 
-## Tool registry foundation — 2026-11-06 — in progress
+## Tool registry foundation — 2026-11-06 — historical checkpoint (superseded by review follow-ups)
 
 - Starting checkpoint: PR #10 branch `fix/storage-reliability` at `3b7efe6f4c6085d62c5fa3e5761fee23bab246ca`; PR #10 remains open and Draft. PR #11's work is already present in that branch; no claim is made that PR #10 has passed its own independent review or merge gate.
 - Created stacked branch `feature/tool-registry-foundation` from the exact PR #10 head. This branch and its PR must target `fix/storage-reliability` until PR #10 is resolved; do not merge it directly to `main` or bypass the dependency.
@@ -452,7 +452,7 @@ Run the full Vitest suite, TypeScript/Vite production build, and dependency audi
 
 - Clarified the state contract: Not connected means an adapter exists but has no authorized connection configured; Not built yet means the adapter itself does not exist.
 - GitHub read-only, research/SEO/CAO, and AI-provider adapters do not yet exist inside DevMate. They are now correctly marked Not built yet, alongside the test/build runner, code review, and browser testing.
-- Current inventory count: 1 available (browser-local workspace storage), 0 not connected, 6 not built.
+- Current inventory count: 1 implemented (runtime-gated) capability (browser-local workspace storage), 0 not connected, 6 not built.
 - Updated the panel copy to state explicitly that the registry does not yet route tasks or execute external tools. This is a descriptive registry and selection-function foundation, not an orchestrator.
 - This is a classification/documentation correction, not a new integration or permission grant.
 ## Corrected tool registry code verification — 2026-11-06
@@ -472,3 +472,52 @@ Run the full Vitest suite, TypeScript/Vite production build, and dependency audi
 - PR #13 remains open/Draft, based on fix/storage-reliability at 3b7efe6f4c6085d62c5fa3e5761fee23bab246ca. It is stacked on PR #10 and has not been merged.
 - Real browser/mobile rendering, accessibility, and live tool integrations remain unverified/not built.
 - The subsequent operations-room-only update creates a newer documentation head; its push CI run is checked in this session. No application code changes follow the verified code head.
+
+## Tool registry review follow-up — 2026-11-06 — historical checkpoint (superseded by PR #15 follow-ups)
+
+> Historical: the statements below about panel semantics, typography/contrast adjustments and "removed public mounting" describe an intermediate state. The Tool Registry panel component and its styles were later deleted entirely; see "PR #15 second review follow-up" and "PR #15 small follow-ups" below for the current state.
+
+- Owner decision: the tool inventory is for owner/internal operations, not a public product panel.
+- Security correction: DevMate currently has no authentication or authorization layer. Therefore the Tool Registry panel has been removed from the general workspace UI; it must not be described as owner-only until a real authenticated admin surface exists. The registry code remains internal and is not an active orchestrator.
+- Review follow-up continued on branch `feature/tool-registry-review-followup`, stacked on PR #13 head `62003acbc9b6eb7166b4fa8eeadf86a45c6ed673`.
+- Implemented in this follow-up: explicit `satisfied` result so a non-empty partial tool selection cannot be mistaken for full task coverage; readonly tool definitions and runtime freezing of the registry and nested capability arrays; tests for full coverage, unique IDs, non-empty capabilities, and runtime immutability; corrected test naming; panel semantics and typography/contrast adjustments; removed public mounting of the internal panel.
+- Documentation corrections: clarified that `available` means implemented, not guaranteed success under every runtime condition; fixed readiness wording and removed a reference to a governance document absent from this branch.
+- **Verification:** GitHub Actions run #137 (ID 42300207617) passed on exact application-code head `5b8159b35e131998e26f7a006be713db254765b6`: npm ci passed, dependency audit reported 0 vulnerabilities, Vitest passed 4 files / 123 tests, TypeScript check and Vite production build passed. This head includes the implementation changes and the CI-trigger documentation note. A subsequent documentation-only evidence update creates a new head and requires its own CI check. No local test run or browser/device test is claimed.
+- No providers, connectors, API keys, network calls, dependencies, permissions, costs, workflow changes, deployment, merge, `main`, PR #10, PR #1, PR #12, or other repositories were changed.
+- PR #13 remains open/Draft and stacked on PR #10. Next: inspect exact diff, verify CI on the exact follow-up head, then obtain independent review of that exact head. PR #10's separate review/owner decision remains unresolved.
+
+
+- CI trigger note: the existing workflow only runs pull-request checks when the base is `main`, and push checks on `main` or `feature/**`. The original `fix/tool-registry-review-followup` branch therefore did not trigger CI. A `feature/tool-registry-review-followup` branch now carries the same reviewed code plus this documentation-only trigger note so the existing push workflow can verify the exact resulting head. No workflow change was made.
+
+
+- **Exact CI evidence:** [GitHub Actions run #137](https://github.com/Fadhel-docom/DevMate/actions/runs/42300207617) — success on `5b8159b35e131998e26f7a006be713db254765b6`; 0 vulnerabilities; 4 test files / 123 tests passed; TypeScript and Vite build passed. Computed text/background contrast ratios for the updated registry text styles are all above 4.5:1 (approximately 7.11:1, 6.63:1, 6.07:1, 7.91:1, and 6.14:1). This calculation does not replace a visual or assistive-technology check.
+
+
+## PR #15 second review follow-up — 2026-11-06
+
+- Independent review at exact head `fa96f0a7b092244f1ae342c67a5434b5ee66849f` found no blockers and identified low-risk follow-ups.
+- Defined empty capability requests as unsatisfied (`satisfied: false`) and added a regression test. The selector now also returns frozen result containers; the optional injected registry argument is documented as a deterministic test seam, not a production input.
+- Removed the unused ToolRegistryPanel component and its CSS rather than leaving stale UI copy and styling in the app. The owner-only dashboard is deferred until actual authentication/authorization exists.
+- Updated readiness terminology to “Implemented (runtime-gated)” consistently and marked the original registry status section as a historical checkpoint.
+- **Verification:** pending exact-head GitHub Actions. No browser or assistive-technology test is claimed.
+- PR #15 remains Draft/unmerged, stacked on PR #13; PR #13 remains stacked on PR #10. No merge, workflow change, external integration, provider, key, permission, dependency, cost, deployment, or main change.
+
+
+- **Second review follow-up exact CI:** GitHub Actions run #147 (ID 42301856450) passed on code/documentation head `73075eba602b825181369f6f32057eda0718469e`: npm ci installed 155 packages; audit reported 0 vulnerabilities; Vitest passed 4 files / 124 tests (including 9 registry tests); TypeScript check and Vite production build passed. No local or browser/device test is claimed.
+
+
+- **Final documentation-head verification:** GitHub Actions run #149 (ID 42301948481) passed on exact head `12452cf86efac66ab2912426b653e24fdafbb3bb`. The run repeated npm ci, audit (0 vulnerabilities), 4 test files / 124 tests, TypeScript, and Vite production build. The tested code head remains `73075eba602b825181369f6f32057eda0718469e`; #149 verifies the documentation-only commits after it.
+
+
+## PR #15 small follow-ups — 2026-11-06 — Claude (implemented at the owner's request)
+
+- **Scope (owner's work order, reported in the chat session):** close the small non-blocking follow-ups from Claude's independent review of PR #15 head `2cbbffe3b5da7159301a034a63a350a34ad48acf`, inside PR #15 only. No change to selector behaviour or scope, the constitution, workflows, dependencies or project structure.
+- **Verified before changing (GitHub API, branch head `2cbbffe…`):** `src/tools/` contains only `registry.ts` and `registry.test.ts`, so `ToolRegistryPanel.tsx` is deleted. `src/App.tsx` has no reference to it. The only remaining mentions of the component are in historical documentation entries. `src/styles.css` still held four unused `.tools-*` rules (`.tools-panel`, `.tools-intro`, and `.tools-footnote` twice) with two comments; the earlier "removed all `.tool-*` CSS" wording matched `.tool-*` but not `.tools-*`.
+- **Changes:** removed those rules and comments from `src/styles.css` (no `tool` selector remains); added a test that freezes are applied to a selection result, its `tools` array, its `unavailableCapabilities` array and the returned production entries, and that pushing to either array throws (`src/tools/registry.test.ts`, now 10 tests); `docs/TOOL-REGISTRY.md` now states that the selector evaluates coverage across the union of available tools (no single tool needs to cover every capability), that selection results are frozen, and exactly what the immutability tests assert; the earlier "Tool registry review follow-up" section in this file is marked historical and points to the PR #15 entries; the PR #15 description now records run #149 on `12452cf…` and run #151 on `2cbbffe…`.
+- **CI record for the previous head:** GitHub Actions run #151 (ID `42302026868`, event `push`) succeeded on `2cbbffe…`. Its job log was read through the GitHub API: 155 packages installed, audit summary 0 at every severity, 4 test files / 124 tests passed, TypeScript and Vite build passed (29 modules).
+- **Local verification (observed; remote sandbox, Node v24.22.1, npm 10.8.2, files fetched from `2cbbffe…`; not GitHub Actions):** before the change 124/124 tests passed; after it `npm test` passed 4 files / 125 tests (10 registry tests); `npm run build` (`tsc --noEmit` and Vite) passed with 29 modules transformed; `npm audit` reported 0 vulnerabilities. Removing each of the three freezes in `selectAvailableTools` made the new test fail (checked on a throwaway edit that was reverted).
+- **Not verified:** GitHub Actions on the new head (pending; none is claimed here), Node 20 locally, real browsers, accessibility. The remaining `ToolRegistryPanel` mentions in older entries stay as history.
+- **Independence:** this change set was authored by Claude, who also reviewed the previous head, so it needs review by a contributor other than Claude before any merge decision. PR #15, PR #13 and PR #10 remain Draft and unmerged; nothing was merged, retargeted or opened.
+- **Remaining follow-ups (not done, outside this task):** the top-of-file pointer says the current state is "at the end of this file" but the "Current state — 2026-11-06" section is mid-file and stale; other historical entries that mention the removed panel (the readiness-classification and PR #13 verification entries) are not marked historical.
+
+- **Exact-head CI for the follow-up commit:** GitHub Actions run #152 (ID `42303911193`, event `push`, job `128188333779`) succeeded on `4f2ffe70927ce1db18e77a9f8f9591a9895b1ea8`. The job log shows 155 packages installed, audit summary 0 at every severity, 4 test files / 125 tests passed (registry 10), TypeScript and Vite build passed (29 modules). The documentation commit that records this result changes no source. No browser or device test is claimed.

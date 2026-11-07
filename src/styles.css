@@ -34,22 +34,3 @@
 @media(max-width:600px){
   .confirm-dialog{margin:auto 0 0;max-width:none;width:100%;border-radius:14px 14px 0 0}
 }
-
-
-/* Tool registry: honest readiness and capability inventory */
-.tools-panel{grid-column:1/-1}
-.tools-intro{margin:-4px 0 16px;color:#69758a;font-size:12px;line-height:1.65;max-width:760px}
-.tool-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
-.tool-card{min-width:0;border:1px solid #e7eaf1;border-radius:12px;padding:14px;background:#fcfcfe}
-.tool-card-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex-wrap:wrap}
-.tool-card h3{font-size:13px;line-height:1.4;margin:0;color:#253149}
-.tool-status{display:inline-flex;align-items:center;border-radius:20px;padding:5px 8px;font-size:9px;font-weight:800;letter-spacing:.2px;white-space:nowrap}
-.tool-status-available{background:#eaf7ef;color:#287347}
-.tool-status-not-connected{background:#fff5df;color:#8a6115}
-.tool-status-not-built{background:#f0f1f5;color:#6e7788}
-.tool-summary{font-size:12px;line-height:1.55;color:#58657b;margin:10px 0}
-.tool-capabilities{display:flex;gap:5px;flex-wrap:wrap}
-.tool-capability{background:#f0efff;color:#5549bd;border-radius:6px;padding:4px 6px;font-size:9px}
-.tool-boundary{border-top:1px solid #eceef3;padding-top:9px;margin:10px 0 0;color:#7b8495;font-size:10px;line-height:1.55}
-.tools-footnote{margin:14px 0 0;color:#8a93a2;font-size:10px;line-height:1.6}
-@media(max-width:600px){.tool-grid{grid-template-columns:1fr}.tool-card{padding:12px}}
