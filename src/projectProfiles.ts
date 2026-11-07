@@ -347,6 +347,10 @@ export function validateProjectProfilesStoreUpdate(previous: ProjectProfilesStor
     if (!updated || updated.createdAt !== prior.createdAt ||
       updated.profileRevision < prior.profileRevision ||
       !validateProfileApprovalHistoryUpdate(prior.approval, updated.approval)) return false;
+    const { approval: _priorApproval, updatedAt: _priorUpdatedAt, profileRevision: _priorRevision, ...priorContent } = prior;
+    const { approval: _nextApproval, updatedAt: _nextUpdatedAt, profileRevision: _nextRevision, ...nextContent } = updated;
+    if (stableJson(priorContent) !== stableJson(nextContent) &&
+      updated.profileRevision <= prior.profileRevision) return false;
   }
   return true;
 }
