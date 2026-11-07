@@ -750,6 +750,15 @@ describe("Web Locks fail-closed behaviour", () => {
     if (!result.ok) expect(result.reason).toBe("lock-unavailable");
     expect(storage.getItem(STORAGE_KEY)).toBeNull();
   });
+
+  it("checks the cutover barrier while holding the shared lock", async () => {
+    installFakeLocks(); const storage = memoryStorage();
+    storage.setItem(CUTOVER_INTENT_KEY, "present");
+    const result = await saveProjectsLocked(sample, storage);
+    expect(result).toMatchObject({ ok: false, reason: "cutover-active" });
+    expect(storage.getItem(STORAGE_KEY)).toBeNull();
+    uninstallLocks();
+  });
   it("times out while waiting for a lock", async () => {
     Object.defineProperty(navigator, "locks", { configurable: true, value: {
       request(_name: string, opts: { signal?: AbortSignal }) {
