@@ -287,14 +287,24 @@ export function validateTaskLedgerStore(input: unknown, profiles?: ProjectProfil
     if (!task || task.projectId !== event.projectId) addError(errors, path, "Event must reference an existing task in the same project.");
   });
   if (isTimestamp(input.updatedAt) && input.updatedAt < latestLedgerTimestamp) addError(errors, "updatedAt", "Ledger timestamp cannot precede a task or event update.");
+  const eventsByTask = new Map<string, Record<string, unknown>[]>();
+  if (Array.isArray(input.events)) {
+    for (const event of input.events) {
+      if (!isRecord(event) || !requiredString(event.taskId)) continue;
+      const bucket = eventsByTask.get(event.taskId) ?? [];
+      bucket.push(event);
+      eventsByTask.set(event.taskId, bucket);
+    }
+  }
   if (Array.isArray(input.records)) input.records.forEach((task, index) => {
     if (!isRecord(task) || task.state !== "completed") return;
     const criteria = task.acceptanceCriteria;
     const taskEvidence = task.evidenceReferences;
     const taskUpdatedAt = task.updatedAt;
+    const taskEvents = safeId(task.taskId) ? eventsByTask.get(task.taskId) ?? [] : [];
     const verified = isStringList(criteria) && isStringList(taskEvidence) && isTimestamp(taskUpdatedAt) &&
-      Array.isArray(input.events) && input.events.some((event) => {
-        if (!isRecord(event) || event.taskId !== task.taskId || event.projectId !== task.projectId ||
+      taskEvents.some((event) => {
+        if (event.projectId !== task.projectId ||
           event.type !== "task.acceptance-verified" || event.outcome !== "succeeded" ||
           !isTimestamp(event.createdAt) || event.createdAt > taskUpdatedAt ||
           event.actor !== task.accountableCoordinator || !isRecord(event.details)) return false;
@@ -311,10 +321,15 @@ export function validateTaskLedgerStore(input: unknown, profiles?: ProjectProfil
 }
 
 /** Verifies that a new ledger snapshot preserves every prior event unchanged and in order. */
-export function validateAppendOnlyLedgerUpdate(previous: TaskLedgerStore, next: TaskLedgerStore): boolean {
-  if (!validateTaskLedgerStore(previous).ok || !validateTaskLedgerStore(next).ok ||
+export function validateAppendOnlyLedgerUpdate(
+  previous: TaskLedgerStore,
+  next: TaskLedgerStore,
+  profiles?: ProjectProfilesStore
+): boolean {
+  if (!validateTaskLedgerStore(previous).ok || !validateTaskLedgerStore(next, profiles).ok ||
     next.revision <= previous.revision || next.updatedAt < previous.updatedAt ||
     next.events.length < previous.events.length) return false;
+  const previousIds = new Set(previous.records.map((task) => task.taskId));
   const nextTasks = new Map(next.records.map((task) => [task.taskId, task]));
   if (!previous.records.every((task) => {
     const retained = nextTasks.get(task.taskId);
@@ -322,21 +337,55 @@ export function validateAppendOnlyLedgerUpdate(previous: TaskLedgerStore, next: 
   })) return false;
   if (!previous.events.every((event, index) => JSON.stringify(event) === JSON.stringify(next.events[index]))) return false;
   const appendedEvents = next.events.slice(previous.events.length);
+  const appendedEventsByTask = new Map<string, TaskLedgerEvent[]>();
+  for (const event of appendedEvents) {
+    const bucket = appendedEventsByTask.get(event.taskId) ?? [];
+    bucket.push(event);
+    appendedEventsByTask.set(event.taskId, bucket);
+  }
+
+  // New tasks are admitted only as clean drafts, accompanied by one creation
+  // event, and with a policy snapshot matching the profile store at creation.
+  for (const task of next.records) {
+    if (previousIds.has(task.taskId)) continue;
+    if (!profiles || task.state !== "draft" || task.attemptCount !== 0 ||
+      task.evidenceReferences.length !== 0 || task.checkpoint !== null ||
+      task.failureReason !== null || task.createdAt !== task.updatedAt) return false;
+    const profile = profiles.records.find((item) => item.projectId === task.projectId);
+    if (!profile || task.policySnapshot.projectProfileRevision !== profile.profileRevision ||
+      task.policySnapshot.profileApprovalStatus !== profile.approval.status) return false;
+    const creationEvents = appendedEventsByTask.get(task.taskId) ?? [];
+    if (creationEvents.length !== 1) return false;
+    const creation = creationEvents[0];
+    if (creation.projectId !== task.projectId || creation.type !== "task.created" ||
+      creation.actor !== task.accountableCoordinator || creation.createdAt < task.createdAt ||
+      creation.createdAt > task.updatedAt) return false;
+  }
+
   for (const priorTask of previous.records) {
     const updatedTask = nextTasks.get(priorTask.taskId);
     if (!updatedTask) return false;
     const taskChanged = JSON.stringify(priorTask) !== JSON.stringify(updatedTask);
     if (!taskChanged) continue;
+    if (["completed", "failed", "cancelled"].includes(priorTask.state)) return false;
+    if (updatedTask.taskId !== priorTask.taskId || updatedTask.projectId !== priorTask.projectId ||
+      updatedTask.createdAt !== priorTask.createdAt ||
+      updatedTask.attemptCount < priorTask.attemptCount ||
+      JSON.stringify(priorTask.allowedTools) !== JSON.stringify(updatedTask.allowedTools) ||
+      JSON.stringify(priorTask.allowedActions) !== JSON.stringify(updatedTask.allowedActions)) return false;
+    if (priorTask.state !== "draft" &&
+      JSON.stringify(priorTask.acceptanceCriteria) !== JSON.stringify(updatedTask.acceptanceCriteria)) return false;
+    if (priorTask.checkpoint && (!updatedTask.checkpoint ||
+      updatedTask.checkpoint.sequence < priorTask.checkpoint.sequence)) return false;
     if (JSON.stringify(priorTask.policySnapshot) !== JSON.stringify(updatedTask.policySnapshot)) return false;
-    if (updatedTask.updatedAt <= priorTask.updatedAt) return false;
-    const matchingEvents = appendedEvents.filter((item) => item.taskId === priorTask.taskId && item.projectId === priorTask.projectId);
+
+    const matchingEvents = appendedEventsByTask.get(priorTask.taskId) ?? [];
     const event = matchingEvents[matchingEvents.length - 1];
-    if (taskChanged && (!event || event.actor !== priorTask.accountableCoordinator ||
-      event.createdAt < priorTask.updatedAt || event.createdAt > updatedTask.updatedAt)) return false;
+    if (!event || event.actor !== priorTask.accountableCoordinator ||
+      event.createdAt < priorTask.updatedAt || event.createdAt > updatedTask.updatedAt ||
+      updatedTask.updatedAt <= priorTask.updatedAt) return false;
     let context: TaskTransitionContext | undefined;
     if (priorTask.state !== updatedTask.state) {
-      if (!event || event.actor !== priorTask.accountableCoordinator || event.createdAt < priorTask.updatedAt ||
-        updatedTask.updatedAt < event.createdAt) return false;
       if (priorTask.state === "indeterminate") {
         if (event.type !== "task.reconciled" || updatedTask.updatedAt <= event.createdAt) return false;
         const reconciliationLedger: TaskLedgerStore = {
