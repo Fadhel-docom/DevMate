@@ -94,6 +94,13 @@ describe("project profile schema v1", () => {
     };
     expect(validateProjectProfilesStore(store).ok).toBe(true);
   });
+  it("rejects unknown envelope and identity keys instead of silently accepting them", () => {
+    const extraEnvelope = { ...draftStore(), hidden: true };
+    expect(validateProjectProfilesStore(extraEnvelope).ok).toBe(false);
+    const extraIdentity = draftStore();
+    (extraIdentity.records[0].identity as unknown as Record<string, unknown>).hidden = true;
+    expect(validateProjectProfilesStore(extraIdentity).ok).toBe(false);
+  });
   it("rejects unsafe extension keys and non-plain objects", () => {
     const store = draftStore();
     store.records[0].extensions = JSON.parse('{"__proto__":{"polluted":true}}');
