@@ -421,7 +421,7 @@ Until the owner records a decision, continue respecting the existing repository 
 
 ## 17. Versioning and amendments
 
-- Version 1.2 is the current approved governing version after this amendment is merged. Version 1.1 is preserved verbatim at `docs/CHARTER-AND-QUALITY-RULES-v1.1.md`; version 1.0 is preserved at `docs/CHARTER-AND-QUALITY-RULES-v1.0.md`.
+- Version 1.2 becomes the approved governing version only after the owner explicitly approves this specific amendment and it is then merged. Version 1.1 is preserved verbatim at `docs/CHARTER-AND-QUALITY-RULES-v1.1.md`; version 1.0 is preserved at `docs/CHARTER-AND-QUALITY-RULES-v1.0.md`.
 - A proposed amendment must be stored as a clearly labelled draft and must not silently replace the approved constitution.
 - Every approved amendment must include version, date, concise change summary, owner decision, and the exact commit SHA.
 - Contributors may recommend amendments but may not approve them on the owner's behalf.
