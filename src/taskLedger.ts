@@ -121,8 +121,11 @@ function isJson(value: unknown, seen = new WeakSet<object>(), budget = { nodes: 
   seen.add(value);
   let valid = true;
   if (Array.isArray(value)) {
-    for (let i = 0; i < value.length; i += 1) {
-      if (!Object.prototype.hasOwnProperty.call(value, i) || !isJson(value[i], seen, budget, depth + 1)) { valid = false; break; }
+    if (Object.keys(value).some((key) => !/^(0|[1-9][0-9]*)$/.test(key) || Number(key) >= value.length)) valid = false;
+    for (let i = 0; valid && i < value.length; i += 1) {
+      const descriptor = Object.getOwnPropertyDescriptor(value, String(i));
+      if (!descriptor || !Object.prototype.hasOwnProperty.call(descriptor, "value") ||
+        !isJson(descriptor.value, seen, budget, depth + 1)) { valid = false; break; }
     }
   } else if (isRecord(value)) {
     for (const key of Object.keys(value)) {
@@ -157,7 +160,7 @@ export function validateTaskLedgerStore(input: unknown, profiles?: ProjectProfil
   if (!Array.isArray(input.records)) addError(errors, "records", "Expected a task array.");
   if (!Array.isArray(input.events)) addError(errors, "events", "Expected an event array.");
   if (Array.isArray(input.records) && !input.records.every((_, index) => Object.prototype.hasOwnProperty.call(input.records, index))) addError(errors, "records", "Sparse task arrays are not allowed.");
-  if (Array.isArray(input.events) && !input.events.some((_, index) => !Object.prototype.hasOwnProperty.call(input.events, index)) && input.events.length !== [...input.events].length) addError(errors, "events", "Sparse event arrays are not allowed.");
+  if (Array.isArray(input.events) && !Array.from({ length: input.events.length }, (_, index) => Object.prototype.hasOwnProperty.call(input.events, index)).every(Boolean)) addError(errors, "events", "Sparse event arrays are not allowed.");
   if (Array.isArray(input.records) && input.records.length > 2000) addError(errors, "records", "Task ledger exceeds the 2,000-task validation limit.");
   if (Array.isArray(input.events) && input.events.length > 10000) addError(errors, "events", "Task ledger exceeds the 10,000-event validation limit.");
   const taskById = new Map<string, Record<string, unknown>>();
