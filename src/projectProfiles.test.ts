@@ -277,6 +277,13 @@ describe("project profile schema v1", () => {
     expect(() => migrateLegacyProjectsToProfiles([{ id: "p2", name: "Two" }], 1234,
       { schemaVersion: 1, revision: 1, updatedAt: 1234, records: [null] } as never)).toThrow();
   });
+  it("rejects prototype-sensitive legacy identifiers", () => {
+    for (const id of ["__proto__", "constructor", "toString", "hasOwnProperty", "prototype"]) {
+      const result = migrateLegacyProjectsToProfiles([{ id, name: "Unsafe" }], 1234);
+      expect(result.store.records).toHaveLength(0);
+      expect(result.rejected).toHaveLength(1);
+    }
+  });
   it("continues after duplicate legacy IDs and rejects future-version existing stores", () => {
     const result = migrateLegacyProjectsToProfiles([
       { id: "p1", name: "First" }, { id: "p1", name: "Duplicate" }, { id: "p2", name: "Second" }
