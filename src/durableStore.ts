@@ -402,6 +402,8 @@ export function createDurableStore<T>(options: DurableStoreOptions<T>) {
             return { ok: false as const, reason: "indeterminate" as const, message: "The migration marker is malformed; automatic migration is refused." };
           if (storage.getItem(dataKey) === null)
             return { ok: false as const, reason: "indeterminate" as const, message: "Migration was recorded but durable data is missing; automatic re-migration is refused." };
+          if (marker.sourceFingerprint !== fingerprint(legacyRaw ?? ""))
+            return { ok: false as const, reason: "conflict" as const, message: "The legacy workspace changed after migration; reconcile the new source explicitly instead of silently skipping it." };
           return { ok: true as const, revision: current.revision, updatedAt: current.updatedAt };
         }
         if (!options.validateUpdate)
