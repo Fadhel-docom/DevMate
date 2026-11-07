@@ -1,4 +1,4 @@
-import { DEFAULT_LOCK_TIMEOUT_MS, STORAGE_LOCK_NAME, withStorageLock } from "./storage";
+import { DEFAULT_LOCK_TIMEOUT_MS, STORAGE_KEY, STORAGE_LOCK_NAME, withStorageLock } from "./storage";
 
 export type DurableStoreName = "project-profiles" | "task-ledger";
 export type DurableSnapshotReason = "pre-migration" | "pre-restore" | "corrupt" | "future-version";
@@ -375,21 +375,69 @@ export function createDurableStore<T>(options: DurableStoreOptions<T>) {
       });
       return locked.ok ? locked.value : "unreadable";
     },
-    async markMigrated(sourceRaw: string): Promise<boolean> {
+    async migrateLegacyWorkspace(
+      transform: (legacyRaw: string | null, currentRecords: Readonly<Record<string, T>>) => Record<string, T>
+    ): Promise<DurableWriteResult> {
       const locked = await runExclusive(() => {
-        if (!storage) return false;
+        if (!storage) return { ok: false as const, reason: "unavailable" as const, message: "Browser storage is unavailable." };
+        const recovered = recoverLocked();
+        if (!recovered.ok) return recovered;
+        const loaded = loadEnvelopeLocked();
+        if (loaded.failure) return { ok: false as const, reason: loaded.failure.reason, message: loaded.failure.message };
+        const current = loaded.envelope!;
+        if (!Object.entries(current.records).every(([id, item]) => safeId(id) && options.validateRecord(id, clone(item)))) {
+          snapshotCorruptRaw();
+          return { ok: false as const, reason: "corrupt" as const, message: "Existing durable records failed validation; migration was refused." };
+        }
+        let markerRaw: string | null, legacyRaw: string | null;
+        try { markerRaw = storage.getItem(migrationKey); legacyRaw = storage.getItem(STORAGE_KEY); }
+        catch (error) { return { ok: false as const, reason: "unavailable" as const, message: String(error) }; }
+        if (markerRaw !== null) {
+          let marker: unknown;
+          try { marker = JSON.parse(markerRaw); } catch {
+            return { ok: false as const, reason: "indeterminate" as const, message: "The migration marker is unreadable; automatic migration is refused." };
+          }
+          if (!isObject(marker) || marker.version !== 1 || !Number.isFinite(marker.migratedAt) ||
+            typeof marker.sourceFingerprint !== "string" || !/^[0-9a-f]{8}$/.test(marker.sourceFingerprint))
+            return { ok: false as const, reason: "indeterminate" as const, message: "The migration marker is malformed; automatic migration is refused." };
+          if (storage.getItem(dataKey) === null)
+            return { ok: false as const, reason: "indeterminate" as const, message: "Migration was recorded but durable data is missing; automatic re-migration is refused." };
+          return { ok: true as const, revision: current.revision, updatedAt: current.updatedAt };
+        }
+        if (!options.validateUpdate)
+          return { ok: false as const, reason: "invalid-data" as const, message: "Migration requires a store-specific update guard." };
+        if (legacyRaw !== null) {
+          try { if (!snapshotRaw(legacyRaw, "pre-migration")) return { ok: false as const, reason: "snapshot-full" as const, message: "No free pre-migration snapshot slot; migration was cancelled." }; }
+          catch (error) { return { ok: false as const, reason: "write-failed" as const, message: String(error) }; }
+        }
+        let nextRecords: Record<string, T>;
+        try { nextRecords = clone(transform(legacyRaw, clone(current.records))); }
+        catch (error) { return { ok: false as const, reason: "invalid-data" as const, message: `Legacy migration transform failed: ${String(error)}` }; }
+        if (!isObject(nextRecords) || !Object.keys(nextRecords).every(safeId) ||
+          !Object.keys(current.records).every((id) => Object.prototype.hasOwnProperty.call(nextRecords, id)))
+          return { ok: false as const, reason: "invalid-data" as const, message: "Migration must preserve all existing project records and use valid project IDs." };
+        for (const [id, nextRecord] of Object.entries(nextRecords)) {
+          if (!options.validateRecord(id, clone(nextRecord)))
+            return { ok: false as const, reason: "invalid-data" as const, message: `Migrated record for project ${id} failed validation.` };
+          const previous = current.records[id] ?? null;
+          if ((previous === null || JSON.stringify(previous) !== JSON.stringify(nextRecord)) &&
+            !options.validateUpdate(id, previous === null ? null : clone(previous), clone(nextRecord), clone(current.records)))
+            return { ok: false as const, reason: "invalid-data" as const, message: `The update guard rejected migrated project ${id}.` };
+        }
+        const next: DurableEnvelope<T> = { schemaVersion: 1, revision: current.revision + 1, updatedAt: now(), records: nextRecords };
+        const written = transactLocked("migration", next);
+        if (!written.ok) return written;
+        const marker = { version: 1, migratedAt: now(), sourceFingerprint: fingerprint(legacyRaw ?? "") };
         try {
-          const existing = storage.getItem(migrationKey);
-          if (existing !== null) return false;
-          const committedRaw = readRaw();
-          if (committedRaw === null || !envelopeFromRaw<T>(committedRaw)) return false;
-          if (!snapshotRaw(sourceRaw, "pre-migration")) return false;
-          const marker: MigrationMarker = { version: 1, migratedAt: now(), sourceFingerprint: fingerprint(sourceRaw) };
           storage.setItem(migrationKey, JSON.stringify(marker));
-          return storage.getItem(migrationKey) === JSON.stringify(marker);
-        } catch { return false; }
+          if (storage.getItem(migrationKey) !== JSON.stringify(marker))
+            return { ok: false as const, reason: "write-failed" as const, message: "Durable data was committed, but the migration marker could not be verified; retry the idempotent migration." };
+        } catch (error) {
+          return { ok: false as const, reason: "write-failed" as const, message: `Durable data was committed, but the migration marker could not be written: ${String(error)}` };
+        }
+        return written;
       });
-      return locked.ok && locked.value;
+      return locked.ok ? locked.value : lockFailure(locked.reason, locked.message);
     },
     async recover(): Promise<DurableWriteResult> {
       const locked = await runExclusive(recoverLocked);
