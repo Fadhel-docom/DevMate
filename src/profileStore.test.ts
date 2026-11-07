@@ -15,6 +15,45 @@ class MemoryStorage {
 const runExclusive: NonNullable<ProfileStoreOptions["runExclusive"]> = async (work) => ({
   ok: true,
   value: await work()
+
+  it("returns invalid-data rather than throwing synchronously for a null runtime payload", async () => {
+    const { store } = makeStore();
+    const result = await store.writeProfile("p1", null as unknown as ProjectProfile, 0);
+    expect(result).toMatchObject({ ok: false, reason: "invalid-data" });
+  });
+
+  it("rejects invalid expected revisions for profile writes and restores", async () => {
+    const { store } = makeStore();
+    const profile = draftProfile("p1", "One");
+    expect(await store.writeProfile("p1", profile, -1)).toMatchObject({ ok: false, reason: "invalid-data" });
+    expect(await store.writeProfile("p1", profile, Number.NaN)).toMatchObject({ ok: false, reason: "invalid-data" });
+    expect(await store.restoreSnapshot("p1", "not-a-snapshot", "00000000", -1))
+      .toMatchObject({ ok: false, reason: "invalid-data" });
+  });
+
+  it("preserves existing durable profiles when migrating additional legacy projects", async () => {
+    const { store, storage } = makeStore();
+    const existing = draftProfile("p1", "Existing");
+    storage.seed("devmate-durable-store-v1:project-profiles", JSON.stringify({
+      schemaVersion: 1, revision: 4, updatedAt: existing.updatedAt, records: { p1: existing }
+    }));
+    const legacy = JSON.stringify([{ id: "p1", name: "Legacy replacement" }, { id: "p2", name: "New project" }]);
+    storage.seed(STORAGE_KEY, legacy);
+    expect(await store.migrateLegacyProfiles()).toMatchObject({ ok: true, revision: 5 });
+    expect(await store.readProfile("p1")).toMatchObject({ ok: true, value: { identity: { name: "Existing" } } });
+    expect(await store.readProfile("p2")).toMatchObject({ ok: true, value: { identity: { name: "New project" } } });
+  });
+
+  it("uses the expected durable revision as a compare-and-swap guard for restore", async () => {
+    const { store } = makeStore();
+    const profile = draftProfile("p1", "One");
+    await store.writeProfile("p1", profile, 0);
+    const snapshot = await store.createSnapshot("pre-restore");
+    await store.writeProfile("p1", { ...profile, profileRevision: 2, updatedAt: 201, identity: { name: "Changed", purpose: "" } }, 1);
+    expect(await store.restoreSnapshot("p1", snapshot!.key, snapshot!.fingerprint, 1))
+      .toMatchObject({ ok: false, reason: "conflict" });
+  });
+
 });
 
 function draftProfile(projectId: string, name: string, at = 100): ProjectProfile {
@@ -60,7 +99,7 @@ describe("durable project profile adapter", () => {
     expect(await store.migrationStatus()).toBe("migrated");
     const legacySnapshot = (await store.listSnapshots()).find((snapshot) => snapshot.reason === "pre-migration");
     expect(legacySnapshot).toBeDefined();
-    expect(await store.restoreSnapshot("p1", legacySnapshot!.key, legacySnapshot!.fingerprint))
+    expect(await store.restoreSnapshot("p1", legacySnapshot!.key, legacySnapshot!.fingerprint, 1))
       .toMatchObject({ ok: false, reason: "invalid-data" });
     expect(storage.getItem(STORAGE_KEY)).toBe(legacy);
     expect((await store.readProfile("p1")).ok).toBe(true);
