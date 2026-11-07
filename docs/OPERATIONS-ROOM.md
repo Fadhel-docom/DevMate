@@ -1389,3 +1389,7 @@ Remote sandbox, Node v24.22.1, npm 10.8.2 (CI uses Node 20.20.2), files fetched 
 ### Independence and handoff
 - Authored by Claude, who also reviewed the previous head; the delta needs review by another contributor (ChatGPT coordinator or the owner). Committed through the GitHub connector under the owner's delegation; GitHub shows the owner's account.
 - Next exact action: verify GitHub Actions on the new PR #15 head (the push to this `feature/**` branch triggers the existing workflow), then have a contributor other than Claude review the delta. Keep all stacked PRs Draft and unmerged.
+
+### Exact-head CI result
+- GitHub Actions run #152 (ID `42303911193`, event `push`, job `128188333779`) succeeded on exact head `4f2ffe70927ce1db18e77a9f8f9591a9895b1ea8` (the follow-up commit). Log: 155 packages, audit summary 0 at every severity, 4 files / 125 tests (storage 90, App 14, BackupManager 11, registry 10), TypeScript and Vite build passed (29 modules). This replaces the "pending" status above for that head.
+- The commit that records this evidence is documentation-only; its own CI run is the next push event on the branch.
