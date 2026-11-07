@@ -75,7 +75,8 @@ export function createProjectProfileStore(options: ProfileStoreOptions = {}) {
           message: "A non-negative durable-store revision is required."
         });
       }
-      if (profile.projectId !== projectId || !isProfileForProject(projectId, profile)) {
+      if (typeof profile !== "object" || profile === null || Array.isArray(profile) ||
+        profile.projectId !== projectId || !isProfileForProject(projectId, profile)) {
         return Promise.resolve({
           ok: false,
           reason: "invalid-data",
@@ -112,7 +113,9 @@ export function createProjectProfileStore(options: ProfileStoreOptions = {}) {
     createSnapshot(reason: DurableSnapshotReason): Promise<DurableSnapshot | null> {
       return durable.createSnapshot(reason);
     },
-    async restoreSnapshot(projectId: string, key: string, fingerprint: string): Promise<DurableWriteResult> {
+    async restoreSnapshot(projectId: string, key: string, fingerprint: string, expectedRevision: number): Promise<DurableWriteResult> {
+      if (!Number.isSafeInteger(expectedRevision) || expectedRevision < 0)
+        return { ok: false, reason: "invalid-data", message: "A non-negative durable-store revision is required for restore." };
       const snapshots = await durable.listSnapshots();
       const selected = snapshots.find((snapshot) => snapshot.key === key);
       if (!selected) return { ok: false, reason: "not-found", message: "Snapshot not found." };
@@ -123,7 +126,7 @@ export function createProjectProfileStore(options: ProfileStoreOptions = {}) {
           message: "This snapshot contains raw legacy workspace bytes and is export-only; it is not a durable profile envelope."
         };
       }
-      return durable.restoreSnapshot(projectId, key, fingerprint);
+      return durable.restoreSnapshot(projectId, key, fingerprint, expectedRevision);
     }
   };
 }
