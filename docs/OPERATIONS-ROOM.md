@@ -1602,7 +1602,7 @@ Remote sandbox, Node v24.22.1, npm 10.8.2 (CI uses Node 20.20.2), files fetched 
 
 ### Consolidated review plan
 - The prior independent review of PR #24's baseline was **APPROVE WITH FOLLOW-UP**, no blockers. PR #26 contains the technical follow-ups and tests.
-- To conserve the owner's limited Claude free quota, request one comprehensive independent review of the stacked change: PR #24 baseline plus PR #26 incremental diff, evaluated as one cumulative code tree from foundation commit `f3b2e4f4fe748ae75aba0095c837b30c9635f692` to PR #26 head `462b95e55b44fbf71da78a437dfab6c7e6396cf5`.
+- To conserve the owner's limited Claude free quota, request one comprehensive independent review of the stacked change: PR #24 baseline plus PR #26 incremental diff, evaluated as one cumulative code tree from foundation commit `f3b2e4f4fe748ae75aba0095c837b30c9635f692` to the exact live PR #26 head confirmed at review time.
 - The review must assess the implementation, tests, migration retry behavior, locked compare-and-swap restore, approval/revocation-history preservation, fail-closed corrupt-record behavior, and documentation consistency. It should return one overall verdict and classify only concrete blockers versus non-blocking follow-ups.
 - Include a forward-only recovery design proposal for PR-D that preserves profile revision monotonicity and approval/revocation evidence. This is a design review only; do not implement PR-D or invoke migration.
 - Do not request separate full reviews for #26 and #24. A narrowly targeted follow-up is justified only if the review identifies a material blocker and a code change is made.
