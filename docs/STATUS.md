@@ -612,3 +612,23 @@ Run the full Vitest suite, TypeScript/Vite production build, and dependency audi
 - The durable-store foundation is a new unused persistence primitive until PR-B/PR-C integrate it.
 - No AI provider, API key, server-side adapter, in-app GitHub connector, autonomous orchestrator, paid service, or external data transfer is connected or authorized.
 - No change to `main`, RateNest, or any other repository.
+
+
+## Current state — 2026-11-07 (PR #23 governance correction; PR #24 review pending)
+
+### Governing version and amendment status
+- Constitution v1.1 remains the effective governing version until PR #23 is approved, merged, and its merge SHA is recorded.
+- PR #23: https://github.com/Fadhel-docom/DevMate/pull/23 — open Draft, targets `feature/phase-1-foundation`.
+- The first independent review returned **REQUEST CHANGES** on head `96ace96d3d6434e7f12352ea675a50e7065dce61`, identifying two blockers: §17's stale v1.1 current-version statement and the absence of a verbatim preserved v1.1 file.
+- Corrected both blockers: §17 now states v1.2 becomes current only after merge; added `docs/CHARTER-AND-QUALITY-RULES-v1.1.md`, copied byte-for-byte from the approved v1.1 source at commit `50126a159961b71faf88025a8695cb7e734d63b7`. Verified exact content equality against that source.
+- Also clarified that constitution/approval-boundary changes remain owner-reserved, uncertainty requires asking the owner, and D-002 says "may merge" rather than "must merge". The owner's standing instruction is recorded verbatim in D-002.
+- New PR #23 head is pending final verification and a second independent review. The docs-only branch/PR workflow does not trigger the repository's configured CI for this base/branch combination; CI is **Not verified**, not claimed as passed. Diff review and exact content comparison are the applicable checks here.
+- The owner has explicitly approved the standing instruction not to ask again for routine merges that satisfy all conditions. The constitution amendment itself remains subject to its own explicit owner approval and independent review.
+
+### PR #24 — profile persistence
+- PR #24: https://github.com/Fadhel-docom/DevMate/pull/24 — Draft, pending the second Claude independent review requested by the owner.
+- Do not merge until the exact reviewed head, all required gates, and independent review are confirmed.
+
+### Boundaries
+- PR #1 remains excluded from delegated merge authority.
+- No changes to `main`, RateNest, other repositories, providers, costs, secrets, permissions, or public release.
