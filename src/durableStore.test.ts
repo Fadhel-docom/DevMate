@@ -165,6 +165,22 @@ describe("durable store foundation", () => {
     expect(await store.markMigrated(legacy)).toBe(false);
   });
 
+  it("refuses snapshot restoration when no store-specific update guard is configured", async () => {
+    const storage = new MemoryStorage();
+    const store = createDurableStore<RecordValue>({
+      name: "project-profiles", storage,
+      runExclusive: async (work) => ({ ok: true, value: await work() }),
+      validateRecord: (projectId, value): value is RecordValue =>
+        !!value && typeof value === "object" && (value as RecordValue).projectId === projectId
+    });
+    await store.writeProject("p1", { projectId: "p1", value: "before" });
+    const snapshot = await store.createSnapshot("pre-restore");
+    await store.writeProject("p1", { projectId: "p1", value: "current" });
+    const result = await store.restoreSnapshot("p1", snapshot!.key, snapshot!.fingerprint);
+    expect(result).toMatchObject({ ok: false, reason: "invalid-data" });
+    expect(await store.readProject("p1")).toMatchObject({ ok: true, value: { value: "current" } });
+  });
+
   it("snapshots the current value before restoring and verifies the restored envelope", async () => {
     const { store, storage } = setup();
     await store.writeProject("p1", { projectId: "p1", value: "original" });
