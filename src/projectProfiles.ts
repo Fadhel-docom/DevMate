@@ -132,6 +132,15 @@ function isNonNegativeInteger(value: unknown): value is number {
 function isPositiveInteger(value: unknown): value is number {
   return isNonNegativeInteger(value) && value >= 1;
 }
+function hasOrderedRevocationTimes(value: unknown): boolean {
+  if (!Array.isArray(value)) return false;
+  let last = -1;
+  for (const entry of value) {
+    if (!isRecord(entry) || !isNonNegativeInteger(entry.revokedAt) || entry.revokedAt < last) return false;
+    last = entry.revokedAt;
+  }
+  return true;
+}
 function addError(errors: ProfileValidationError[], path: string, message: string) {
   errors.push({ path, message });
 }
@@ -266,6 +275,8 @@ function validateProfile(value: unknown, index: number, errors: ProfileValidatio
   if (isRecord(value.approval)) {
     const a = value.approval;
     const history = a.revocationHistory;
+    const lastHistoryEntry = Array.isArray(history) && history.length > 0 ? history[history.length - 1] : null;
+    const lastHistoryRevokedAt = isRecord(lastHistoryEntry) && isNonNegativeInteger(lastHistoryEntry.revokedAt) ? lastHistoryEntry.revokedAt : null;
     check(a.status === "unapproved" || a.status === "approved" || a.status === "revoked", "approval.status", "Invalid approval status.");
     check(a.approvedRevision === null || isPositiveInteger(a.approvedRevision), "approval.approvedRevision", "Expected null or a positive revision.");
     check(a.approvedAt === null || isNonNegativeInteger(a.approvedAt), "approval.approvedAt", "Expected null or a non-negative timestamp.");
@@ -274,13 +285,13 @@ function validateProfile(value: unknown, index: number, errors: ProfileValidatio
     check(a.revokedAt === null || isNonNegativeInteger(a.revokedAt), "approval.revokedAt", "Expected null or a non-negative timestamp.");
     check(a.revokedRevision === null || isPositiveInteger(a.revokedRevision), "approval.revokedRevision", "Expected null or a positive revision.");
     check(a.revocationReason === null || (typeof a.revocationReason === "string" && a.revocationReason.trim().length > 0), "approval.revocationReason", "Expected null or a non-empty revocation reason.");
-    check(Array.isArray(history) && history.every((entry, historyIndex) =>
+    check(Array.isArray(history) && hasOrderedRevocationTimes(history) && history.every((entry, historyIndex) =>
       isRecord(entry) && hasExactKeys(entry, [
         "approvedRevision", "evidence", "approvedAt", "approvedContentHash", "revokedAt", "revocationReason"
       ]) && isPositiveInteger(entry.approvedRevision) && validateEvidence(entry.evidence) &&
       isNonNegativeInteger(entry.approvedAt) && isNonNegativeInteger(entry.revokedAt) &&
       entry.revokedAt >= entry.approvedAt &&
-      (historyIndex === 0 || (isRecord(history[historyIndex - 1]) && history[historyIndex - 1].revokedAt <= entry.revokedAt)) &&
+      true &&
       typeof entry.approvedContentHash === "string" && /^[0-9a-f]{16}$/i.test(entry.approvedContentHash) &&
       typeof entry.revocationReason === "string" && entry.revocationReason.trim().length > 0
     ), "approval.revocationHistory", "Expected an ordered array of complete, valid prior revocation records.");
@@ -297,8 +308,7 @@ function validateProfile(value: unknown, index: number, errors: ProfileValidatio
       check(a.approvedRevision !== null && a.evidence !== null && a.approvedAt !== null &&
         a.approvedContentHash !== null && a.revokedAt !== null && a.revokedRevision === a.approvedRevision &&
         a.revocationReason !== null && (a.revokedAt as number) >= (a.approvedAt as number) &&
-        (Array.isArray(history) && (history.length === 0 || (isRecord(history[history.length - 1]) &&
-          isNonNegativeInteger(history[history.length - 1].revokedAt) && history[history.length - 1].revokedAt <= (a.revokedAt as number)))) &&
+        (Array.isArray(history) && (history.length === 0 || (lastHistoryRevokedAt !== null && lastHistoryRevokedAt <= (a.revokedAt as number)))) &&
         isPositiveInteger(value.profileRevision) && (a.revokedRevision as number) <= value.profileRevision,
       "approval", "Revoked status must preserve the prior approval evidence and record when, which revision, and why it was revoked.");
     }
