@@ -51,10 +51,10 @@ No decisions have been inventoried into this log yet. This is intentional: histo
 
 - Date: 2026-11-07
 - Status: Accepted
-- Decided / approved by: Repository owner; explicit instruction in the project conversation on 2026-11-07.
+- Decided / approved by: Repository owner; explicit instruction in the project conversation on 2026-11-07: «سجل هذا القانون لا تعود لي في كل مرة تريد دمج طالما انه استوفي كل الشروط لا يكون هذا عمل روتيني اي شيء يستوفي الشروط قم به و استمر في التقدم». GitHub shared-account attribution does not independently authenticate the conversational instruction.
 - Context: Repeatedly asking the owner to approve each merge after all required conditions are met creates unnecessary coordination and delays autonomous project management.
 - Alternatives considered: Continue requesting per-PR confirmation for every merge; extend standing delegation with explicit sensitive-work safeguards.
-- Decision: Contributors must merge a PR without another owner prompt when all applicable constitution conditions, quality gates, exact-head verification, and independent review pass. This includes bounded, reversible data-format and migration changes when the sensitive-level requirements are met.
+- Decision: Contributors may merge a PR without another owner prompt when all applicable constitution conditions, quality gates, exact-head verification, and independent review pass. This includes bounded, reversible data-format and migration changes when the sensitive-level requirements are met; it is not a command to merge when a gate is uncertain or an owner-reserved decision applies.
 - Rationale: Owner time should be reserved for genuine decisions, not repeated authorization of work already covered by the standing delegation.
 - Consequences / risks: The delegation does not waive PR #1's hold, owner-reserved decisions, new costs, secret disclosure, sensitive permission expansion, destructive or difficult-to-reverse actions, material security-risk acceptance, licensing decisions, mission/scope changes, or unauthorized production/public release. If any required gate fails, block only the affected action and continue safe independent work.
-- References: Owner instruction dated 2026-11-07; proposed constitution amendment v1.2 in this branch.
+- References: Owner instruction dated 2026-11-07; proposed constitution amendment v1.2 in this PR; reviewed PR head `96ace96d3d6434e7f12352ea675a50e7065dce61` (superseded by the correction commits in this same PR). The final merge SHA must be added to the status/operations record after merge.
