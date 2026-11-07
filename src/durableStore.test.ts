@@ -12,6 +12,7 @@ class MemoryStorage {
   private values = new Map<string, string>();
   failDataWrites = 0;
   wrongReadBack = false;
+  wrongReadBackOnNextDataWrite = false;
   getItem(key: string): string | null {
     if (this.wrongReadBack && key === durableStoreKey("project-profiles")) {
       this.wrongReadBack = false;
@@ -25,6 +26,10 @@ class MemoryStorage {
       throw new Error("injected write failure");
     }
     this.values.set(key, value);
+    if (key === durableStoreKey("project-profiles") && this.wrongReadBackOnNextDataWrite) {
+      this.wrongReadBackOnNextDataWrite = false;
+      this.wrongReadBack = true;
+    }
   }
   removeItem(key: string): void { this.values.delete(key); }
   seed(key: string, value: string): void { this.values.set(key, value); }
@@ -92,7 +97,7 @@ describe("durable store foundation", () => {
     const { store, storage } = setup();
     await store.writeProject("p1", { projectId: "p1", value: "before" });
     const before = storage.getItem(durableStoreKey("project-profiles"));
-    storage.wrongReadBack = true;
+    storage.wrongReadBackOnNextDataWrite = true;
     expect(await store.writeProject("p1", { projectId: "p1", value: "after" })).toMatchObject({ ok: false, reason: "write-failed" });
     expect(storage.getItem(durableStoreKey("project-profiles"))).toBe(before);
     expect(await store.readProject("p1")).toMatchObject({ ok: true, value: { value: "before" } });
