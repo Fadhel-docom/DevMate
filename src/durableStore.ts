@@ -53,8 +53,13 @@ const JOURNAL_PREFIX = "devmate-durable-journal-v1";
 const MIGRATION_PREFIX = "devmate-migrations-v1";
 const BACKUP_PREFIX = "devmate-durable-backups-v1";
 const DEFAULT_MAX_BACKUPS = 5;
+const UNSAFE_IDS = new Set([
+  "__proto__", "prototype", "constructor", "toString", "toLocaleString", "valueOf",
+  "hasOwnProperty", "isPrototypeOf", "propertyIsEnumerable", "__defineGetter__",
+  "__defineSetter__", "__lookupGetter__", "__lookupSetter__"
+]);
 const safeId = (value: string): boolean =>
-  value.trim().length > 0 && value.length <= 160 && !["__proto__", "prototype", "constructor"].includes(value);
+  value.trim().length > 0 && value.length <= 160 && !UNSAFE_IDS.has(value);
 const isObject = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
 const fingerprint = (raw: string): string => {
@@ -278,7 +283,7 @@ export function createDurableStore<T>(options: DurableStoreOptions<T>) {
       try { candidate = clone(value); } catch {
         return { ok: false, reason: "invalid-data", message: "The project-scoped record must be JSON-serializable." };
       }
-      if (!options.validateRecord(projectId, clone(candidate)))
+      if (options.validateRecord(projectId, clone(candidate)) !== true)
         return { ok: false, reason: "invalid-data", message: "The projectId or project-scoped record is invalid." };
       const locked = await runExclusive(() => {
         const recovered = recoverLocked();
@@ -295,7 +300,7 @@ export function createDurableStore<T>(options: DurableStoreOptions<T>) {
         const previous = current.records[projectId] ?? null;
         const records = clone(current.records);
         records[projectId] = clone(candidate);
-        if (options.validateUpdate && !options.validateUpdate(projectId, previous === null ? null : clone(previous), clone(candidate), clone(current.records), clone(records), readStorageView))
+        if (options.validateUpdate && options.validateUpdate(projectId, previous === null ? null : clone(previous), clone(candidate), clone(current.records), clone(records), readStorageView) !== true)
           return { ok: false as const, reason: "invalid-data" as const, message: "The project-scoped update violated its store contract." };
         const next: DurableEnvelope<T> = { schemaVersion: 1, revision: current.revision + 1, updatedAt: now(), records };
         return transactLocked(projectId, next);
@@ -359,7 +364,7 @@ export function createDurableStore<T>(options: DurableStoreOptions<T>) {
         const previous = currentEnvelope.records[projectId] ?? null;
         const records = clone(currentEnvelope.records);
         records[projectId] = clone(nextRecord);
-        if (!options.validateUpdate(projectId, previous === null ? null : clone(previous), clone(nextRecord), clone(currentEnvelope.records), clone(records), readStorageView))
+        if (options.validateUpdate(projectId, previous === null ? null : clone(previous), clone(nextRecord), clone(currentEnvelope.records), clone(records), readStorageView) !== true)
           return { ok: false as const, reason: "invalid-data" as const, message: "The project-specific update guard rejected this restore." };
         if (currentRaw !== null) {
           try { if (!snapshotRaw(currentRaw, "pre-restore")) return { ok: false as const, reason: "snapshot-full" as const, message: "No free snapshot slot; restore was cancelled." }; }
@@ -432,7 +437,7 @@ export function createDurableStore<T>(options: DurableStoreOptions<T>) {
             return { ok: false as const, reason: "invalid-data" as const, message: `Migrated record for project ${id} failed validation.` };
           const previous = current.records[id] ?? null;
           if ((previous === null || JSON.stringify(previous) !== JSON.stringify(nextRecord)) &&
-            !options.validateUpdate(id, previous === null ? null : clone(previous), clone(nextRecord), clone(current.records), clone(nextRecords), readStorageView))
+            options.validateUpdate(id, previous === null ? null : clone(previous), clone(nextRecord), clone(current.records), clone(nextRecords), readStorageView) !== true)
             return { ok: false as const, reason: "invalid-data" as const, message: `The update guard rejected migrated project ${id}.` };
         }
         const next: DurableEnvelope<T> = { schemaVersion: 1, revision: current.revision + 1, updatedAt: now(), records: nextRecords };
