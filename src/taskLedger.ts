@@ -215,7 +215,7 @@ export function validateTaskLedgerStore(input: unknown, profiles?: ProjectProfil
     check(typeof task.nextAction === "string", "nextAction", "Expected a next-action string.");
     check(task.failureReason === null || typeof task.failureReason === "string", "failureReason", "Expected null or a string.");
     check(isStringList(task.recoveryInstructions), "recoveryInstructions", "Expected recovery instructions.");
-    if (requiredString(task.taskId)) {
+    if (safeId(task.taskId)) {
       if (taskById.has(task.taskId)) addError(errors, `${path}.taskId`, "Duplicate task ID.");
       else taskById.set(task.taskId, task);
     }
@@ -274,16 +274,16 @@ export function validateTaskLedgerStore(input: unknown, profiles?: ProjectProfil
       (event.idempotencyKey !== undefined && !requiredString(event.idempotencyKey)) ||
       !isRecord(event.details) || !isJson(event.details)) addError(errors, path, "Invalid event record.");
     if (isTimestamp(event.createdAt)) latestLedgerTimestamp = Math.max(latestLedgerTimestamp, event.createdAt);
-    if (requiredString(event.eventId)) {
+    if (safeId(event.eventId)) {
       if (eventIds.has(event.eventId)) addError(errors, `${path}.eventId`, "Duplicate event ID.");
       eventIds.add(event.eventId);
     }
-    if (requiredString(event.idempotencyKey)) {
-      const scopedKey = String(event.projectId) + "\u0000" + event.idempotencyKey;
+    if (requiredString(event.idempotencyKey) && safeId(event.projectId)) {
+      const scopedKey = event.projectId + "\u0000" + event.idempotencyKey;
       if (idempotencyKeys.has(scopedKey)) addError(errors, `${path}.idempotencyKey`, "Duplicate idempotency key within project.");
       idempotencyKeys.add(scopedKey);
     }
-    const task = taskById.get(String(event.taskId));
+    const task = safeId(event.taskId) ? taskById.get(event.taskId) : undefined;
     if (!task || task.projectId !== event.projectId) addError(errors, path, "Event must reference an existing task in the same project.");
   });
   if (isTimestamp(input.updatedAt) && input.updatedAt < latestLedgerTimestamp) addError(errors, "updatedAt", "Ledger timestamp cannot precede a task or event update.");
