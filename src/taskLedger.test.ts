@@ -42,7 +42,7 @@ describe("task ledger schema v1", () => {
     const event = { eventId: "e1", taskId: "t1", projectId: "p1", type: "task.started", actor: "coordinator", createdAt: 101, outcome: "started" as const, idempotencyKey: "k1", details: {} };
     expect(validateTaskLedgerStore(storeWith([baseTask], [{ ...event, taskId: "missing" }])).ok).toBe(false);
     expect(validateTaskLedgerStore(storeWith([baseTask], [{ ...event, projectId: "p2" }])).ok).toBe(false);
-    expect(validateTaskLedgerStore(storeWith([baseTask], [event, { ...event, eventId: "e2" }])).ok).toBe(false);
+    expect(validateTaskLedgerStore(storeWith([baseTask], [event, { ...event, eventId: "e2", idempotencyKey: "k2" }])).ok).toBe(true);
     expect(validateTaskLedgerStore(storeWith([baseTask], [event, { ...event, eventId: "e2" }])).ok).toBe(false);
   });
   it("requires checkpoints to match both task and project", () => {
