@@ -1539,3 +1539,34 @@ Remote sandbox, Node v24.22.1, npm 10.8.2 (CI uses Node 20.20.2), files fetched 
 ### Related work
 - PR #24 remains Draft and awaits the second Claude review requested by the owner. No merge or approval inference.
 - No change to `main`, RateNest, other repositories, provider access, costs, secrets, permissions, or public release.
+
+
+---
+
+## 58. PR #23 second independent review — seven follow-ups corrected; owner approval still required — 2026-11-07 — ChatGPT coordinator
+
+### Independent review evidence
+- PR #23 review of exact head `0644007347d846e2d61b9903fd1ae5747f5e718c`: **APPROVE WITH FOLLOW-UP**; no blocking defects.
+- CI: **Not verified**. The reviewer found no workflow runs, check-runs, or commit statuses for that SHA. No CI success is claimed.
+- The reviewer confirmed §17's merge-effective wording, exact preservation of v1.1, and the main delegation safeguards, then identified seven non-blocking corrections.
+
+### Seven follow-ups applied
+1. Corrected the proposed v1.2 header's predecessor from v1.0 to v1.1; v1.0 remains preserved as the predecessor of v1.1.
+2. Corrected the v1.1 provenance: `50126a1…` is a Git blob SHA, not a commit. The actual approved v1.1 commit is `371da3325f3b5a8e9e8d9c794c3e1829cce8c818` ("docs: approve constitution v1.1"). The historical v1.1 file remains byte-for-byte preserved.
+3. Corrected the STATUS top pointer to this current governance checkpoint.
+4. Updated D-002's reviewed PR #23 head from superseded `96ace96…` to `0644007347d846e2d61b9903fd1ae5747f5e718c` and added constitution amendments / approval-boundary changes to the explicit exclusions.
+5. Added an explicit PR #23 merge prerequisite: the owner must separately and explicitly approve this constitution amendment after review. The standing routine-merge delegation cannot authorize or bootstrap the amendment that records it.
+6. Explicitly added Sensitive-level threat assessment and least-privilege/data-handling review to the migration delegation conditions.
+7. Recorded that PR #24 and stacked PR #26 append to STATUS/OPERATIONS-ROOM on a common earlier base; both require careful rebase/reconciliation after any PR #23 merge.
+
+### Current governance boundary
+- Constitution v1.1 remains governing.
+- Version 1.2 is a proposal only; it is not described as owner-approved or effective until the owner explicitly approves this specific amendment and it is merged.
+- PR #23 remains Draft and unmerged pending fresh independent review of the corrected final head and the owner's separate explicit approval.
+- After an approved merge, add the actual merge commit SHA to the v1.2 change-log row as required by §17. Do not pre-fill or guess it.
+
+### Next actions
+1. Verify this follow-up commit and inspect the final PR #23 diff/head.
+2. Obtain a fresh independent review of the corrected head. If it approves, present the exact final amendment for the owner's explicit approval; do not merge before that approval.
+3. Once PR #23 is properly approved and merged, rebase/reconcile PR #24 onto the new foundation base, then PR #26 onto the updated PR #24 head; rerun exact-head CI and independent reviews as needed.
+4. Keep all unrelated project, provider, cost, permission, deployment, and `main` boundaries unchanged.
