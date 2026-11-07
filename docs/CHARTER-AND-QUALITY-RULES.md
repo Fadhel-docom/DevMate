@@ -451,7 +451,7 @@ This constitution is binding only in its latest owner-approved version. Contribu
 |---|---|---|---|---|
 | 1.0 | 2026-11-05 | Preserved historical version | Initial constitution; retained at `docs/CHARTER-AND-QUALITY-RULES-v1.0.md` | Previously approved; superseded by 1.1 |
 | 1.1 | 2026-11-05 | Preserved historical version | Clarifies governance, roles, evidence, security, quality gates, session continuity, project boundaries, and owner approval authority | Approved by owner |
-| 1.2 | 2026-11-07 | Owner-approved amendment; effective on merge | Extends standing merge delegation to bounded, reversible data-format and migration PRs that pass sensitive-level gates; preserves all owner-reserved exceptions | Explicit owner instruction in project conversation; recorded in D-002 |
+| 1.2 | 2026-11-07 | Proposed amendment; effective only after the owner's explicit approval of this amendment and merge | Extends standing merge delegation to bounded, reversible data-format and migration PRs that pass sensitive-level gates; preserves all owner-reserved exceptions | Pending — the owner's standing operational instruction is recorded in D-002, but it is not approval of this constitutional amendment |
 
 ## Deferred governance backlog
 
