@@ -109,13 +109,15 @@ export type CutoverControllerOptions = {
   stages: CutoverStages;
   now?: () => number;
   runExclusive?: LockRunner;
+  /** Host-owned proof that every pre-barrier application instance has been closed or reloaded. Missing/false means no intent marker may be written. Must not acquire the storage lock. */
+  confirmLegacyWritersQuiesced?: () => boolean | Promise<boolean>;
 };
 
 export type CutoverFailureReason =
   | "lock-unavailable" | "lock-timeout" | "lock-error" | "storage-unavailable"
   | "marker-present" | "no-marker" | "marker-invalid" | "marker-changed" | "marker-write-failed" | "marker-verify-failed"
   | "stale-plan" | "source-unreadable" | "source-changed" | "source-copy-missing"
-  | "preserve-failed" | "preserve-conflict" | "preserve-quota" | "stage-failed";
+  | "preserve-failed" | "preserve-conflict" | "preserve-quota" | "stage-failed" | "legacy-writers-not-quiesced";
 export type CutoverResult =
   | { ok: true; state: CutoverState; changed: boolean }
   | { ok: false; reason: CutoverFailureReason; message: string; state: CutoverState; stageReason?: string; divergentPreserved?: boolean };
@@ -213,7 +215,13 @@ export function createCutoverController(options: CutoverControllerOptions) {
 
   /** Declare intent: preserve raw bytes, then write and verify the intent marker. Idempotent for the same source. */
   function begin(plan: CutoverPlan): Promise<CutoverResult> {
-    return locked(() => {
+    return locked(async () => {
+      // A marker only constrains bundles that know to check it. An already-loaded pre-barrier bundle
+      // can still call the old mutators, so the controller must not declare intent without a host
+      // verifier that has quiesced every legacy writer. There is deliberately no permissive default.
+      let quiesced = false;
+      try { quiesced = (await options.confirmLegacyWritersQuiesced?.()) === true; } catch { quiesced = false; }
+      if (!quiesced) return fail("legacy-writers-not-quiesced", "Cutover is blocked: the host has not proved that every pre-barrier application instance is closed or reloaded. No marker or migration was written.");
       let markerRaw: string | null;
       try { markerRaw = storage!.getItem(CUTOVER_MARKER_KEY); }
       catch (error) { return fail("marker-invalid", `The cutover marker could not be read: ${describe(error)}`); }
