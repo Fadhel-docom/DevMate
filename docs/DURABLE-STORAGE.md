@@ -129,3 +129,6 @@ PR-C adds `src/taskLedgerStore.ts` as a project-scoped adapter over the generic 
 ## PR-D recovery design reference
 
 The controlled application cutover and forward-only recovery requirements are specified in [PR-D-RECOVERY-DESIGN.md](./PR-D-RECOVERY-DESIGN.md). This design is not migration authorization; the legacy writer must remain unchanged until the Sensitive-level cutover gates are met.
+
+### Note on `readLedger` (PR-C review follow-up)
+`readLedger` validates the ledger under the shared lock, then reads the project-profile envelope after the lock is released. If the profile envelope changes between the two reads, the call can return `invalid-data` even though no invalid state was written. Writes are unaffected: every write re-validates against the current profile bytes inside the lock. Callers (and the future PR-D UI) must treat a read-time `invalid-data` as retryable / re-inspect, not as proof of corruption, and must not repair or overwrite data based on that single result.

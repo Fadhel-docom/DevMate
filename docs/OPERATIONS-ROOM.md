@@ -1757,3 +1757,31 @@ Remote sandbox, Node v24.22.1, npm 10.8.2 (CI uses Node 20.20.2), files fetched 
 - Defined the cutover marker key as `devmate-cutover-v1:workspace` and its exact phase set: `intent`, `profiles-verified`, `stores-verified`, `committed`.
 - All legacy mutators (workspace saves, backup restoration, and helpers that set/remove the legacy workspace key) must check this marker inside the existing shared lock. Any marker or unreadable marker blocks legacy mutation; legacy reads remain available for archive/export.
 - If marker persistence/read-back is uncertain, migration is not started and the app enters read-only recovery if any marker bytes exist.
+
+---
+
+## 69. Independent review and merge of PR #28, PR #29 and PR #30 — 2026-11-07 — Claude (independent reviewer, via the owner's GitHub connection)
+
+### Live checkpoint before action
+- Base `feature/phase-1-foundation` at `3665c694d29966188096c534dc7221b84f723dd4`. PR #28 head `2c7d798d2a07d5c8ec6d6a4b3e871bd164c2f17a` (open, clean, no reviews); PR #29 head `924241df0f5a12906c720fe6e9494c77c2ab1ef7`; PR #30 head `ed2e70dcbfbd28de92b84c678664b16031f063a3`. A cached public PR #28 page showed an older head `d5589a8...`; the GitHub API was used as the source of truth.
+- Exact-head CI for PR #28: run #371 / ID `42380821309`, head SHA `2c7d798...`, completed / success; job steps npm ci, audit report, npm test, npm run build succeeded. PR #29 and PR #30: no check runs on their heads (docs branches); none claimed.
+
+### Reviews (one per PR, exact head, posted on the PRs)
+- PR #28: APPROVE WITH FOLLOW-UP. Read in full: `src/taskLedgerStore.ts`; downstream `validateTaskLedgerStore`, `validateAppendOnlyLedgerUpdate`, and the durable-store read/write/lock/validateUpdate paths. The `readLedger` question (profile envelope read after the lock is released) was assessed as a read-only, fail-closed transient rejection that cannot persist or accept a wrong state, because every write re-validates against current profile bytes inside the lock; no atomic cross-store read API is required for PR-C; documentation follow-up only.
+- PR #29: APPROVE WITH FOLLOW-UP against constitution sections 7, 8, 10, 12 and 14; no new authority; SESSION-START change is a single link.
+- PR #30: APPROVE WITH FOLLOW-UP as a design only; implementation conditions R1 to R6 recorded in STATUS.
+
+### Merges (standing delegation, constitution section 7; GitHub merge with the exact reviewed SHA)
+- PR #28 -> `9d03b9c426b06be8fb1dd4b4a54342def150ff83`.
+- PR #29 -> `f111f4d77b575b5313432b5911ed55f7566051fe`.
+- PR #30 -> `3c60a8529ae99d869c3c98970c2df9ff37895d42`. After #28 and #29 merged, #30 conflicted in STATUS, OPERATIONS-ROOM and DURABLE-STORAGE. A mechanical merge commit `b160156a0be610e393ea0a8c5a34de549ca2ad50` kept both sides; the design file was verified byte-identical, so the design review was not repeated.
+
+### Tests and limits
+- No tests were run by the reviewer locally; CI evidence above is the exact-head GitHub run. Real-browser behaviour, restart, quota and two-tab tests remain unwritten.
+- Reviews are COMMENT reviews because all contributors share the owner's GitHub account.
+
+### Boundaries kept
+- No migration, cutover, legacy-data change, App/UI change, provider connection, cost, permission change, deployment, `main` change or RateNest work. No owner-reserved decision was involved.
+
+### Next
+- This documentation PR needs an independent review before merge. Then start PR-D implementation step 1 (cutover-intent write barrier) per `docs/PR-D-RECOVERY-DESIGN.md` and conditions R1 to R6.

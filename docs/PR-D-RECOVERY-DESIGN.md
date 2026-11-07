@@ -2,7 +2,7 @@
 
 **Status:** Design baseline for implementation planning; not an authorization to run migration or cut over storage.  
 **Base:** `feature/phase-1-foundation` at PR-B merge `3665c694d29966188096c534dc7221b84f723dd4`.  
-**Dependencies:** PR-B profile persistence (merged); PR-C task-ledger adapter (PR #28, pending independent review/merge).  
+**Dependencies:** PR-B profile persistence (merged); PR-C task-ledger adapter (PR #28, merged at `9d03b9c426b06be8fb1dd4b4a54342def150ff83`).  
 **Risk:** Sensitive — local user-data migration, recovery, and persistence cutover.
 
 ## 1. Objective and non-goals
