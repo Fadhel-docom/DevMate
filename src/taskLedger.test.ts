@@ -161,6 +161,13 @@ describe("task ledger schema v1", () => {
     for (let index = 0; index < 120; index += 1) deep = { child: deep };
     expect(validateTaskLedgerStore(storeWith([baseTask], [{ ...event, details: { deep } } as never])).ok).toBe(false);
   });
+  it("applies node budgets per task and event instead of across the entire ledger", () => {
+    const oversizedTask = { ...baseTask, allowedResources: Array(10001).fill("resource") };
+    expect(validateTaskLedgerStore(storeWith([oversizedTask])).ok).toBe(false);
+    const oversizedEvent = { eventId: "e1", taskId: "t1", projectId: "p1", type: "task.note",
+      actor: "coordinator", createdAt: 101, details: { values: Array(10001).fill("x") } };
+    expect(validateTaskLedgerStore(storeWith([baseTask], [oversizedEvent])).ok).toBe(false);
+  });
   it("accepts per-project idempotency keys and rejects unsafe task and project IDs", () => {
     const task2 = { ...baseTask, taskId: "t2", projectId: "p2" };
     const event1 = { eventId: "e1", taskId: "t1", projectId: "p1", type: "task.note", actor: "coordinator", createdAt: 101, idempotencyKey: "same", details: {} };
