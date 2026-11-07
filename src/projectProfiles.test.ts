@@ -260,4 +260,17 @@ describe("project profile schema v1", () => {
     expect(validateProjectProfilesStoreUpdate(approvedStore, forged)).toBe(false);
   });
 
+
+  it("requires a profile revision increment for material profile edits", () => {
+    const previous = draftStore();
+    const edited = JSON.parse(JSON.stringify(previous));
+    edited.revision += 1;
+    edited.updatedAt = 1300;
+    edited.records[0].updatedAt = 1300;
+    edited.records[0].identity.name = "Renamed";
+    expect(validateProjectProfilesStoreUpdate(previous, edited)).toBe(false);
+    edited.records[0].profileRevision += 1;
+    expect(validateProjectProfilesStoreUpdate(previous, edited)).toBe(true);
+  });
+
 });
