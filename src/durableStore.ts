@@ -136,6 +136,12 @@ export function createDurableStore<T>(options: DurableStoreOptions<T>) {
     }
     return null;
   };
+  const snapshotCorruptRaw = (): void => {
+    try {
+      const raw = readRaw();
+      if (raw !== null) snapshotRaw(raw, "corrupt");
+    } catch { /* never overwrite or discard the source bytes */ }
+  };
   const recoverLocked = (): DurableWriteResult => {
     if (!storage) return { ok: false, reason: "unavailable", message: "Browser storage is unavailable." };
     let journalRaw: string | null, currentRaw: string | null;
@@ -249,7 +255,10 @@ export function createDurableStore<T>(options: DurableStoreOptions<T>) {
         if (loaded.failure) return loaded.failure;
         const value = loaded.envelope!.records[projectId];
         if (value === undefined) return { ok: true as const, status: "empty" as const, revision: loaded.envelope!.revision, value: null };
-        if (!options.validateRecord(projectId, clone(value))) return { ok: false as const, reason: "corrupt" as const, message: "The project-scoped record failed its validator." };
+        if (!options.validateRecord(projectId, clone(value))) {
+          snapshotCorruptRaw();
+          return { ok: false as const, reason: "corrupt" as const, message: "The project-scoped record failed its validator." };
+        }
         return { ok: true as const, status: "found" as const, revision: loaded.envelope!.revision, value: clone(value) };
       });
       if (!locked.ok) return { ok: false, reason: locked.reason, message: locked.message };
@@ -269,8 +278,10 @@ export function createDurableStore<T>(options: DurableStoreOptions<T>) {
         const loaded = loadEnvelopeLocked();
         if (loaded.failure) return { ok: false as const, reason: loaded.failure.reason, message: loaded.failure.message };
         const current = loaded.envelope!;
-        if (!Object.entries(current.records).every(([id, item]) => safeId(id) && options.validateRecord(id, clone(item))))
+        if (!Object.entries(current.records).every(([id, item]) => safeId(id) && options.validateRecord(id, clone(item)))) {
+          snapshotCorruptRaw();
           return { ok: false as const, reason: "corrupt" as const, message: "An existing project record failed validation; no write was attempted." };
+        }
         if (expectedRevision !== undefined && current.revision !== expectedRevision)
           return { ok: false as const, reason: "conflict" as const, message: "The durable store revision changed; reload before writing." };
         const previous = current.records[projectId] ?? null;
