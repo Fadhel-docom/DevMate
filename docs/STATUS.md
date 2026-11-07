@@ -1,6 +1,6 @@
 # DevMate Status
 
-> Current state: see "## Current state — 2026-11-07 (after PR #21 merge and PR-A durable-store foundation)" at the end of this file. Earlier dated checkpoints are historical snapshots and do not describe the present.
+> Current state: see "## Current state — 2026-11-07 (PR #23 third-review correction; owner approval pending)" at the end of this file. Earlier dated checkpoints are historical snapshots and do not describe the present.
 
 ## Current milestone
 Phase 1 — foundation and local demo.
@@ -612,3 +612,73 @@ Run the full Vitest suite, TypeScript/Vite production build, and dependency audi
 - The durable-store foundation is a new unused persistence primitive until PR-B/PR-C integrate it.
 - No AI provider, API key, server-side adapter, in-app GitHub connector, autonomous orchestrator, paid service, or external data transfer is connected or authorized.
 - No change to `main`, RateNest, or any other repository.
+
+
+## Current state — 2026-11-07 (PR #23 governance correction; PR #24 review pending)
+
+### Governing version and amendment status
+- Constitution v1.1 remains the effective governing version until PR #23 is approved, merged, and its merge SHA is recorded.
+- PR #23: https://github.com/Fadhel-docom/DevMate/pull/23 — open Draft, targets `feature/phase-1-foundation`.
+- The first independent review returned **REQUEST CHANGES** on head `96ace96d3d6434e7f12352ea675a50e7065dce61`, identifying two blockers: §17's stale v1.1 current-version statement and the absence of a verbatim preserved v1.1 file.
+- Corrected both blockers: §17 now states v1.2 becomes current only after merge; added `docs/CHARTER-AND-QUALITY-RULES-v1.1.md`, copied byte-for-byte from the approved v1.1 source at approved commit `371da3325f3b5a8e9e8d9c794c3e1829cce8c818`. Verified exact content equality against that source.
+- Also clarified that constitution/approval-boundary changes remain owner-reserved, uncertainty requires asking the owner, and D-002 says "may merge" rather than "must merge". The owner's standing instruction is recorded verbatim in D-002.
+- New PR #23 head is pending final verification and a second independent review. No workflow runs were observed for the reviewed head; CI is **Not verified**, not claimed as passed. Diff review and exact content comparison are the applicable checks here.
+- Historical checkpoint: this pending-second-review statement was accurate when recorded; the later review and subsequent corrective review are documented in the newer dated checkpoint below. Do not treat this historical paragraph as the current PR #23 status.
+- The owner has explicitly approved the standing instruction not to ask again for routine merges that satisfy all conditions. The constitution amendment itself remains subject to its own explicit owner approval and independent review.
+
+### PR #24 — profile persistence
+- PR #24: https://github.com/Fadhel-docom/DevMate/pull/24 — Draft, pending the second Claude independent review requested by the owner.
+- Do not merge until the exact reviewed head, all required gates, and independent review are confirmed.
+
+### Boundaries
+- PR #1 remains excluded from delegated merge authority.
+- No changes to `main`, RateNest, other repositories, providers, costs, secrets, permissions, or public release.
+
+
+## Current state — 2026-11-07 (PR #23 second-review follow-ups; owner approval pending)
+
+### Review result and governance status
+- Second independent review of PR #23 returned **APPROVE WITH FOLLOW-UP**, with no blocking defects. CI on review head `0644007347d846e2d61b9903fd1ae5747f5e718c` is **Not verified**: no workflow runs, check-runs, or commit statuses were present. No CI success is claimed.
+- The reviewer identified seven non-blocking corrections. This follow-up updates the v1.2 predecessor to v1.1; corrects the approved v1.1 provenance to commit `371da3325f3b5a8e9e8d9c794c3e1829cce8c818` (the previous `50126a1…` was a Git blob SHA, not a commit); corrects this file's top current-state pointer; updates D-002 to the corrected review head; explicitly excludes constitution/approval-boundary amendments; explicitly adds Sensitive-level threat assessment and least-privilege/data-handling review; and states the separate owner-approval prerequisite for PR #23 itself.
+- The approved v1.1 text remains byte-for-byte preserved at `docs/CHARTER-AND-QUALITY-RULES-v1.1.md`. Its approval commit is `371da3325f3b5a8e9e8d9c794c3e1829cce8c818`; do not label a blob SHA as a commit.
+- Version 1.1 remains the effective constitution. Version 1.2 is only a proposal until the owner explicitly approves this amendment and PR #23 is subsequently merged. D-002 records the owner's standing instruction for routine merges; it does not authorize this constitution amendment or supply its required separate approval.
+- PR #23's final merge commit SHA and v1.2 change-log merge reference must be added only after a properly approved merge; no merge SHA exists yet.
+
+### PR and branch interaction
+- PR #23 remains Draft and unmerged pending a fresh independent review of this corrected head and the owner's explicit approval of the constitution amendment itself.
+- PR #24 and its stacked follow-up PR #26 both carry STATUS/OPERATIONS-ROOM append-only changes based on an earlier common base. After PR #23 is merged, rebase/reconcile PR #24 first and then PR #26 on its updated parent; resolve duplicate/conflicting chronological append sections rather than dropping either history. Do not merge stale stacked heads.
+- PR #24 remains Draft. PR #26 remains Draft. Their technical review/CI state is separate from this governance amendment.
+
+### CI and boundaries
+- CI for review head `0644007347d846e2d61b9903fd1ae5747f5e718c`: **Not verified**, exactly as reported by the independent reviewer.
+- No change to `main`, RateNest, other repositories, providers, costs, secrets, permissions, deployment, or public release.
+
+
+## Current state — 2026-11-07 (PR #23 third-review correction; owner approval pending)
+
+### Review result and current governance state
+- Third independent review of PR #23 exact head `d1ef5d290b21048cea4ce925d711c293cc3b233e` returned **REQUEST CHANGES** for one blocker: the v1.2 change-log row falsely characterized the amendment as owner-approved and cited D-002 as approval evidence, contrary to the explicit separate-approval prerequisite.
+- Corrected the v1.2 change-log row to proposed/pending, changed D-002 to Proposed, and explicitly distinguished the owner's standing routine-merge instruction from approval of the constitutional amendment. Updated the historical STATUS note and operations-room provenance record.
+- Constitution v1.1 remains the only effective governing version. Version 1.2 is not owner-approved and is not effective. PR #23 itself remains excluded from routine merge delegation and requires the owner's separate, explicit approval after a fresh independent review.
+- PR #23 current head is recorded in the live PR metadata; exact-head CI must be verified for that head. No CI success is claimed.
+
+### Next actions
+1. Obtain a fresh independent review of the exact current PR #23 head.
+2. If review approves, request the owner's separate explicit approval of this exact v1.2 amendment. Do not merge before that approval.
+3. Only after approved merge, reconcile PR #24 first and stacked PR #26 second; rerun exact-head CI and independent reviews as applicable.
+
+
+### PR #23 owner approval gate — 2026-11-07
+- The independent review of head `594603d64cb7670509e5a652d91d7c709da0eb56` returned **APPROVE WITH FOLLOW-UP**, no blockers. Three documentation follow-ups were applied in the subsequent corrective commits.
+- No owner approval of v1.2 is recorded. Before merge, require a separate explicit owner approval identifying both this exact constitutional amendment and the final PR head SHA, recorded durably with date and attributable evidence. A shared-account GitHub comment alone is insufficient identity evidence.
+- v1.1 remains the only effective version; PR #23 remains Draft and unmerged. CI on the previous review head was Not verified; verify the final head separately.
+
+
+## Current state — 2026-11-07 (PR #23 final review follow-ups)
+
+- The latest independent review of PR #23 returned **APPROVE WITH FOLLOW-UP**, with no blocking defects, on head `2f6e9c4edd2814a064339b08ebfb525eab5a8912`. The subsequent documentation corrections are recorded in OPERATIONS-ROOM §61; this historical review SHA is not the new review target after those commits.
+- PR description must refer to the live PR head rather than a stale hard-coded SHA. The next independent review must state the exact SHA it inspected.
+- CI: **Not verified** unless workflow/check evidence is observed for the exact current head. The factual historical wording is “no workflow runs were observed”; no cause is inferred.
+- Owner-approval evidence standard: a separate, explicit message from the owner in this ChatGPT conversation, independent of the shared GitHub account, naming both the exact v1.2 amendment and exact final PR head SHA. Before merge, quote the owner's message verbatim here with its date. A shared-account comment alone, silence, the standing routine delegation, or a technical review does not qualify.
+- Recheck exact-head CI immediately before requesting owner approval and before merge if the head changes. No CI success is claimed without exact-head evidence.
+- PR #23 remains Draft and unmerged; v1.1 remains the sole effective constitution. Do not apply routine merge delegation to this constitutional amendment.

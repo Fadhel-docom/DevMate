@@ -1517,3 +1517,94 @@ Remote sandbox, Node v24.22.1, npm 10.8.2 (CI uses Node 20.20.2), files fetched 
 - PR #22 is open as Draft: https://github.com/Fadhel-docom/DevMate/pull/22. It targets `feature/phase-1-foundation`; PR #22 exact current documentation head `dca72a801faa313a7ac632caf51e89fc276de276` passed run #308. The subsequent status/operations reconciliation commits update the PR head and require their own exact-head CI run. The implementation remains on `feature/durable-store-foundation`.
 - Next: verify CI on the exact PR #22 head after this final evidence reconciliation, update the PR body with the resulting SHA and run, then request an independent review of that exact head. Do not merge before review.
 - PR-B profile persistence, PR-C ledger persistence, and PR-D App integration remain separate bounded changes. No provider integration or owner-reserved permission/cost decision is implied.
+
+
+---
+
+## 57. PR #23 first independent review and corrective revision — 2026-11-07 — ChatGPT coordinator
+
+### Review outcome
+- Independent review of PR #23 exact head `96ace96d3d6434e7f12352ea675a50e7065dce61` returned **REQUEST CHANGES**.
+- Two blockers: §17 incorrectly stated v1.1 was current; the approved v1.1 text was not preserved as a standalone immutable file (the old `v1.1-DRAFT.md` is only a stub).
+- No changes were made by the reviewer. The reviewer found the delegated authority exclusions broadly sound and no unintended permission expansion.
+
+### Corrections applied
+- Added `docs/CHARTER-AND-QUALITY-RULES-v1.1.md` using the exact content of the approved v1.1 source. The identifier `50126a159961b71faf88025a8695cb7e734d63b7` is the historical Git blob SHA, not a commit; the actual approval commit is `371da3325f3b5a8e9e8d9c794c3e1829cce8c818`. A byte-for-byte content comparison against the source returned true.
+- Updated §17 to state that v1.2 becomes the current governing version only after the amendment is merged, while v1.1 and v1.0 remain preserved at standalone versioned paths.
+- Clarified §7 that changes to the constitution and approval boundaries remain owner-reserved; uncertainty about whether an action is covered requires asking the owner.
+- Corrected D-002 from "must merge" to "may merge without asking" when all gates pass; recorded the owner's literal 2026-11-07 instruction as evidence. This does not authenticate GitHub shared-account attribution independently.
+- Updated STATUS to state that v1.1 remains effective until PR #23 merges. PR #23's new exact head still requires independent review. No workflow runs were observed for that head; CI is Not verified. No cause for the absence of runs is asserted.
+- PR #23 remains Draft and unmerged pending second independent review and exact diff check.
+
+### Related work
+- PR #24 remains Draft and awaits the second Claude review requested by the owner. No merge or approval inference.
+- No change to `main`, RateNest, other repositories, provider access, costs, secrets, permissions, or public release.
+
+
+---
+
+## 58. PR #23 second independent review — seven follow-ups corrected; owner approval still required — 2026-11-07 — ChatGPT coordinator
+
+### Independent review evidence
+- PR #23 review of exact head `0644007347d846e2d61b9903fd1ae5747f5e718c`: **APPROVE WITH FOLLOW-UP**; no blocking defects.
+- CI: **Not verified**. The reviewer found no workflow runs, check-runs, or commit statuses for that SHA. No CI success is claimed.
+- The reviewer confirmed §17's merge-effective wording, exact preservation of v1.1, and the main delegation safeguards, then identified seven non-blocking corrections.
+
+### Seven follow-ups applied
+1. Corrected the proposed v1.2 header's predecessor from v1.0 to v1.1; v1.0 remains preserved as the predecessor of v1.1.
+2. Corrected the v1.1 provenance: `50126a1…` is a Git blob SHA, not a commit. The actual approved v1.1 commit is `371da3325f3b5a8e9e8d9c794c3e1829cce8c818` ("docs: approve constitution v1.1"). The historical v1.1 file remains byte-for-byte preserved.
+3. Corrected the STATUS top pointer to this current governance checkpoint.
+4. Updated D-002's reviewed PR #23 head from superseded `96ace96…` to `0644007347d846e2d61b9903fd1ae5747f5e718c` and added constitution amendments / approval-boundary changes to the explicit exclusions.
+5. Added an explicit PR #23 merge prerequisite: the owner must separately and explicitly approve this constitution amendment after review. The standing routine-merge delegation cannot authorize or bootstrap the amendment that records it.
+6. Explicitly added Sensitive-level threat assessment and least-privilege/data-handling review to the migration delegation conditions.
+7. Recorded that PR #24 and stacked PR #26 append to STATUS/OPERATIONS-ROOM on a common earlier base; both require careful rebase/reconciliation after any PR #23 merge.
+
+### Current governance boundary
+- Constitution v1.1 remains governing.
+- Version 1.2 is a proposal only; it is not described as owner-approved or effective until the owner explicitly approves this specific amendment and it is merged.
+- PR #23 remains Draft and unmerged pending fresh independent review of the corrected final head and the owner's separate explicit approval.
+- After an approved merge, add the actual merge commit SHA to the v1.2 change-log row as required by §17. Do not pre-fill or guess it.
+
+### Next actions
+1. Verify this follow-up commit and inspect the final PR #23 diff/head.
+2. Obtain a fresh independent review of the corrected head. If it approves, present the exact final amendment for the owner's explicit approval; do not merge before that approval.
+3. Once PR #23 is properly approved and merged, rebase/reconcile PR #24 onto the new foundation base, then PR #26 onto the updated PR #24 head; rerun exact-head CI and independent reviews as needed.
+4. Keep all unrelated project, provider, cost, permission, deployment, and `main` boundaries unchanged.
+
+
+## 59. PR #23 third independent review — blocker correction; owner approval still pending — 2026-11-07 — ChatGPT coordinator
+
+### Review result and correction
+- Third independent review of exact PR #23 head `d1ef5d290b21048cea4ce925d711c293cc3b233e`: **REQUEST CHANGES**, with one blocking governance-record inconsistency. The v1.2 change-log row incorrectly called the amendment owner-approved and cited D-002 as its approval source, while the same PR correctly said owner approval of this exact amendment was still pending.
+- Corrected the v1.2 change-log row to **Proposed amendment; effective only after the owner's explicit approval of this amendment and merge**. Its owner-decision field now says pending and explicitly distinguishes the standing operational instruction from approval of constitutional text.
+- Changed D-002 to Proposed for the constitutional decision record; clarified that the owner's instruction establishes routine operational delegation only and does not approve v1.2. Reworded its superseded-head phrase to point to this latest review checkpoint.
+- Added a note to the older STATUS checkpoint clarifying that its pending-second-review wording is historical, not current.
+- Clarified the old §57 provenance note: `50126a1…` is a blob SHA, while `371da3325f3b5a8e9e8d9c794c3e1829cce8c818` is the approval commit. Earlier entries are preserved as historical records, with this correction explicitly linked.
+
+### Current status and gates
+- Constitution v1.1 remains the only effective governing version. v1.2 remains a proposal and cannot be merged under the routine delegation; it requires the owner's separate, explicit approval of this exact amendment after a fresh independent review.
+- PR #23 remains Draft and unmerged. The corrective commit(s) do not constitute owner approval.
+- CI on the previously reviewed head `d1ef5d290b21048cea4ce925d711c293cc3b233e` was **Not verified** (no workflow runs, check-runs, or statuses). Exact-head CI for the new corrective head must be checked independently; no CI success is claimed.
+- After the documentation correction, obtain a fresh independent review of the exact final head. Do not merge before the separate owner approval.
+
+
+## 60. PR #23 final owner-approval evidence gate — 2026-11-07 — ChatGPT coordinator
+
+- Independent review of head `594603d64cb7670509e5a652d91d7c709da0eb56` returned **APPROVE WITH FOLLOW-UP**, with no blockers. The three non-blocking documentation follow-ups have now been applied: §17 explicitly requires the owner's approval before merge; the historical STATUS CI note now states only that no runs were observed; and the PR title now says “propose”.
+- Before any merge, the owner must provide a separate, explicit approval of this exact v1.2 constitutional amendment **and the final PR head SHA** after the latest independent review. Record the approval in a durable, attributable project record that quotes or precisely identifies the amendment and exact SHA, and records the date. A technical review verdict is not owner approval. A GitHub comment attributed only to a shared account is not sufficient identity evidence by itself.
+- Until that evidence is recorded, PR #23 remains Draft and unmerged; v1.1 remains the sole effective constitution. Do not infer approval from the standing operational delegation instruction, silence, a review result, or the PR author's shared-account activity.
+- Exact-head CI must also be checked and recorded. At the latest check, the previously reviewed head had no workflow runs or statuses; this is **Not verified**, not a pass. Recheck the final head before any approval/merge decision.
+
+
+## 61. PR #23 final follow-up corrections — 2026-11-07 — ChatGPT coordinator
+
+### Third review follow-ups
+- The latest independent review returned **APPROVE WITH FOLLOW-UP**, with no blocking defects. Its target was the then-current head `2f6e9c4edd2814a064339b08ebfb525eab5a8912`.
+- Corrected the PR description to identify the live PR head dynamically rather than retaining a stale SHA. The independent reviewer must record the exact live SHA it actually inspected; any subsequent commit creates a new review target.
+- Replaced the unsupported historical explanation for missing CI with the factual statement: **no workflow runs were observed**. CI remains **Not verified** unless evidence appears for the exact head.
+- Defined acceptable owner-approval evidence: an explicit approval message from the owner in this ChatGPT conversation, independent of the shared GitHub account, that names the exact v1.2 amendment and exact final PR head SHA. The coordinator must quote that message verbatim in this operations room and record its date before merging. A shared-account GitHub comment alone, assistant interpretation, silence, or a technical review does not qualify.
+- Exact-head CI must be rechecked immediately before seeking owner approval and again before merge if the head changes. Record observed workflow runs/checks; absence remains Not verified and is never described as a pass.
+
+### Current boundary
+- PR #23 remains Draft and unmerged. Constitution v1.1 remains the sole effective version until the owner explicitly approves the exact amendment and the approved PR is merged.
+- The routine merge delegation does not apply to this constitutional amendment. Once its separate approval gate is satisfied, resume the already-planned PR #24 then PR #26 reconciliation without reopening routine merge permissions for each qualifying PR.

@@ -1,12 +1,12 @@
 # DevMate — Charter, Laws, and Quality Rules
 
 **Document:** Permanent project constitution  
-**Version:** 1.1  
-**Status:** Approved by the project owner on 2026-11-05. This is the current governing version.  
-**Predecessor:** Version 1.0, preserved at `docs/CHARTER-AND-QUALITY-RULES-v1.0.md`.  
+**Version:** 1.2  
+**Status:** Version 1.1 was approved on 2026-11-05. Version 1.2 is a proposed amendment dated 2026-11-07; it is not approved or governing unless and until the owner explicitly approves this amendment and it is merged.  
+**Predecessor:** Version 1.1, preserved at `docs/CHARTER-AND-QUALITY-RULES-v1.1.md` (with version 1.0 retained at `docs/CHARTER-AND-QUALITY-RULES-v1.0.md`).  
 **Applies to:** All contributors, assistants, agents, integrations, and project work in DevMate.
 
-> **Authority:** Version 1.1 supersedes version 1.0 as the current governing constitution. Version 1.0 remains preserved for historical reference. This approval does not itself authorize a merge of PR #1, code changes beyond approved scope, or production publishing. Do not treat draft-only rules as binding until the owner approves version 1.1.
+> **Authority:** This proposed version 1.2 would amend version 1.1 if explicitly approved by the owner and merged. Until both conditions are met, version 1.1 remains the governing constitution. Versions 1.1 and 1.0 remain preserved. This proposal does not authorize a merge of PR #1, code changes beyond approved scope, or production publishing.
 
 ## 1. Mission and vision
 
@@ -191,12 +191,18 @@ PR #1, **Phase 1: establish DevMate web workspace**, is excluded from any standi
 
 Routine merge delegation applies only when all of the following are true:
 - The change is bounded, reversible, and within an already approved task.
-- It does not change mission, scope, licensing, architecture, authentication, security controls, permissions, dependencies, data formats/migrations, costs, or production/public release behavior.
+- It does not change mission, scope, licensing, architecture, authentication, security controls, permissions, dependencies, costs, or production/public release behavior. Bounded data-format and migration changes are eligible under the owner's standing delegation below when their sensitive-level gates are fully satisfied.
 - Applicable quality gates pass and evidence is recorded.
 - An independent reviewer other than the author has reviewed the diff and found no blocking issue.
 - No unresolved high-impact risk or owner decision remains.
 
 A line-count threshold alone does not make a change routine. Documentation-only changes may qualify if they do not alter governing policy or require an owner decision. Changes to this constitution, licensing, security policy, or approval boundaries always require explicit owner approval before merge.
+
+### Owner's standing merge delegation — 2026-11-07
+
+The owner explicitly directs contributors not to interrupt them for routine merge permission. A PR may be merged without a new per-PR owner confirmation when every applicable condition in this section and the relevant quality gates is satisfied, including bounded and reversible data-format or migration work. For such work, the PR must include a migration/compatibility assessment, explicit Sensitive-level threat assessment and least-privilege/data-handling review, verified backup and rollback or recovery path, tests for idempotence and data preservation, exact-head CI evidence, and independent review with no blocking findings.
+
+This standing delegation does **not** authorize: PR #1; amendments to this constitution or changes to approval boundaries; unresolved owner-reserved decisions under §14; new costs; secret disclosure or sensitive permission expansion; destructive or difficult-to-reverse operations; material security-risk acceptance; licensing decisions; changes to mission or scope; or production/public release not already explicitly authorized. If there is any doubt whether an action is covered by this delegation or is owner-reserved, stop that action and ask the owner; do not infer authorization. If a migration cannot be made bounded and recoverable, or any required gate is unmet, stop only that affected action and continue safe unrelated work. Do not ask the owner again for a merge already covered by this delegation.
 
 If repository branch-protection features are available on the current plan and repository settings, configure them to require pull requests and required checks before merging. Verify the actual settings; never claim branch protection is enabled based only on this document. If the feature is unavailable, record the limitation and follow the manual review protocol.
 
@@ -415,7 +421,7 @@ Until the owner records a decision, continue respecting the existing repository 
 
 ## 17. Versioning and amendments
 
-- Version 1.1 is the current approved governing version. Version 1.0 is preserved as a historical version.
+- Version 1.2 becomes the approved governing version only after the owner explicitly approves this specific amendment and it is then merged. Version 1.1 is preserved verbatim at `docs/CHARTER-AND-QUALITY-RULES-v1.1.md`; version 1.0 is preserved at `docs/CHARTER-AND-QUALITY-RULES-v1.0.md`.
 - A proposed amendment must be stored as a clearly labelled draft and must not silently replace the approved constitution.
 - Every approved amendment must include version, date, concise change summary, owner decision, and the exact commit SHA.
 - Contributors may recommend amendments but may not approve them on the owner's behalf.
@@ -444,7 +450,8 @@ This constitution is binding only in its latest owner-approved version. Contribu
 | Version | Date | Status | Summary | Owner decision |
 |---|---|---|---|---|
 | 1.0 | 2026-11-05 | Preserved historical version | Initial constitution; retained at `docs/CHARTER-AND-QUALITY-RULES-v1.0.md` | Previously approved; superseded by 1.1 |
-| 1.1 | 2026-11-05 | Current approved version | Clarifies governance, roles, evidence, security, quality gates, session continuity, project boundaries, and owner approval authority | Approved by owner |
+| 1.1 | 2026-11-05 | Preserved historical version | Clarifies governance, roles, evidence, security, quality gates, session continuity, project boundaries, and owner approval authority | Approved by owner |
+| 1.2 | 2026-11-07 | Proposed amendment; effective only after the owner's explicit approval of this amendment and merge | Extends standing merge delegation to bounded, reversible data-format and migration PRs that pass sensitive-level gates; preserves all owner-reserved exceptions | Pending — the owner's standing operational instruction is recorded in D-002, but it is not approval of this constitutional amendment |
 
 ## Deferred governance backlog
 
