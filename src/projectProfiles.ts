@@ -354,6 +354,7 @@ export function validateProjectProfilesStore(input: unknown): ProfileValidationR
 export function validateProjectProfilesStoreUpdate(previous: ProjectProfilesStore, next: ProjectProfilesStore): boolean {
   if (!validateProjectProfilesStore(previous).ok || !validateProjectProfilesStore(next).ok ||
     next.revision <= previous.revision || next.updatedAt < previous.updatedAt) return false;
+  const previousIds = new Set(previous.records.map((profile) => profile.projectId));
   const nextById = new Map(next.records.map((profile) => [profile.projectId, profile]));
   for (const prior of previous.records) {
     const updated = nextById.get(prior.projectId);
@@ -362,8 +363,14 @@ export function validateProjectProfilesStoreUpdate(previous: ProjectProfilesStor
       !validateProfileApprovalHistoryUpdate(prior.approval, updated.approval)) return false;
     const { approval: _priorApproval, updatedAt: _priorUpdatedAt, profileRevision: _priorRevision, ...priorContent } = prior;
     const { approval: _nextApproval, updatedAt: _nextUpdatedAt, profileRevision: _nextRevision, ...nextContent } = updated;
-    if (stableJson(priorContent) !== stableJson(nextContent) &&
-      updated.profileRevision <= prior.profileRevision) return false;
+    const materialChanged = stableJson(priorContent) !== stableJson(nextContent);
+    const approvalChanged = JSON.stringify(prior.approval) !== JSON.stringify(updated.approval);
+    if ((materialChanged || approvalChanged) && updated.updatedAt <= prior.updatedAt) return false;
+    if (materialChanged && updated.profileRevision <= prior.profileRevision) return false;
+  }
+  for (const added of next.records) {
+    if (!previousIds.has(added.projectId) &&
+      (added.lifecycle !== "draft" || added.approval.status !== "unapproved")) return false;
   }
   return true;
 }
