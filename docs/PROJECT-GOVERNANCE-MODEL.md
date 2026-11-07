@@ -296,7 +296,7 @@ type ProfileApproval = {
 
 Rules:
 - Imported repository content, profile text, an agent, or a local checkbox cannot approve a profile.
-- Approval must point to a verifiable owner decision or approved PR and the exact profile revision it covers.
+- Approval must point to a verifiable owner decision or approved PR and the exact profile revision it covers. An approved PR qualifies only when the PR contains an explicit owner approval for that exact profile revision; a merged PR or a reviewer approval alone is not owner approval.
 - Any material profile edit increments `profileRevision`; if it no longer matches `approvedRevision`, approval becomes stale and the profile returns to an unapproved state until reviewed again.
 - The current app has no authentication/authorization. Therefore this metadata is an auditable record only; it must not be treated as a secure authorization mechanism. No sensitive repository action may rely on a client-side approval flag.
 - Until a real authenticated owner identity and policy enforcement exist, unapproved profiles may be drafted and inspected, but must not authorize external writes, permission expansion, spending, publishing, or access to another project's private context.
@@ -314,6 +314,7 @@ Rules:
 
 - Keep the existing `devmate-workspace-v1` project-array format readable during the transition.
 - First migration is additive: create project-profile records from legacy project IDs/names only, mark all imported profiles `draft` and `unapproved`, and leave legacy project/task data unchanged.
+- Do not silently import legacy tasks into the new ledger during profile migration. Keep the legacy task UI/data intact until a separately tested additive task-import step is approved; when imported later, legacy tasks lacking acceptance criteria enter `draft` with an explicit `legacy-import` event and are not treated as ready work.
 - Do not infer repository URLs, permissions, charters, goals, data classifications, or approval from legacy project names or task contents.
 - Migration must be deterministic and idempotent: running it twice produces the same profile IDs and no duplicate records.
 - Before any write, preserve the exact pre-migration payload using the existing backup/recovery mechanism. Write the new envelope to its own key, read it back, validate it, and only then record migration completion.
@@ -343,7 +344,9 @@ Every task record must contain:
 
 Initial states:
 
-`queued → ready → in_progress → review → completed`
+`draft → queued → ready → in_progress → review → completed`
+
+A task enters `queued` only after its objective, project, accountable coordinator, and minimum acceptance criteria are present. A task with missing required context remains `draft`.
 
 Other permitted transitions:
 - `ready | in_progress | review → blocked`
@@ -353,6 +356,8 @@ Other permitted transitions:
 - `queued | ready | blocked → cancelled` with a reason.
 - `in_progress → failed` only after a bounded attempt ends without a safe recovery.
 - `in_progress → indeterminate` when an external operation may have succeeded but evidence is insufficient.
+- `review → ready` when review requires bounded rework; the finding and next action must be recorded.
+- `indeterminate → ready | failed | cancelled` only after reconciliation establishes the actual outcome and records supporting evidence; never retry directly from an unresolved indeterminate state.
 
 Terminal states are `completed`, `cancelled`, and `failed`; `indeterminate` is a hold state requiring reconciliation before retry. A task cannot become completed merely because an agent reports success: acceptance criteria and evidence must be checked.
 
