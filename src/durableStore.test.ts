@@ -40,7 +40,8 @@ function setup(storage = new MemoryStorage()) {
     validateRecord: (projectId, value): value is RecordValue =>
       typeof value === "object" && value !== null &&
       (value as RecordValue).projectId === projectId &&
-      typeof (value as RecordValue).value === "string"
+      typeof (value as RecordValue).value === "string",
+    validateUpdate: () => true
   });
   return { storage, store };
 }
