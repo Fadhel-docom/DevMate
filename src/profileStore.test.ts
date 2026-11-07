@@ -188,6 +188,68 @@ describe("durable project profile adapter", () => {
     expect(await store.readProfile("p1")).toMatchObject({ ok: true, value: { approval: { status: "approved" } } });
   });
 
+  it("refuses restoring an older draft snapshot through the real restore guard", async () => {
+    const { store } = makeStore();
+    const draft = draftProfile("p1", "One");
+    await store.writeProfile("p1", draft, 0);
+    const snapshot = await store.createSnapshot("pre-restore");
+    expect(snapshot).not.toBeNull();
+
+    const changed: ProjectProfile = {
+      ...draft,
+      profileRevision: 2,
+      updatedAt: 201,
+      identity: { name: "Changed", purpose: draft.identity.purpose }
+    };
+    expect(await store.writeProfile("p1", changed, 1)).toMatchObject({ ok: true, revision: 2 });
+    expect(await store.restoreSnapshot("p1", snapshot!.key, snapshot!.fingerprint, 2))
+      .toMatchObject({ ok: false, reason: "invalid-data" });
+    expect(await store.readProfile("p1"))
+      .toMatchObject({ ok: true, value: { profileRevision: 2, identity: { name: "Changed" } } });
+  });
+
+  it("refuses restoring an older approved snapshot after approval has been revoked", async () => {
+    const { store } = makeStore();
+    const draft = draftProfile("p1", "One");
+    await store.writeProfile("p1", draft, 0);
+    const approved: ProjectProfile = {
+      ...draft,
+      updatedAt: 201,
+      approval: {
+        status: "approved",
+        approvedRevision: draft.profileRevision,
+        evidence: { kind: "owner-decision", reference: "test approval", commitSha: null },
+        approvedAt: 150,
+        approvedContentHash: computeProfileContentHash(draft),
+        revokedAt: null,
+        revokedRevision: null,
+        revocationReason: null,
+        revocationHistory: []
+      }
+    };
+    expect(await store.writeProfile("p1", approved, 1)).toMatchObject({ ok: true, revision: 2 });
+    const snapshot = await store.createSnapshot("pre-restore");
+    expect(snapshot).not.toBeNull();
+
+    const revoked: ProjectProfile = {
+      ...approved,
+      profileRevision: 2,
+      updatedAt: 202,
+      approval: {
+        ...approved.approval,
+        status: "revoked",
+        revokedAt: 202,
+        revokedRevision: approved.approval.approvedRevision,
+        revocationReason: "Test revocation"
+      }
+    };
+    expect(await store.writeProfile("p1", revoked, 2)).toMatchObject({ ok: true, revision: 3 });
+    expect(await store.restoreSnapshot("p1", snapshot!.key, snapshot!.fingerprint, 3))
+      .toMatchObject({ ok: false, reason: "invalid-data" });
+    expect(await store.readProfile("p1"))
+      .toMatchObject({ ok: true, value: { profileRevision: 2, approval: { status: "revoked", revokedRevision: 1 } } });
+  });
+
   it("keeps reads available but fails writes closed when another stored profile is invalid", async () => {
     const { store, storage } = makeStore();
     const valid = draftProfile("p1", "One");
