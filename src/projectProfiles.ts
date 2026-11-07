@@ -119,7 +119,7 @@ function hashText(text: string, seed: number): string {
   return hash.toString(16).padStart(8, "0");
 }
 function stableJson(value: unknown): string {
-  if (value === null || typeof value !== "object") return JSON.stringify(value);
+  if (value === null || typeof value !== "object") { const serialized = JSON.stringify(value); if (serialized === undefined) throw new TypeError("Value is not JSON serializable."); return serialized; }
   if (Array.isArray(value)) return "[" + value.map(stableJson).join(",") + "]";
   if (!isRecord(value)) throw new TypeError("Profile content must be plain JSON.");
   return "{" + Object.keys(value).sort().map((key) => JSON.stringify(key) + ":" + stableJson(value[key])).join(",") + "}";
@@ -184,7 +184,8 @@ function validateProfile(value: unknown, index: number, errors: ProfileValidatio
     } else {
       check(a.approvedRevision !== null && a.evidence !== null && a.approvedAt !== null &&
         a.approvedContentHash !== null && a.revokedAt !== null && a.revokedRevision === a.approvedRevision &&
-        a.revocationReason !== null && (a.revokedAt as number) >= (a.approvedAt as number),
+        a.revocationReason !== null && (a.revokedAt as number) >= (a.approvedAt as number) &&
+        isPositiveInteger(value.profileRevision) && (a.revokedRevision as number) <= value.profileRevision,
       "approval", "Revoked status must preserve the prior approval evidence and record when, which revision, and why it was revoked.");
     }
   }
@@ -234,12 +235,14 @@ export function migrateLegacyProjectsToProfiles(
   if (existingStore) {
     const checked = validateProjectProfilesStore(existingStore);
     if (!checked.ok) throw new TypeError("Existing profile store is invalid; refusing to overwrite it.");
-    base = checked.value;
+    base = JSON.parse(JSON.stringify(checked.value)) as ProjectProfilesStore;
   } else {
     base = { schemaVersion: PROJECT_PROFILE_SCHEMA_VERSION, revision: 1, updatedAt: migratedAt, records: [] };
   }
   const ids = new Set(base.records.map((record) => record.projectId));
+  const seenLegacyIds = new Set<string>();
   const rejected: LegacyMigrationRejection[] = [];
+  if (!Array.isArray(legacyProjects)) throw new TypeError("Legacy projects must be an array.");
   const additions: ProjectProfile[] = [];
   legacyProjects.forEach((candidate, index) => {
     if (!isRecord(candidate) || typeof candidate.id !== "string" || candidate.id.trim().length === 0 ||
@@ -248,6 +251,8 @@ export function migrateLegacyProjectsToProfiles(
       return;
     }
     const id = candidate.id;
+    if (seenLegacyIds.has(id)) { rejected.push({ index, reason: "Duplicate legacy project ID." }); return; }
+    seenLegacyIds.add(id);
     if (ids.has(id)) return;
     let name: string;
     let nameUnknown = false;
