@@ -151,6 +151,28 @@ describe("durable task-ledger adapter", () => {
       .toMatchObject({ ok: false, reason: "invalid-data" });
   });
 
+  it("rejects a profile record whose envelope key does not match its projectId", async () => {
+    const { storage, profiles, store } = makeStore();
+    const profile = profiles.records[0];
+    storage.seed(durableStoreKey("project-profiles"), JSON.stringify({
+      schemaVersion: 1, revision: 1, updatedAt: profiles.updatedAt,
+      records: { orphaned-key: profile }
+    }));
+    expect(await store.writeLedger("p1", draftLedger(profiles), 0))
+      .toMatchObject({ ok: false, reason: "invalid-data" });
+  });
+
+  it("rejects profile envelopes with unexpected top-level fields", async () => {
+    const { storage, profiles, store } = makeStore();
+    storage.seed(durableStoreKey("project-profiles"), JSON.stringify({
+      schemaVersion: 1, revision: 1, updatedAt: profiles.updatedAt,
+      records: Object.fromEntries(profiles.records.map((profile) => [profile.projectId, profile])),
+      unexpected: true
+    }));
+    expect(await store.writeLedger("p1", draftLedger(profiles), 0))
+      .toMatchObject({ ok: false, reason: "invalid-data" });
+  });
+
   it("exposes recovery and snapshots but deliberately provides no legacy migration", async () => {
     const { store } = makeStore();
     expect(await store.recover()).toMatchObject({ ok: true });
