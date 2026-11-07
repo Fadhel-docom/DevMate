@@ -24,6 +24,18 @@ describe("task ledger schema v1", () => {
   it("accepts a valid project-scoped task store", () => {
     expect(validateTaskLedgerStore(storeWith([baseTask])).ok).toBe(true);
   });
+  it("cross-checks task project identity and policy snapshot when profiles are supplied", () => {
+    const profiles = { schemaVersion: 1 as const, revision: 1, updatedAt: 100,
+      records: [{ projectId: "p1", profileRevision: 1, createdAt: 1, updatedAt: 100,
+        identity: { name: "One", purpose: "" }, lifecycle: "draft" as const, repositories: [], websites: [],
+        technology: [], goals: [], governanceReferences: [], workflow: [], dataClassification: "unknown",
+        allowedTools: [], forbiddenActions: [], releaseRules: [], risks: [], recoveryPlan: [], unknownFields: [],
+        approval: { status: "unapproved" as const, approvedRevision: null, evidence: null, approvedAt: null,
+          approvedContentHash: null, revokedAt: null, revokedRevision: null, revocationReason: null } }] };
+    expect(validateTaskLedgerStore(storeWith([baseTask]), profiles).ok).toBe(true);
+    expect(validateTaskLedgerStore(storeWith([{ ...baseTask, projectId: "missing" }]), profiles).ok).toBe(false);
+    expect(validateTaskLedgerStore(storeWith([{ ...baseTask, policySnapshot: { ...baseTask.policySnapshot, profileApprovalStatus: "approved" as const } }]), profiles).ok).toBe(false);
+  });
   it("rejects future versions, unknown fields, and malformed enum values", () => {
     expect(validateTaskLedgerStore({ schemaVersion: 2, revision: 1, updatedAt: 100, records: [], events: [] }).ok).toBe(false);
     expect(validateTaskLedgerStore({ ...storeWith([baseTask]), hidden: true }).ok).toBe(false);
