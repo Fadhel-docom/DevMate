@@ -180,6 +180,15 @@ describe("durable store foundation", () => {
     expect(storage.getItem(durableStoreKey("project-profiles"))).not.toBeNull();
   });
 
+  it("snapshots a structurally valid envelope when its project record fails validation", async () => {
+    const { store, storage } = setup();
+    const raw = envelope({ p1: { projectId: "another-project", value: "invalid" } });
+    storage.seed(durableStoreKey("project-profiles"), raw);
+    expect(await store.readProject("p1")).toMatchObject({ ok: false, reason: "corrupt" });
+    expect(storage.getItem(durableStoreKey("project-profiles"))).toBe(raw);
+    expect(storage.getItem(durableBackupKey("project-profiles", 1))).toBe(raw);
+  });
+
   it("preserves corrupt and future-version bytes rather than overwriting them", async () => {
     const { store, storage } = setup();
     storage.seed(durableStoreKey("project-profiles"), "{broken");
