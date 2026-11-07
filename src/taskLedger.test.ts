@@ -18,7 +18,8 @@ const baseTask = {
   failureReason: null, recoveryInstructions: []
 };
 function storeWith(records: TaskLedgerStore["records"], events: TaskLedgerStore["events"] = []): TaskLedgerStore {
-  return { schemaVersion: 1, revision: 1, updatedAt: 100, records, events };
+  const latest = Math.max(100, ...records.map((task) => task.updatedAt), ...events.map((event) => event.createdAt));
+  return { schemaVersion: 1, revision: 1, updatedAt: latest, records, events };
 }
 describe("task ledger schema v1", () => {
   it("accepts a valid project-scoped task store", () => {
