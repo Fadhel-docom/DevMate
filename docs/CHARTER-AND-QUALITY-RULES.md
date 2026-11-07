@@ -6,7 +6,7 @@
 **Predecessor:** Version 1.0, preserved at `docs/CHARTER-AND-QUALITY-RULES-v1.0.md`.  
 **Applies to:** All contributors, assistants, agents, integrations, and project work in DevMate.
 
-> **Authority:** Version 1.2 amends version 1.1; version 1.1 and version 1.0 remain preserved for historical reference. Version 1.0 remains preserved for historical reference. This approval does not itself authorize a merge of PR #1, code changes beyond approved scope, or production publishing. Do not treat draft-only rules as binding until the owner approves version 1.1.
+> **Authority:** Version 1.2 amends version 1.1; versions 1.1 and 1.0 remain preserved for historical reference. This amendment does not authorize a merge of PR #1, code changes beyond approved scope, or production publishing. It becomes the governing version when merged.
 
 ## 1. Mission and vision
 
