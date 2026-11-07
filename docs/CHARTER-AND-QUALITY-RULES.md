@@ -2,11 +2,11 @@
 
 **Document:** Permanent project constitution  
 **Version:** 1.2  
-**Status:** Version 1.1 was approved on 2026-11-05. Version 1.2 is a proposed amendment dated 2026-11-07; it is not approved or governing unless and until the owner explicitly approves this amendment and it is merged.  
+**Status:** Version 1.2 was explicitly approved by the owner on 2026-11-07 and merged in PR #23. Merge commit: `2f7f9c69e80863b3720c269cc33a36b33a841209`.  
 **Predecessor:** Version 1.1, preserved at `docs/CHARTER-AND-QUALITY-RULES-v1.1.md` (with version 1.0 retained at `docs/CHARTER-AND-QUALITY-RULES-v1.0.md`).  
 **Applies to:** All contributors, assistants, agents, integrations, and project work in DevMate.
 
-> **Authority:** This proposed version 1.2 would amend version 1.1 if explicitly approved by the owner and merged. Until both conditions are met, version 1.1 remains the governing constitution. Versions 1.1 and 1.0 remain preserved. This proposal does not authorize a merge of PR #1, code changes beyond approved scope, or production publishing.
+> **Authority:** Version 1.2 is the current owner-approved governing constitution, approved for exact PR head `40ba47082ea663a2076951f9756d7cf967a3cccb` and merged in commit `2f7f9c69e80863b3720c269cc33a36b33a841209`. Versions 1.1 and 1.0 remain preserved. This amendment does not authorize a merge of PR #1, code changes beyond approved scope, or production publishing.
 
 ## 1. Mission and vision
 
@@ -451,7 +451,7 @@ This constitution is binding only in its latest owner-approved version. Contribu
 |---|---|---|---|---|
 | 1.0 | 2026-11-05 | Preserved historical version | Initial constitution; retained at `docs/CHARTER-AND-QUALITY-RULES-v1.0.md` | Previously approved; superseded by 1.1 |
 | 1.1 | 2026-11-05 | Preserved historical version | Clarifies governance, roles, evidence, security, quality gates, session continuity, project boundaries, and owner approval authority | Approved by owner |
-| 1.2 | 2026-11-07 | Proposed amendment; effective only after the owner's explicit approval of this amendment and merge | Extends standing merge delegation to bounded, reversible data-format and migration PRs that pass sensitive-level gates; preserves all owner-reserved exceptions | Pending — the owner's standing operational instruction is recorded in D-002, but it is not approval of this constitutional amendment |
+| 1.2 | 2026-11-07 | Approved and effective; merged in PR #23 | Extends standing merge delegation to bounded, reversible data-format and migration PRs that pass sensitive-level gates; preserves all owner-reserved exceptions | Explicit owner approval of exact PR head `40ba47082ea663a2076951f9756d7cf967a3cccb`; merge commit `2f7f9c69e80863b3720c269cc33a36b33a841209` |
 
 ## Deferred governance backlog
 
