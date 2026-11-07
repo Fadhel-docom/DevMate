@@ -268,7 +268,7 @@ export function createDurableStore<T>(options: DurableStoreOptions<T>) {
         if (loaded.failure) return loaded.failure;
         const value = loaded.envelope!.records[projectId];
         if (value === undefined) return { ok: true as const, status: "empty" as const, revision: loaded.envelope!.revision, value: null };
-        if (!options.validateRecord(projectId, clone(value))) {
+        if (options.validateRecord(projectId, clone(value)) !== true) {
           snapshotCorruptRaw();
           return { ok: false as const, reason: "corrupt" as const, message: "The project-scoped record failed its validator." };
         }
@@ -291,7 +291,7 @@ export function createDurableStore<T>(options: DurableStoreOptions<T>) {
         const loaded = loadEnvelopeLocked();
         if (loaded.failure) return { ok: false as const, reason: loaded.failure.reason, message: loaded.failure.message };
         const current = loaded.envelope!;
-        if (!Object.entries(current.records).every(([id, item]) => safeId(id) && options.validateRecord(id, clone(item)))) {
+        if (!Object.entries(current.records).every(([id, item]) => safeId(id) && options.validateRecord(id, clone(item)) === true)) {
           snapshotCorruptRaw();
           return { ok: false as const, reason: "corrupt" as const, message: "An existing project record failed validation; no write was attempted." };
         }
@@ -359,7 +359,7 @@ export function createDurableStore<T>(options: DurableStoreOptions<T>) {
           return { ok: false as const, reason: "corrupt" as const, message: "Current data failed validation; restore was refused without changing it." };
         }
         const nextRecord = restored.records[projectId];
-        if (nextRecord === undefined || !options.validateRecord(projectId, clone(nextRecord)))
+        if (nextRecord === undefined || options.validateRecord(projectId, clone(nextRecord)) !== true)
           return { ok: false as const, reason: "not-found" as const, message: "The selected snapshot has no valid record for this project." };
         const previous = currentEnvelope.records[projectId] ?? null;
         const records = clone(currentEnvelope.records);
@@ -433,7 +433,7 @@ export function createDurableStore<T>(options: DurableStoreOptions<T>) {
           !Object.keys(current.records).every((id) => Object.prototype.hasOwnProperty.call(nextRecords, id)))
           return { ok: false as const, reason: "invalid-data" as const, message: "Migration must preserve all existing project records and use valid project IDs." };
         for (const [id, nextRecord] of Object.entries(nextRecords)) {
-          if (!options.validateRecord(id, clone(nextRecord)))
+          if (options.validateRecord(id, clone(nextRecord)) !== true)
             return { ok: false as const, reason: "invalid-data" as const, message: `Migrated record for project ${id} failed validation.` };
           const previous = current.records[id] ?? null;
           if ((previous === null || JSON.stringify(previous) !== JSON.stringify(nextRecord)) &&
