@@ -1691,3 +1691,10 @@ Remote sandbox, Node v24.22.1, npm 10.8.2 (CI uses Node 20.20.2), files fetched 
 - PR #28: independent exact-head review pending.
 - PR #29: second-contributor review pending.
 - PR-D implementation must wait until PR-C is merged; the design can be reviewed independently. Do not run migration/cutover as part of implementation or CI.
+
+
+### PR-D design hardening — restart-safe cutover intent
+- Added a pre-migration, versioned cutover-intent marker and a shared-lock write barrier to the design. Every legacy writer must check the marker under the existing lock, not merely rely on disabling the current React controls.
+- Defined restart behavior for no marker, intermediate intent, committed marker, and malformed marker. Intermediate state resumes forward in read-only recovery mode; it never re-enables legacy writes.
+- Added tests for every marker phase and for legacy writer rejection across tabs/restarts.
+- This closes a design-level crash/reload gap; no implementation or migration was run.
