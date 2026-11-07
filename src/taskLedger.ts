@@ -374,7 +374,9 @@ export function validateAppendOnlyLedgerUpdate(
       updatedTask.createdAt !== priorTask.createdAt ||
       updatedTask.attemptCount < priorTask.attemptCount ||
       JSON.stringify(priorTask.allowedTools) !== JSON.stringify(updatedTask.allowedTools) ||
-      JSON.stringify(priorTask.allowedActions) !== JSON.stringify(updatedTask.allowedActions)) return false;
+      JSON.stringify(priorTask.allowedResources) !== JSON.stringify(updatedTask.allowedResources) ||
+      JSON.stringify(priorTask.allowedActions) !== JSON.stringify(updatedTask.allowedActions) ||
+      priorTask.risk !== updatedTask.risk) return false;
     if (priorTask.state !== "draft" &&
       JSON.stringify(priorTask.acceptanceCriteria) !== JSON.stringify(updatedTask.acceptanceCriteria)) return false;
     if (priorTask.checkpoint && (!updatedTask.checkpoint ||
