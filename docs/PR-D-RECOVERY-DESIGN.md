@@ -189,7 +189,7 @@ Implemented and tested in `src/storage.ts`, `src/cutoverController.ts`, `src/App
 ### 10.2 R1 to R6
 | Condition | Status | Evidence / remaining work |
 |---|---|---|
-| R1 source revalidation at every advance incl. `committed`; legacy write after intent | Implemented | `cutoverController.test.ts` "R1" group: write after each phase, after commit, and during stage work; barrier tests for direct legacy writes |
+| R1 source revalidation at every advance incl. `committed`; legacy write after intent | Partial; begin fails closed by default | Source revalidation and current-bundle barriers are tested. A host-level stale-bundle quiescence verifier does not exist; `begin()` now refuses unless one is injected. Direct storage mutation tests do not prove old-bundle prevention. |
 | R2 fingerprint algorithm + full-byte compare with preserved copy | Implemented | Fingerprint spec above; test with equal fingerprint and different bytes |
 | R3 idempotent raw-byte preservation | Implemented | Retry after crash between preservation and marker; conflict and quota tests |
 | R4 abort-after-intent | Defined; no app deletion | `verifyAbortEligibility()` is read-only: valid `intent` marker, source equals preserved copy, and proof of no durable state. The application never deletes the marker; any abort is an owner-approved action performed outside the application after the report and a raw export. |
@@ -197,4 +197,13 @@ Implemented and tested in `src/storage.ts`, `src/cutoverController.ts`, `src/App
 | R6 fixed-size marker; marker-write failure per phase | Partly implemented | Size bound (256 characters, worst case tested) and marker-write failure at every phase tested in jsdom with in-memory storage. Real-browser quota and two-tab tests are NOT done. The marker is bounded, not padded to a constant length. |
 
 ### 10.3 Not done
-- No real-browser (two-tab, quota, restart) tests; no cutover trigger UI; no durable workspace UI; no read-only legacy task archive view or export button; no automated slot release. The design verification matrix items that require those remain open and the cutover gates in section 8 are not satisfied for any live cutover.
+- No production host-level stale-bundle quiescence verifier exists; therefore `begin()` is intentionally blocked by default. No real-browser (two-tab, quota, restart) tests; no cutover trigger UI; no durable workspace UI; no read-only legacy task archive view or export button; no automated slot release. The design verification matrix items that require those remain open and the cutover gates in section 8 are not satisfied for any live cutover.
+
+
+## 11. Stale pre-barrier bundles — explicit safety gate (2026-11-07)
+
+A marker check in the current bundle cannot retroactively constrain JavaScript already loaded by an older tab. An older bundle may continue calling the pre-barrier `saveProjectsLocked`, `restoreBackup`, or `deleteBackup` implementations; Web Locks serialize those calls but do not make old code inspect the marker. Revalidating the source after a stage detects some writes, but detection is not prevention and cannot protect the post-commit interval.
+
+Accordingly, `createCutoverController().begin()` now fails closed unless the host supplies `confirmLegacyWritersQuiesced()` and it returns `true`. The callback is a trust boundary: it must prove that every pre-barrier app instance is closed or forcibly reloaded and cannot resume writing. It must not acquire the storage lock. There is currently **no production implementation** of this verifier (no service-worker/client-version fence or equivalent), so the default application cannot begin a cutover. Tests that inject `true` exercise controller mechanics only; they do not prove browser-wide stale-tab quiescence. Do not wire a permissive callback or treat a user checkbox as proof. A future host-level mechanism and real-browser two-tab regression are required before this gate may be enabled.
+
+This is an intentional fail-closed limitation, not a claim that arbitrary already-loaded old JavaScript can be blocked by localStorage markers.
