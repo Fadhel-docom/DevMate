@@ -4,6 +4,7 @@ import {
   computeProfileContentHash,
   migrateLegacyProjectsToProfiles,
   validateProjectProfilesStore,
+  validateProfileApprovalHistoryUpdate,
   type ProjectProfile,
   type ProjectProfilesStore
 } from "./projectProfiles";
@@ -129,6 +130,8 @@ describe("project profile schema v1", () => {
       }]
     };
     expect(validateProjectProfilesStore(store).ok).toBe(true);
+    expect(validateProfileApprovalHistoryUpdate(revoked, store.records[0].approval)).toBe(true);
+    expect(validateProfileApprovalHistoryUpdate(revoked, { ...store.records[0].approval, revocationHistory: [] })).toBe(false);
     expect(store.records[0].approval.revocationHistory).toHaveLength(1);
     expect(store.records[0].approval.revocationHistory[0].evidence).toEqual(oldApproval.evidence);
   });
