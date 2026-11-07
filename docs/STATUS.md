@@ -1,6 +1,6 @@
 # DevMate Status
 
-> Current state: see "## Current state — 2026-11-07 (PR #23 third-review correction; owner approval pending)" at the end of this file. Earlier dated checkpoints are historical snapshots and do not describe the present.
+> Current state: see "## Current state — 2026-11-07 (PR #23 merged; PR-B rebased for final review)" at the end of this file. Earlier dated checkpoints are historical snapshots and do not describe the present.
 
 ## Current milestone
 Phase 1 — foundation and local demo.
@@ -682,3 +682,27 @@ Run the full Vitest suite, TypeScript/Vite production build, and dependency audi
 - Owner-approval evidence standard: a separate, explicit message from the owner in this ChatGPT conversation, independent of the shared GitHub account, naming both the exact v1.2 amendment and exact final PR head SHA. Before merge, quote the owner's message verbatim here with its date. A shared-account comment alone, silence, the standing routine delegation, or a technical review does not qualify.
 - Recheck exact-head CI immediately before requesting owner approval and before merge if the head changes. No CI success is claimed without exact-head evidence.
 - PR #23 remains Draft and unmerged; v1.1 remains the sole effective constitution. Do not apply routine merge delegation to this constitutional amendment.
+
+
+## Current state — 2026-11-07 (PR #23 merged; PR-B rebased for final review)
+
+### Governance
+- PR #23 merged by the repository owner. Exact proposal head named in the owner's approval: `40ba47082ea663a2076951f9756d7cf967a3cccb`.
+- Owner approval message: «40ba47082ea663a2076951f9756d7cf967a3cccb
+نعم قم بدمج 23 بتفويض مني».
+- PR #23 merge commit: `2f7f9c69e80863b3720c269cc33a36b33a841209`.
+- Constitution v1.2 is the current owner-approved and merged version; v1.1 remains preserved at `docs/CHARTER-AND-QUALITY-RULES-v1.1.md`.
+- Exact-head CI and fresh independent review for the final PR #23 head were not verified before the owner merged it; this limitation is retained and is not represented as a pass.
+
+### PR-B durable profile persistence
+- PR #24 and stacked PR #26 remain unmerged. After PR #23 advanced the foundation branch, PR #24 became dirty against its old base because its STATUS/OPERATIONS-ROOM edits overlapped the merged governance history. No force merge or direct foundation write was attempted.
+- Rebased cumulative PR-B implementation onto the current foundation in branch `feature/project-profile-durable-integration-rebased`.
+- The cumulative implementation includes PR #24, PR #26, and two additional regression fixes: empty/missing legacy source now commits an empty durable envelope before writing the migration marker; actual restore tests verify that older draft and approved snapshots cannot roll back profile revision or approval/revocation history.
+- Original stacked-branch fix commits: `d0f41cd7ddc54da3a03923afbefc22d04b2644dc`, `f38e49b7923abdac0e81ee3ef73790fbd89c53e2`, `5af764c7f3a7ad702c110b09abc81ab011cd720e`.
+- CI on original cumulative head `5af764c7f3a7ad702c110b09abc81ab011cd720e`: run #336, ID `42377882586`, success; npm ci installed 155 packages, audit summary 0 vulnerabilities, 8 test files / 205 tests passed, TypeScript check and Vite production build passed. This verifies the source tree before rebasing; CI must run again on the rebased PR head.
+- No App/UI cutover, legacy migration invocation, provider integration, deployment, or PR-D recovery implementation has been performed.
+
+### Next actions
+1. Open one cumulative PR from `feature/project-profile-durable-integration-rebased` to `feature/phase-1-foundation`.
+2. Verify CI on its exact head and obtain one focused independent review of the cumulative implementation, including the F1/F2 fixes and forward-only PR-D recovery design.
+3. If all applicable gates pass, merge under the standing delegation; then begin PR-C task-ledger persistence.
