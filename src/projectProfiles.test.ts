@@ -16,7 +16,7 @@ function approve(profile: ProjectProfile): void {
     status: "approved", approvedRevision: profile.profileRevision,
     evidence: { kind: "approved-pull-request", reference: "https://github.com/org/repo/pull/1", commitSha: "a".repeat(40) },
     approvedAt: 1300, approvedContentHash: computeProfileContentHash(profile),
-    revokedAt: null, revokedRevision: null, revocationReason: null
+    revokedAt: null, revokedRevision: null, revocationReason: null, revocationHistory: []
   };
 }
 describe("project profile schema v1", () => {
@@ -79,9 +79,27 @@ describe("project profile schema v1", () => {
     badSha.records[0].approval = {
       status: "approved", approvedRevision: 1,
       evidence: { kind: "approved-pull-request", reference: "PR #1", commitSha: "bad" },
-      approvedAt: 1234, approvedContentHash: "0000000000000000",
-      revokedAt: null, revokedRevision: null, revocationReason: null
+      approvedAt: 1234, approvedContentHash: computeProfileContentHash(badSha.records[0]),
+      revokedAt: null, revokedRevision: null, revocationReason: null, revocationHistory: []
     };
+    for (const malformedSha of ["a".repeat(39), "a".repeat(41), "a".repeat(64)]) {
+      const invalidSha = draftStore();
+      invalidSha.records[0].approval = {
+        status: "approved", approvedRevision: 1,
+        evidence: { kind: "approved-pull-request", reference: "PR #1", commitSha: malformedSha },
+        approvedAt: 1234, approvedContentHash: computeProfileContentHash(invalidSha.records[0]),
+        revokedAt: null, revokedRevision: null, revocationReason: null, revocationHistory: []
+      };
+      expect(validateProjectProfilesStore(invalidSha).ok).toBe(false);
+    }
+    const uppercaseSha = draftStore();
+    uppercaseSha.records[0].approval = {
+      status: "approved", approvedRevision: 1,
+      evidence: { kind: "approved-pull-request", reference: "PR #1", commitSha: "A".repeat(40) },
+      approvedAt: 1234, approvedContentHash: computeProfileContentHash(uppercaseSha.records[0]),
+      revokedAt: null, revokedRevision: null, revocationReason: null, revocationHistory: []
+    };
+    expect(validateProjectProfilesStore(uppercaseSha).ok).toBe(true);
     expect(validateProjectProfilesStore(badSha).ok).toBe(false);
   });
   it("preserves revoked approval evidence and revocation history", () => {
@@ -93,6 +111,26 @@ describe("project profile schema v1", () => {
       revokedRevision: oldApproval.approvedRevision, revocationReason: "Policy changed"
     };
     expect(validateProjectProfilesStore(store).ok).toBe(true);
+    const revoked = { ...oldApproval, status: "revoked" as const, revokedAt: 1400,
+      revokedRevision: oldApproval.approvedRevision, revocationReason: "Policy changed" };
+    store.records[0].approval = {
+      ...revoked,
+      status: "approved",
+      approvedAt: 1500,
+      approvedContentHash: computeProfileContentHash(store.records[0]),
+      revokedAt: null, revokedRevision: null, revocationReason: null,
+      revocationHistory: [{
+        approvedRevision: oldApproval.approvedRevision!,
+        evidence: oldApproval.evidence!,
+        approvedAt: oldApproval.approvedAt!,
+        approvedContentHash: oldApproval.approvedContentHash!,
+        revokedAt: 1400,
+        revocationReason: "Policy changed"
+      }]
+    };
+    expect(validateProjectProfilesStore(store).ok).toBe(true);
+    expect(store.records[0].approval.revocationHistory).toHaveLength(1);
+    expect(store.records[0].approval.revocationHistory[0].evidence).toEqual(oldApproval.evidence);
   });
   it("rejects unknown envelope and identity keys instead of silently accepting them", () => {
     const extraEnvelope = { ...draftStore(), hidden: true };
