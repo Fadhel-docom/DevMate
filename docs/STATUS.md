@@ -595,12 +595,12 @@ Run the full Vitest suite, TypeScript/Vite production build, and dependency audi
 - The new primitive uses separate per-store data, transaction-journal, migration-marker, and backup namespaces; at most five raw snapshots per store; the existing shared Web Lock; projectId-scoped reads, writes, and restores; revision checks; read-back verification; rollback; interrupted-intent recovery; and fail-closed indeterminate handling.
 - Restore requires a store-specific update guard, snapshots current data first, and changes only the requested project record. PR-B/PR-C must supply their profile/ledger validators inside the locked write boundary.
 - Legacy `src/storage.ts`, `devmate-workspace-v1`, and its backup namespace are unchanged. No App/UI integration or migration was performed.
-- Latest code head verified by GitHub Actions run #276 (ID `42364565092`): `0ed9efa64bde0fce38f57048484eb861c6681a8d`. Audit: 0 vulnerabilities; 7 test files / 182 tests passed; TypeScript and Vite production build passed. Run: https://github.com/Fadhel-docom/DevMate/actions/runs/42364565092. Later documentation-only handoff commits require exact-head CI before review.
+- Code head `0ed9efa64bde0fce38f57048484eb861c6681a8d` passed run #276 (ID `42364565092`): audit 0 vulnerabilities; 7 files / 182 tests; TypeScript and Vite build passed. The exact PR head `3dba2d849f0b8b93f7a0d8ebb5e54235317d908c` also passed run #278 (ID `42364630016), including the documentation handoff: audit 0 vulnerabilities; 7 files / 182 tests; TypeScript and Vite build passed. Run: https://github.com/Fadhel-docom/DevMate/actions/runs/42364630016. The next status/operations evidence commit is documentation-only and will be rechecked before independent review.
 - Not verified: real-browser multi-tab Web Locks, crash/restart timing in a browser, quota exhaustion, Android/Safari, or accessibility. Unit tests use deterministic in-memory storage and an injected lock runner.
 - The journal stores the latest transaction recovery state; it is not the domain append-only audit log. The task ledger remains responsible for append-only domain events.
 
 ### Next actions
-1. Complete exact-head CI for PR #22 and obtain an independent review of that exact head.
+1. Reconcile this evidence update, verify the resulting exact PR #22 head, then obtain an independent review of that exact head.
 2. Resolve only genuine blocking findings; retain the documented follow-ups for PR-B/PR-C.
 3. PR-B: project-profile persistence and additive/idempotent migration, with `validateProjectProfilesStoreUpdate` inside the shared lock.
 4. PR-C: task-ledger persistence, append-only event validation, project/profile cross-validation, and immutable policy snapshots inside the shared lock.
