@@ -1,6 +1,6 @@
 # DevMate Status
 
-> Current state: see "## Current state — 2026-11-07 (PR #23 second-review follow-ups; owner approval pending)" at the end of this file. Earlier dated checkpoints are historical snapshots and do not describe the present.
+> Current state: see "## Current state — 2026-11-07 (PR #23 third-review correction; owner approval pending)" at the end of this file. Earlier dated checkpoints are historical snapshots and do not describe the present.
 
 ## Current milestone
 Phase 1 — foundation and local demo.
@@ -652,3 +652,17 @@ Run the full Vitest suite, TypeScript/Vite production build, and dependency audi
 ### CI and boundaries
 - CI for review head `0644007347d846e2d61b9903fd1ae5747f5e718c`: **Not verified**, exactly as reported by the independent reviewer.
 - No change to `main`, RateNest, other repositories, providers, costs, secrets, permissions, deployment, or public release.
+
+
+## Current state — 2026-11-07 (PR #23 third-review correction; owner approval pending)
+
+### Review result and current governance state
+- Third independent review of PR #23 exact head `d1ef5d290b21048cea4ce925d711c293cc3b233e` returned **REQUEST CHANGES** for one blocker: the v1.2 change-log row falsely characterized the amendment as owner-approved and cited D-002 as approval evidence, contrary to the explicit separate-approval prerequisite.
+- Corrected the v1.2 change-log row to proposed/pending, changed D-002 to Proposed, and explicitly distinguished the owner's standing routine-merge instruction from approval of the constitutional amendment. Updated the historical STATUS note and operations-room provenance record.
+- Constitution v1.1 remains the only effective governing version. Version 1.2 is not owner-approved and is not effective. PR #23 itself remains excluded from routine merge delegation and requires the owner's separate, explicit approval after a fresh independent review.
+- PR #23 current head is recorded in the live PR metadata; exact-head CI must be verified for that head. No CI success is claimed.
+
+### Next actions
+1. Obtain a fresh independent review of the exact current PR #23 head.
+2. If review approves, request the owner's separate explicit approval of this exact v1.2 amendment. Do not merge before that approval.
+3. Only after approved merge, reconcile PR #24 first and stacked PR #26 second; rerun exact-head CI and independent reviews as applicable.
