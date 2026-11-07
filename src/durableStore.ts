@@ -44,7 +44,7 @@ export type DurableStoreOptions<T> = {
   now?: () => number;
   createId?: () => string;
   validateRecord: (projectId: string, value: unknown) => value is T;
-  validateUpdate?: (projectId: string, previous: T | null, next: T, records: Readonly<Record<string, T>>, readStorage: Pick<Storage, "getItem">) => boolean;
+  validateUpdate?: (projectId: string, previous: T | null, next: T, previousRecords: Readonly<Record<string, T>>, nextRecords: Readonly<Record<string, T>>, readStorage: Pick<Storage, "getItem">) => boolean;
   runExclusive?: LockRunner;
   maxBackups?: number;
 };
@@ -289,10 +289,10 @@ export function createDurableStore<T>(options: DurableStoreOptions<T>) {
         if (expectedRevision !== undefined && current.revision !== expectedRevision)
           return { ok: false as const, reason: "conflict" as const, message: "The durable store revision changed; reload before writing." };
         const previous = current.records[projectId] ?? null;
-        if (options.validateUpdate && !options.validateUpdate(projectId, previous === null ? null : clone(previous), clone(candidate), clone(current.records), storage!))
-          return { ok: false as const, reason: "invalid-data" as const, message: "The project-scoped update violated its store contract." };
         const records = clone(current.records);
         records[projectId] = clone(candidate);
+        if (options.validateUpdate && !options.validateUpdate(projectId, previous === null ? null : clone(previous), clone(candidate), clone(current.records), clone(records), storage!))
+          return { ok: false as const, reason: "invalid-data" as const, message: "The project-scoped update violated its store contract." };
         const next: DurableEnvelope<T> = { schemaVersion: 1, revision: current.revision + 1, updatedAt: now(), records };
         return transactLocked(projectId, next);
       });
@@ -348,14 +348,14 @@ export function createDurableStore<T>(options: DurableStoreOptions<T>) {
         if (nextRecord === undefined || !options.validateRecord(projectId, clone(nextRecord)))
           return { ok: false as const, reason: "not-found" as const, message: "The selected snapshot has no valid record for this project." };
         const previous = currentEnvelope.records[projectId] ?? null;
-        if (!options.validateUpdate(projectId, previous === null ? null : clone(previous), clone(nextRecord), clone(currentEnvelope.records), storage!))
+        const records = clone(currentEnvelope.records);
+        records[projectId] = clone(nextRecord);
+        if (!options.validateUpdate(projectId, previous === null ? null : clone(previous), clone(nextRecord), clone(currentEnvelope.records), clone(records), storage!))
           return { ok: false as const, reason: "invalid-data" as const, message: "The project-specific update guard rejected this restore." };
         if (currentRaw !== null) {
           try { if (!snapshotRaw(currentRaw, "pre-restore")) return { ok: false as const, reason: "snapshot-full" as const, message: "No free snapshot slot; restore was cancelled." }; }
           catch (error) { return { ok: false as const, reason: "write-failed" as const, message: String(error) }; }
         }
-        const records = clone(currentEnvelope.records);
-        records[projectId] = clone(nextRecord);
         const next: DurableEnvelope<T> = { schemaVersion: 1, revision: currentEnvelope.revision + 1, updatedAt: now(), records };
         return transactLocked(projectId, next);
       });
@@ -423,7 +423,7 @@ export function createDurableStore<T>(options: DurableStoreOptions<T>) {
             return { ok: false as const, reason: "invalid-data" as const, message: `Migrated record for project ${id} failed validation.` };
           const previous = current.records[id] ?? null;
           if ((previous === null || JSON.stringify(previous) !== JSON.stringify(nextRecord)) &&
-            !options.validateUpdate(id, previous === null ? null : clone(previous), clone(nextRecord), clone(current.records), storage!))
+            !options.validateUpdate(id, previous === null ? null : clone(previous), clone(nextRecord), clone(current.records), clone(nextRecords), storage!))
             return { ok: false as const, reason: "invalid-data" as const, message: `The update guard rejected migrated project ${id}.` };
         }
         const next: DurableEnvelope<T> = { schemaVersion: 1, revision: current.revision + 1, updatedAt: now(), records: nextRecords };
