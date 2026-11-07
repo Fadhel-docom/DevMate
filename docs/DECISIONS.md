@@ -31,4 +31,17 @@ This log records important decisions and their rationale. It does not replace or
 
 ## Decisions
 
-No decisions have been inventoried into this log yet. This is intentional: historical backfilling must be evidence-based and must not rely on memory or summaries alone.
+No earlier historical decisions have been backfilled. The following decision is recorded from its explicit PR evidence.
+
+
+### D-001 — Approve the Project Governance and Low-Pressure Autonomy architecture baseline
+
+- Date: 2026-11-07
+- Status: Accepted
+- Decided / approved by: Project owner; explicit approval recorded in PR #12 description and in the owner instruction to merge PR #12 if ready and compliant.
+- Context: DevMate needs a two-level governance model and a reliable project/task foundation before adding provider connections.
+- Alternatives considered: Continue with the prior informal project context; or adopt the documented project-governance model as the implementation baseline.
+- Decision: Approve the architecture proposal in PR #12 as the implementation baseline, subject to constitution v1.1 and the normal independent-review/merge gates.
+- Rationale: Establish project isolation, policy precedence, owner-approval boundaries, task accountability, auditability, recovery, and a staged pre-provider implementation sequence.
+- Consequences / risks: This approval does not amend constitution v1.1 and does not authorize provider connections, API keys, external data sharing, costs, new permissions, public publishing, or work on other repositories. Implementation remains gated by review and verification.
+- References: [PR #12](https://github.com/Fadhel-docom/DevMate/pull/12); latest approved design head `4ae15ba5de1b2af75e1dbb48073ce73dbf60ca4f`; owner approval recorded in PR description.
