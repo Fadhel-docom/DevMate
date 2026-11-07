@@ -22,15 +22,15 @@ The cutover must therefore be an explicit application state transition, not a ba
 Required order:
 
 1. **Preflight / read-only inspection:** identify legacy workspace bytes, current profile envelope, current task-ledger envelopes, migration marker state, transaction journals, and available snapshot slots. Do not mutate anything.
-2. **Quiesce legacy writes:** pause workspace edits and wait for the App's serialized save queue to settle. Then acquire the existing shared storage lock. Re-read the source under the lock; if it changed since preflight, discard the stale plan and restart inspection.
-3. **Preserve source:** retain the exact legacy raw workspace bytes in the legacy backup namespace or a separately verified export. Verify byte-for-byte read-back. Never overwrite the original source as a side effect of migration.
-4. **Prepare profiles:** run the PR-B additive/idempotent profile migration under the shared lock. Validate the complete profile envelope and approval/revocation history. If no snapshot slot is available, stop without migration.
+2. **Quiesce and declare intent:** pause workspace edits and wait for the App's serialized save queue to settle. Acquire the existing shared storage lock, re-read the legacy source, and abort if its fingerprint differs from preflight. Preserve the exact source bytes and verify byte-for-byte read-back. Then write and verify a separate, versioned **cutover-intent marker** before running any migration. The marker records the source fingerprint, cutover schema version, start time, and phase. This is a durable write barrier, not a success marker.
+3. **Enforce the write barrier across tabs/restarts:** every legacy write path (including `saveProjectsLocked`) must check the cutover marker while holding the same shared lock and refuse writes whenever intent exists and is not safely finalized. Disabling controls in the current React view is insufficient. On startup, an intent marker forces recovery/read-only mode; the App must not fall back to the legacy writer. A malformed marker is indeterminate and blocks all writes.
+4. **Prepare profiles:** while the write barrier is active, run the PR-B additive/idempotent profile migration under the shared lock. Validate the complete profile envelope and approval/revocation history. If no snapshot slot is available, stop without replacing data; retain the intent marker so restart cannot resume legacy writes.
 5. **Prepare task-ledger state:** do not infer governed task fields from legacy `{id,title,done,createdAt}` records. Do not auto-convert legacy tasks into executable or approved ledger tasks. Keep legacy task data available as a read-only archive/export until an explicit, separately specified mapping flow exists.
 6. **Verify new stores:** re-read every migrated profile and every existing task-ledger partition; verify project isolation, schema, policy snapshots, revision counters, and append-only event histories.
-7. **Commit application mode:** only after the above checks pass, switch the App to durable-store mode and persist a versioned cutover marker. The marker must identify the schema version and source fingerprint and be written only after the durable state is verified.
-8. **Post-cutover:** disable the legacy writer permanently for the active application path. Keep legacy raw bytes and backups available for inspection/export. Never silently fall back to writing the old key if a durable operation fails.
+7. **Advance the marker monotonically:** under the shared lock, update the cutover marker through explicit phases (for example `intent`, `profiles-verified`, `stores-verified`, `committed`), verifying each write. Only the final `committed` phase selects durable-store mode. Phases may advance but never move backward. The final marker includes the source fingerprint and store schema versions.
+8. **Post-cutover:** keep the legacy writer permanently disabled for the active application path. Keep legacy raw bytes and backups available for inspection/export. Never silently fall back to writing the old key if a durable operation fails.
 
-If any step fails before the cutover marker is committed, remain in recovery/read-only mode and offer a safe retry. If the marker is committed but verification after restart fails, enter an indeterminate state and require reconciliation; do not automatically switch writers back and forth.
+**Restart rule:** no marker means legacy mode may start; an `intent`/intermediate marker means recovery/read-only mode and forward resume only; a valid `committed` marker means durable mode; an unreadable or malformed marker means indeterminate/read-only mode. Do not delete an intent marker to force a return to legacy writes. Any abort after intent must be an explicit, verified forward-reconciliation procedure that proves the legacy source is still unchanged and that no durable state was committed.
 
 ## 3. Legacy tasks: preserve, do not fabricate
 
@@ -99,6 +99,7 @@ The App must expose explicit, truthful states:
 |---|---|---|
 | Healthy | Current durable stores validate | Normal actions within policy |
 | Preflight required | Cutover or migration has not been inspected | Inspect, export |
+| Cutover intent / interrupted cutover | Durable write barrier exists but the final marker is not committed | Inspect, export, resume forward; no legacy writes |
 | Legacy read-only | Legacy data preserved but not promoted | View, export; no legacy writes |
 | Interrupted transaction | Journal requires reconciliation | Inspect, safe retry only when exact before/after match |
 | Corrupt / invalid | Stored bytes or schema fail validation | Export, quarantine; no replacement until preserved |
@@ -112,7 +113,7 @@ All controls must explain what will change, what is preserved, and what is block
 
 ## 6. Required implementation boundaries
 
-- Keep legacy read/write code intact until the durable cutover is proven. Then route all App writes through one durable path; never allow dual writers.
+- Keep legacy read code intact, but make every legacy write path consult the durable cutover-intent marker under the shared lock. Once intent is committed, legacy writes are blocked across tabs and restarts. Then route all App writes through one durable path; never allow dual writers.
 - Reuse the existing shared Web Lock. Do not introduce nested or per-store locks.
 - Use explicit expected revisions for every user-visible mutation and recovery write.
 - Keep store-specific validators inside the locked update boundary.
@@ -128,7 +129,8 @@ Before any cutover, implement tests for:
 
 - Repeated preflight and migration are idempotent.
 - Source changes between preflight and lock acquisition abort the stale plan.
-- Legacy writer is quiesced and cannot race migration.
+- Cutover-intent marker is written and verified before migration; all legacy write APIs reject writes while intent/intermediate/committed marker exists.
+- Restart at every marker phase enters the correct legacy, read-only recovery, durable, or indeterminate mode; it never re-enables the legacy writer after intent.
 - Missing/empty legacy workspace still produces a valid durable profile envelope and marker ordering.
 - Legacy tasks remain byte-preserved and are never auto-promoted.
 - Project A recovery never changes Project B.
