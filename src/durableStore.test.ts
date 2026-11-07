@@ -6,6 +6,7 @@ import {
   durableStoreKey,
   type DurableEnvelope
 } from "./durableStore";
+import { STORAGE_KEY } from "./storage";
 
 type RecordValue = { projectId: string; value: string };
 class MemoryStorage {
@@ -154,16 +155,27 @@ describe("durable store foundation", () => {
     expect(storage.getItem(durableBackupKey("project-profiles", 1))).not.toBeNull();
   });
 
-  it("distinguishes never-migrated from migrated and requires a pre-migration snapshot", async () => {
+  it("migrates legacy workspace bytes under the shared lock and marks completion after commit", async () => {
     const { store, storage } = setup();
     expect(await store.migrationStatus()).toBe("never-migrated");
     const legacy = '[{"id":"legacy"}]';
-    expect(await store.markMigrated(legacy)).toBe(false);
-    await store.writeProject("p1", { projectId: "p1", value: "migrated" });
-    expect(await store.markMigrated(legacy)).toBe(true);
+    storage.seed(STORAGE_KEY, legacy);
+    let transformCalls = 0;
+    const migrated = await store.migrateLegacyWorkspace((raw, existing) => {
+      transformCalls++;
+      expect(raw).toBe(legacy);
+      return { ...existing, p1: { projectId: "p1", value: raw ?? "empty" } };
+    });
+    expect(migrated).toMatchObject({ ok: true, revision: 1 });
     expect(await store.migrationStatus()).toBe("migrated");
     expect(storage.getItem(durableBackupKey("project-profiles", 1))).toBe(legacy);
-    expect(await store.markMigrated(legacy)).toBe(false);
+    const retry = await store.migrateLegacyWorkspace(() => {
+      transformCalls++;
+      return {};
+    });
+    expect(retry).toMatchObject({ ok: true, revision: 1 });
+    expect(transformCalls).toBe(1);
+    expect(await store.readProject("p1")).toMatchObject({ ok: true, value: { value: legacy } });
   });
 
   it("refuses snapshot restoration when no store-specific update guard is configured", async () => {
