@@ -1810,3 +1810,10 @@ Remote sandbox, Node v24.22.1, npm 10.8.2 (CI uses Node 20.20.2), files fetched 
 - Finding: old JavaScript bundles loaded before the barrier can continue calling legacy mutators; a localStorage marker cannot force those already-loaded functions to inspect it. The previous direct-storage-mutation tests were insufficient evidence for stale-tab prevention.
 - Repair in progress on `fix/pr-d-stale-legacy-writer-gate` (based on PR #32 exact head `68207a4d776b06b7f986fb52b1f4b2c42daf25e8`): require a host-supplied quiescence verifier before `begin()` can write intent; absent, false, or throwing verifier fails closed. There is no production verifier yet, so the app cannot initiate cutover. Test-only `true` injection is not evidence of real browser quiescence.
 - R1 is explicitly partial until a host-level version/quiescence fence and real-browser stale-tab tests exist. No real user data, migration, deployment, or cutover touched.
+
+
+## PR-D staged review protocol — 2026-11-07
+- The authoritative per-stage implementation/review register is `docs/PR-D-REVIEW-LEDGER.md`.
+- Do not combine separate stage verdicts. Record exact head SHA, scope, tests, CI, reviewer identity/type, findings, fixes, and residual risk for each stage before moving on.
+- A new commit invalidates exact-head evidence until rechecked. COMMENT reviews made through the owner's account must not be described as independent GitHub approvals.
+- R1 is still partial; cutover remains unavailable by default. No real migration/cutover, deployment, provider integration, or merge is authorized by this log entry.
