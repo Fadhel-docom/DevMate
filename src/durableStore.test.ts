@@ -102,7 +102,7 @@ describe("durable store foundation", () => {
       runExclusive: async (work) => ({ ok: true, value: await work() }),
       validateRecord: (projectId, value): value is RecordValue =>
         !!value && typeof value === "object" && (value as RecordValue).projectId === projectId,
-      validateUpdate: (_id, _previous, _next, _records, readStorage) =>
+      validateUpdate: (_id, _previous, _next, _previousRecords, _nextRecords, readStorage) =>
         readStorage.getItem(durableStoreKey("project-profiles")) === "approved-profile-store"
     });
     expect(await store.writeProject("p1", { projectId: "p1", value: "task" })).toMatchObject({ ok: true });
