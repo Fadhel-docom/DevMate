@@ -212,4 +212,19 @@ describe("task ledger schema v1", () => {
       records: [{ ...readyTask, updatedAt: 100 }] })).toBe(false);
   });
 
+
+  it("requires task snapshot edits to be audited and keeps the start policy snapshot immutable", () => {
+    const previous = storeWith([baseTask], []);
+    const changed = { ...baseTask, updatedAt: 102, scope: "Changed scope" };
+    expect(validateAppendOnlyLedgerUpdate(previous, { ...storeWith([changed], []), revision: 2 })).toBe(false);
+    const updateEvent = { eventId: "update-1", taskId: "t1", projectId: "p1", type: "task.updated",
+      actor: "coordinator", createdAt: 101, details: { changedFields: ["scope"] } };
+    expect(validateAppendOnlyLedgerUpdate(previous, { ...storeWith([changed], [updateEvent]), revision: 2 })).toBe(true);
+    const changedSnapshot = { ...baseTask, updatedAt: 102,
+      policySnapshot: { ...baseTask.policySnapshot, projectProfileRevision: 2 } };
+    const snapshotEvent = { eventId: "update-2", taskId: "t1", projectId: "p1", type: "task.updated",
+      actor: "coordinator", createdAt: 101, details: { changedFields: ["policySnapshot"] } };
+    expect(validateAppendOnlyLedgerUpdate(previous, { ...storeWith([changedSnapshot], [snapshotEvent]), revision: 2 })).toBe(false);
+  });
+
 });
