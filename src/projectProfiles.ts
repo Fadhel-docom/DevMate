@@ -78,19 +78,22 @@ const approvalKeys = [
   "revokedAt", "revokedRevision", "revocationReason", "revocationHistory"
 ];
 
+const MAX_JSON_DEPTH = 100;
 function isRecord(value: unknown): value is Record<string, unknown> {
   if (typeof value !== "object" || value === null || Array.isArray(value)) return false;
   const prototype = Object.getPrototypeOf(value);
-  return prototype === Object.prototype || prototype === null;
+  if (prototype !== Object.prototype && prototype !== null) return false;
+  return Reflect.ownKeys(value).every((key) => typeof key === "string" &&
+    Object.prototype.hasOwnProperty.call(Object.getOwnPropertyDescriptor(value, key) ?? {}, "value"));
 }
 function hasExactKeys(value: Record<string, unknown>, required: readonly string[], optional: readonly string[] = []): boolean {
   const allowed = new Set([...required, ...optional]);
   return required.every((key) => Object.prototype.hasOwnProperty.call(value, key)) &&
     Object.keys(value).every((key) => allowed.has(key));
 }
-function isSafeJson(value: unknown, seen = new WeakSet<object>(), budget = { nodes: 0 }): value is JsonValue {
+function isSafeJson(value: unknown, seen = new WeakSet<object>(), budget = { nodes: 0 }, depth = 0): value is JsonValue {
   budget.nodes += 1;
-  if (budget.nodes > 10000) return false;
+  if (budget.nodes > 10000 || depth > MAX_JSON_DEPTH) return false;
   if (value === null || typeof value === "string" || typeof value === "boolean") return true;
   if (typeof value === "number") return Number.isFinite(value);
   if (typeof value !== "object") return false;
@@ -99,11 +102,11 @@ function isSafeJson(value: unknown, seen = new WeakSet<object>(), budget = { nod
   let valid = true;
   if (Array.isArray(value)) {
     for (let i = 0; i < value.length; i += 1) {
-      if (!Object.prototype.hasOwnProperty.call(value, i) || !isSafeJson(value[i], seen, budget)) { valid = false; break; }
+      if (!Object.prototype.hasOwnProperty.call(value, i) || !isSafeJson(value[i], seen, budget, depth + 1)) { valid = false; break; }
     }
   } else if (isRecord(value)) {
     for (const key of Object.keys(value)) {
-      if (dangerousKeys.has(key) || !isSafeJson(value[key], seen, budget)) { valid = false; break; }
+      if (dangerousKeys.has(key) || !isSafeJson(value[key], seen, budget, depth + 1)) { valid = false; break; }
     }
   } else {
     valid = false;
@@ -139,6 +142,7 @@ function stableJson(value: unknown): string {
  * unversioned edits; it is NOT an authentication or authorization primitive.
  */
 export function computeProfileContentHash(profile: ProjectProfile): string {
+  if (!isSafeJson(profile)) throw new TypeError("Profile content must be bounded, accessor-free plain JSON.");
   const { approval: _approval, updatedAt: _updatedAt, ...controlledContent } = profile;
   const canonical = stableJson(controlledContent);
   return hashText(canonical, 2166136261) + hashText(canonical, 2246822519);
@@ -150,24 +154,67 @@ export function computeProfileContentHash(profile: ProjectProfile): string {
  * Persistence must call this alongside the store revision check.
  */
 export function validateProfileApprovalHistoryUpdate(previous: ProfileApproval, next: ProfileApproval): boolean {
-  if (next.revocationHistory.length < previous.revocationHistory.length) return false;
-  const prefixPreserved = previous.revocationHistory.every((entry, index) =>
-    JSON.stringify(entry) === JSON.stringify(next.revocationHistory[index])
-  );
-  if (!prefixPreserved) return false;
-  if (previous.status === "revoked" && next.status === "approved") {
-    const archived: ProfileRevocationRecord = {
-      approvedRevision: previous.approvedRevision as number,
-      evidence: previous.evidence as ProfileApprovalEvidence,
-      approvedAt: previous.approvedAt as number,
-      approvedContentHash: previous.approvedContentHash as string,
-      revokedAt: previous.revokedAt as number,
-      revocationReason: previous.revocationReason as string
-    };
-    return next.revocationHistory.length === previous.revocationHistory.length + 1 &&
-      JSON.stringify(next.revocationHistory[previous.revocationHistory.length]) === JSON.stringify(archived);
+  try {
+    if (!isRecord(previous) || !isRecord(next) ||
+      !hasExactKeys(previous, approvalKeys) || !hasExactKeys(next, approvalKeys) ||
+      !isSafeJson(previous) || !isSafeJson(next) ||
+      !Array.isArray(previous.revocationHistory) || !Array.isArray(next.revocationHistory)) return false;
+    const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
+    if (next.revocationHistory.length < previous.revocationHistory.length ||
+      !previous.revocationHistory.every((entry, index) => same(entry, next.revocationHistory[index]))) return false;
+    const previousHistoryLength = previous.revocationHistory.length;
+    const appended = next.revocationHistory.length - previousHistoryLength;
+    const archiveCurrent = () => ({
+      approvedRevision: previous.approvedRevision,
+      evidence: previous.evidence,
+      approvedAt: previous.approvedAt,
+      approvedContentHash: previous.approvedContentHash,
+      revokedAt: previous.revokedAt,
+      revocationReason: previous.revocationReason
+    });
+    const validApproval = (value: ProfileApproval) =>
+      value.approvedRevision !== null && isPositiveInteger(value.approvedRevision) &&
+      validateEvidence(value.evidence) && isNonNegativeInteger(value.approvedAt) &&
+      typeof value.approvedContentHash === "string" && /^[0-9a-f]{16}$/i.test(value.approvedContentHash);
+    const validRevocation = (value: ProfileApproval) =>
+      validApproval(value) && isNonNegativeInteger(value.revokedAt) &&
+      value.revokedAt >= (value.approvedAt as number) &&
+      value.revokedRevision === value.approvedRevision &&
+      typeof value.revocationReason === "string" && value.revocationReason.trim().length > 0;
+    if (previous.status === "unapproved") {
+      if (appended !== 0 || previous.approvedRevision !== null || previous.evidence !== null ||
+        previous.approvedAt !== null || previous.approvedContentHash !== null ||
+        previous.revokedAt !== null || previous.revokedRevision !== null || previous.revocationReason !== null) return false;
+      if (next.status === "unapproved") return same(previous, next);
+      return next.status === "approved" && validApproval(next) &&
+        next.revokedAt === null && next.revokedRevision === null && next.revocationReason === null;
+    }
+    if (previous.status === "approved") {
+      if (!validApproval(previous) || previous.revokedAt !== null || previous.revokedRevision !== null ||
+        previous.revocationReason !== null) return false;
+      if (next.status === "approved") return appended === 0 && same(previous, next);
+      if (next.status !== "revoked" || appended !== 0 || !validRevocation(next)) return false;
+      return next.approvedRevision === previous.approvedRevision &&
+        same(next.evidence, previous.evidence) && next.approvedAt === previous.approvedAt &&
+        next.approvedContentHash === previous.approvedContentHash;
+    }
+    if (previous.status === "revoked") {
+      if (!validRevocation(previous)) return false;
+      const archived = archiveCurrent();
+      if (next.status === "revoked") return appended === 0 && same(previous, next);
+      if (next.status === "approved") return appended === 1 &&
+        same(next.revocationHistory[previousHistoryLength], archived) &&
+        validApproval(next) && next.revokedAt === null && next.revokedRevision === null && next.revocationReason === null;
+      if (next.status === "unapproved") return appended === 1 &&
+        same(next.revocationHistory[previousHistoryLength], archived) &&
+        next.approvedRevision === null && next.evidence === null && next.approvedAt === null &&
+        next.approvedContentHash === null && next.revokedAt === null &&
+        next.revokedRevision === null && next.revocationReason === null;
+    }
+    return false;
+  } catch {
+    return false;
   }
-  return next.revocationHistory.length === previous.revocationHistory.length;
 }
 function validateEvidence(value: unknown): value is ProfileApprovalEvidence {
   if (!isRecord(value) || !hasExactKeys(value, ["kind", "reference", "commitSha"])) return false;
@@ -261,7 +308,8 @@ export function validateProjectProfilesStore(input: unknown): ProfileValidationR
     });
   }
   if (isNonNegativeInteger(input.updatedAt) && input.updatedAt < latestProfileUpdate) addError(errors, "updatedAt", "Store timestamp cannot precede a profile update.");
-  if (!isSafeJson(input)) addError(errors, "", "Store contains unsafe keys or non-JSON values.");
+  // Each profile receives its own node/depth budget in validateProfile; do not
+  // apply one aggregate budget to the entire collection.
   return errors.length ? { ok: false, errors } : { ok: true, value: input as unknown as ProjectProfilesStore };
 }
 
@@ -289,7 +337,12 @@ export function migrateLegacyProjectsToProfiles(
   const rejected: LegacyMigrationRejection[] = [];
   if (!Array.isArray(legacyProjects)) throw new TypeError("Legacy projects must be an array.");
   const additions: ProjectProfile[] = [];
-  legacyProjects.forEach((candidate, index) => {
+  for (let index = 0; index < legacyProjects.length; index += 1) {
+    if (!Object.prototype.hasOwnProperty.call(legacyProjects, index)) {
+      rejected.push({ index, reason: "Sparse legacy project entry." });
+      continue;
+    }
+    const candidate = legacyProjects[index];
     if (!isRecord(candidate) || typeof candidate.id !== "string" || candidate.id.trim().length === 0 ||
       candidate.id.trim() !== candidate.id || dangerousKeys.has(candidate.id)) {
       rejected.push({ index, reason: "Legacy project must have a safe, non-empty string ID." });
@@ -320,7 +373,7 @@ export function migrateLegacyProjectsToProfiles(
         approvedContentHash: null, revokedAt: null, revokedRevision: null, revocationReason: null, revocationHistory: []
       }
     });
-  });
+  }
   if (additions.length === 0) return { store: base, rejected };
   const store: ProjectProfilesStore = {
     schemaVersion: PROJECT_PROFILE_SCHEMA_VERSION,
