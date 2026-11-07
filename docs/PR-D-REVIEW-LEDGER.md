@@ -84,3 +84,24 @@ After completing a stage, append a dated immutable record below before moving to
 - Environment warning: GitHub runner reports Node 20 deprecation for checkout/setup-node actions; this did not fail the job and is a maintenance follow-up, not a PR-D correctness result.
 - Reviewer: no independent reviewer has reviewed SHA `0837ae3`; prior COMMENT reviews target older SHAs.
 - Verdict: **S0 CI verified on 0837ae3; S0 independent review still open.** No CI evidence is carried forward to a later code head without a new exact-head run.
+
+
+## Stage S1 — R1 pre-barrier writer evidence, record 1 (2026-11-07)
+
+- **Parent / base of this record:** `8742c3e20b8175b6ded1e82b3db4a994ece31907` (live PR head verified through the GitHub API immediately before work; PR #32 open, unmerged). The SHA of the commit that carries this record is appended in record 2 below once the commit exists.
+- **Scope of the change:** test evidence only. No production code changed; `confirmLegacyWritersQuiesced` is still not supplied by the app, so cutover still cannot be started by default.
+- **Files added:** `src/__fixtures__/legacyStorage.base.ts` (byte-for-byte copy of `src/storage.ts` at base revision `3c60a8529ae99d869c3c98970c2df9ff37895d42`, git blob `819997449e653e53aab7e5aec934093c1d44ee06`, sha256 `91ffc4cd07135d62933da4e742e9e57eb38159f47d2746f5c71f4814b69bc5f4`, guarded by a hash test), `src/legacyWriterFence.test.ts`, `src/raw.d.ts` (typing for the `?raw` import only).
+- **Environment:** Composio remote sandbox, Node v24.22.1, npm 10.9.2 installed in a user directory (no global install), jsdom. Dependencies from `npm ci`. No Chromium was used for this record.
+- **Commands run (local, exact tree of this commit before pushing):** `node node_modules/vitest/vitest.mjs run` → 11 files, 319 tests passed (314 baseline + 5 new); `node node_modules/typescript/bin/tsc --noEmit` → no errors.
+- **What the tests do:** run the **unmodified base-revision writer** (`saveProjectsLocked`, the only write path the base `App.tsx` uses) against the same `localStorage` as the current controller. `navigator.locks` is a spec-shaped in-memory **fake** (exclusive, FIFO, abort on queued requests). The quiescence callback is test-only `true` and is not evidence that any writer stopped.
+- **Observed results:**
+  1. After the controller reaches `intent`, the old writer **succeeds** in overwriting the legacy workspace; the controller then reports `indeterminate` (source changed). The marker does not prevent the write.
+  2. After `committed`, the old writer **also succeeds**; the controller reports `indeterminate`. Same conclusion.
+  3. While a host holds the exclusive lock, the old writer is refused with `lock-timeout` and storage is unchanged (fake lock only).
+  4. When the holder disappears, the old writer succeeds again. A held lock is not a durable fence.
+- **Not proven:** any behaviour of a real browser or real Web Locks; close/crash/suspend/BFCache/reconnect; a pending write across a deployment; any production quiescence verifier.
+- **Findings:** the marker plus post-hoc revalidation can only **detect** legacy writes by pre-barrier bundles; it cannot **prevent** them. A cooperative lock held for the whole cutover window would block base-revision writers only while the holder lives, and Web Locks alone is not accepted as proof of quiescence.
+- **Candidate directions (not implemented, owner/reviewer decision may be needed):** (a) hold the storage lock for the full intent→committed window as a mitigation, with the controller refactored to avoid re-entrant lock requests; (b) narrow the supported guarantee: post-commit legacy drift is detected and preserved, and cutover is gated on an operational procedure that closes old tabs.
+- **CI:** not yet run for the commit carrying this record (see record 2).
+- **Review:** none. No independent reviewer has seen this stage.
+- **Verdict:** **R1 UNRESOLVED.** S1 status: **Open** (evidence implemented locally; not CI-verified; not reviewed).

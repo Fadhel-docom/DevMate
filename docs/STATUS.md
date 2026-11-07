@@ -861,3 +861,14 @@ Independent review of the exact final PR #32 head by ChatGPT (not merged by the 
 - Each bounded stage must retain its own exact SHA, evidence, reviewer verdict, fixes and residual risks. A new head invalidates prior exact-head CI/review evidence unless explicitly revalidated.
 - Current live checkpoint when the ledger was created: `269e0a8daf3c504070cf411e7353a1c32af62771`. R1 remains partial; no independent review approves the current head; exact-head CI evidence still requires confirmation.
 - Do not merge or run real cutover until all gates and stage reviews are complete.
+
+
+## Current state — 2026-11-07 (PR #32: S1 evidence recorded; R1 still unresolved)
+
+This section supersedes the earlier dated sections only for R1/S1 status.
+
+- PR #32 head before this change: `8742c3e20b8175b6ded1e82b3db4a994ece31907`; CI run 42407470558 passed on it; no independent review of that head.
+- Added test evidence (no production change): the unmodified base-revision writer **can** write the legacy workspace after `intent` and after `committed`; the marker only allows detection afterwards. A held exclusive lock blocked it only in a fake lock manager and only while the holder lived.
+- **R1: unresolved.** `confirmLegacyWritersQuiesced` is still not provided by the app, so cutover cannot start by default.
+- Local results: 319/319 tests, `tsc --noEmit` clean. CI for the new commit and an independent S1 review are pending. Details: `docs/PR-D-REVIEW-LEDGER.md` (S1 record 1) and `docs/OPERATIONS-ROOM.md`.
+- No real migration, cutover, deletion, deployment or merge was performed.

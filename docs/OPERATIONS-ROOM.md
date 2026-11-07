@@ -1817,3 +1817,15 @@ Remote sandbox, Node v24.22.1, npm 10.8.2 (CI uses Node 20.20.2), files fetched 
 - Do not combine separate stage verdicts. Record exact head SHA, scope, tests, CI, reviewer identity/type, findings, fixes, and residual risk for each stage before moving on.
 - A new commit invalidates exact-head evidence until rechecked. COMMENT reviews made through the owner's account must not be described as independent GitHub approvals.
 - R1 is still partial; cutover remains unavailable by default. No real migration/cutover, deployment, provider integration, or merge is authorized by this log entry.
+
+
+## 2026-11-07 — S1 (R1): execution environment and pre-barrier writer evidence
+
+- Done: verified PR #32 head is still `8742c3e` (CI run 42407470558 green); prepared an isolated, temporary Composio sandbox (Node 24, npm 10.9.2 in a user directory, `npm ci`); reproduced the baseline locally (314/314 tests). Added a regression test that runs the unmodified base-revision `storage.ts` writer against the current controller (5 new tests; 319/319 pass; `tsc --noEmit` clean).
+- Why: the independent review required proof about pre-barrier writers rather than direct storage mutation tests.
+- Files: `src/__fixtures__/legacyStorage.base.ts`, `src/legacyWriterFence.test.ts`, `src/raw.d.ts`, and the three log files.
+- Technical decisions: the old writer is the real base code, hash-guarded; `navigator.locks` is a labelled fake; the test-only quiescence callback is not evidence.
+- Discoveries: the old writer succeeds after `intent` and after `committed`; the marker only lets the new side detect it. A held lock refuses old writers only while the holder lives.
+- Not complete: no production fence exists; R1 stays **unresolved**; no real-browser verification yet (S2); CI for this commit and independent review are pending.
+- Next: record the commit SHA and its CI result, then decide with evidence between the lock-window mitigation and a narrowed guarantee, then prepare the S1 review package. S2 setup (Playwright/Chromium in the sandbox) follows S1 as authorised.
+- Boundaries kept: no real migration, cutover, deletion, deployment, provider, cost, permission change, `main` change; nothing merged.
