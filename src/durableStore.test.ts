@@ -291,4 +291,26 @@ describe("durable store foundation", () => {
     expect(await store.readProject("p1")).toMatchObject({ ok: false, reason: "future-version" });
     expect(storage.getItem(durableStoreKey("project-profiles"))).toBe(future);
   });
+
+  it("rejects prototype-sensitive project IDs before reading object properties", async () => {
+    const { store, storage } = setup();
+    expect(await store.writeProject("toString", { projectId: "toString", value: "unsafe" }))
+      .toMatchObject({ ok: false, reason: "invalid-data" });
+    expect(storage.getItem(durableStoreKey("project-profiles"))).toBeNull();
+  });
+
+  it("does not treat a Promise returned by a runtime-injected validator as approval", async () => {
+    const storage = new MemoryStorage();
+    const store = createDurableStore<RecordValue>({
+      name: "project-profiles",
+      storage,
+      runExclusive: async (work) => ({ ok: true, value: await work() }),
+      validateRecord: (id, value): value is RecordValue =>
+        !!value && typeof value === "object" && (value as RecordValue).projectId === id,
+      validateUpdate: (() => Promise.resolve(false)) as never
+    });
+    expect(await store.writeProject("p1", { projectId: "p1", value: "one" }))
+      .toMatchObject({ ok: false, reason: "invalid-data" });
+    expect(storage.getItem(durableStoreKey("project-profiles"))).toBeNull();
+  });
 });
