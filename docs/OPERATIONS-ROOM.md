@@ -1529,7 +1529,7 @@ Remote sandbox, Node v24.22.1, npm 10.8.2 (CI uses Node 20.20.2), files fetched 
 - No changes were made by the reviewer. The reviewer found the delegated authority exclusions broadly sound and no unintended permission expansion.
 
 ### Corrections applied
-- Added `docs/CHARTER-AND-QUALITY-RULES-v1.1.md` using the exact content of the approved v1.1 source at commit `50126a159961b71faf88025a8695cb7e734d63b7`. A byte-for-byte content comparison against the source returned true.
+- Added `docs/CHARTER-AND-QUALITY-RULES-v1.1.md` using the exact content of the approved v1.1 source. The identifier `50126a159961b71faf88025a8695cb7e734d63b7` is the historical Git blob SHA, not a commit; the actual approval commit is `371da3325f3b5a8e9e8d9c794c3e1829cce8c818`. A byte-for-byte content comparison against the source returned true.
 - Updated §17 to state that v1.2 becomes the current governing version only after the amendment is merged, while v1.1 and v1.0 remain preserved at standalone versioned paths.
 - Clarified §7 that changes to the constitution and approval boundaries remain owner-reserved; uncertainty about whether an action is covered requires asking the owner.
 - Corrected D-002 from "must merge" to "may merge without asking" when all gates pass; recorded the owner's literal 2026-11-07 instruction as evidence. This does not authenticate GitHub shared-account attribution independently.
@@ -1570,3 +1570,19 @@ Remote sandbox, Node v24.22.1, npm 10.8.2 (CI uses Node 20.20.2), files fetched 
 2. Obtain a fresh independent review of the corrected head. If it approves, present the exact final amendment for the owner's explicit approval; do not merge before that approval.
 3. Once PR #23 is properly approved and merged, rebase/reconcile PR #24 onto the new foundation base, then PR #26 onto the updated PR #24 head; rerun exact-head CI and independent reviews as needed.
 4. Keep all unrelated project, provider, cost, permission, deployment, and `main` boundaries unchanged.
+
+
+## 59. PR #23 third independent review — blocker correction; owner approval still pending — 2026-11-07 — ChatGPT coordinator
+
+### Review result and correction
+- Third independent review of exact PR #23 head `d1ef5d290b21048cea4ce925d711c293cc3b233e`: **REQUEST CHANGES**, with one blocking governance-record inconsistency. The v1.2 change-log row incorrectly called the amendment owner-approved and cited D-002 as its approval source, while the same PR correctly said owner approval of this exact amendment was still pending.
+- Corrected the v1.2 change-log row to **Proposed amendment; effective only after the owner's explicit approval of this amendment and merge**. Its owner-decision field now says pending and explicitly distinguishes the standing operational instruction from approval of constitutional text.
+- Changed D-002 to Proposed for the constitutional decision record; clarified that the owner's instruction establishes routine operational delegation only and does not approve v1.2. Reworded its superseded-head phrase to point to this latest review checkpoint.
+- Added a note to the older STATUS checkpoint clarifying that its pending-second-review wording is historical, not current.
+- Clarified the old §57 provenance note: `50126a1…` is a blob SHA, while `371da3325f3b5a8e9e8d9c794c3e1829cce8c818` is the approval commit. Earlier entries are preserved as historical records, with this correction explicitly linked.
+
+### Current status and gates
+- Constitution v1.1 remains the only effective governing version. v1.2 remains a proposal and cannot be merged under the routine delegation; it requires the owner's separate, explicit approval of this exact amendment after a fresh independent review.
+- PR #23 remains Draft and unmerged. The corrective commit(s) do not constitute owner approval.
+- CI on the previously reviewed head `d1ef5d290b21048cea4ce925d711c293cc3b233e` was **Not verified** (no workflow runs, check-runs, or statuses). Exact-head CI for the new corrective head must be checked independently; no CI success is claimed.
+- After the documentation correction, obtain a fresh independent review of the exact final head. Do not merge before the separate owner approval.
