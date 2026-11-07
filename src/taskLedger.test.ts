@@ -71,10 +71,13 @@ describe("task ledger schema v1", () => {
   });
   it("validates append-only event history", () => {
     const previous = storeWith([baseTask], [{ eventId: "e1", taskId: "t1", projectId: "p1", type: "task.created", actor: "coordinator", createdAt: 100, details: {} }]);
-    const unchanged = storeWith([baseTask], [...previous.events, { eventId: "e2", taskId: "t1", projectId: "p1", type: "task.started", actor: "coordinator", createdAt: 101, details: {} }]);
+    const unchanged = { ...storeWith([baseTask], [...previous.events, { eventId: "e2", taskId: "t1", projectId: "p1", type: "task.started", actor: "coordinator", createdAt: 101, details: {} }]), revision: 2, updatedAt: 101 };
     expect(validateAppendOnlyLedgerUpdate(previous, unchanged)).toBe(true);
     expect(validateAppendOnlyLedgerUpdate(previous, storeWith([baseTask], []))).toBe(false);
-    expect(validateAppendOnlyLedgerUpdate(previous, storeWith([baseTask], [{ ...previous.events[0], type: "task.deleted" }]))).toBe(false);
+    expect(validateAppendOnlyLedgerUpdate(previous, { ...unchanged, events: [{ ...previous.events[0], type: "task.deleted" }] })).toBe(false);
+    expect(validateAppendOnlyLedgerUpdate(previous, { ...unchanged, revision: 1 })).toBe(false);
+    expect(validateAppendOnlyLedgerUpdate(previous, { ...unchanged, records: [] })).toBe(false);
+    expect(validateAppendOnlyLedgerUpdate(previous, { ...unchanged, records: [{ ...baseTask, state: "completed" }] })).toBe(false);
   });
   it("requires a linked reconciliation event with evidence to leave indeterminate", () => {
     const ledger = storeWith([{ ...baseTask, state: "indeterminate" as const, failureReason: "Outcome unknown", evidenceReferences: ["audit:123"] }], [{
@@ -164,6 +167,15 @@ describe("task ledger schema v1", () => {
     expect(validateTaskLedgerStore(storeWith([baseTask, task2], [event1, event2])).ok).toBe(true);
     expect(validateTaskLedgerStore(storeWith([{ ...baseTask, taskId: "__proto__" }])).ok).toBe(false);
     expect(validateTaskLedgerStore(storeWith([{ ...baseTask, projectId: " p1 " }])).ok).toBe(false);
+  });
+
+
+  it("requires a recorded review-rework finding before returning to ready", () => {
+    const reviewTask = { ...baseTask, state: "review" as const, updatedAt: 101, evidenceReferences: ["review:1"] };
+    const event = { eventId: "rework-1", taskId: "t1", projectId: "p1", type: "task.review-rework-recorded",
+      actor: "coordinator", createdAt: 102, outcome: "succeeded" as const, details: { evidenceReference: "review:1" } };
+    expect(canTransitionTaskState("review", "ready", { task: reviewTask, event })).toBe(true);
+    expect(canTransitionTaskState("review", "ready")).toBe(false);
   });
 
 });
