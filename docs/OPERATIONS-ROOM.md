@@ -1550,3 +1550,42 @@ Remote sandbox, Node v24.22.1, npm 10.8.2 (CI uses Node 20.20.2), files fetched 
 2. Obtain independent review of PR #24 exact head `4e060090fd5fc6cab7db3121d35217d88495ef50`; resolve blockers only, rerun exact-head CI after changes, then merge automatically under the owner's standing delegation if all gates pass.
 3. Begin PR-C task-ledger durable integration with append-only event checks and profile-store cross-validation inside the same lock.
 4. Plan PR-D cutover only after PR-B/PR-C contracts are accepted; do not invoke migration while the current App still writes the legacy workspace key.
+
+
+---
+
+## 57. PR-B review follow-ups implemented; exact-head CI passed — 2026-11-07 — ChatGPT coordinator
+
+### Scope and branch discipline
+- The owner requested implementation of PR #24's review follow-ups while waiting for Claude to finish the independent review of PR #23.
+- Created a separate stacked branch `feature/pr-b-review-followups` from PR #24's exact head `5e0eaffc68fee2cae58e2fba73b3925bde56a165`.
+- PR #26: https://github.com/Fadhel-docom/DevMate/pull/26 — Draft; base `feature/project-profile-durable-integration`; head `db4b5d7847f85c447e80c73c108cbc9199a4f65b`.
+- An initial PR #25 was created from a branch name that did not match the existing CI push filter (`feature/**)); it was closed as superseded. No code was merged from PR #25.
+
+### Implemented follow-ups
+- In `restoreSnapshot` and `migrateLegacyWorkspace`, existing-record validators must return exactly boolean `true`; truthy non-booleans no longer pass.
+- Profile restore now requires a non-negative expected durable revision, checked inside the shared lock before modifying data. Stale attempts return `conflict`.
+- Legacy migration now validates the complete transformed record map and all locked update guards before consuming a bounded pre-migration snapshot slot. Invalid repeated attempts do not consume slots.
+- If durable data committed but migration-marker persistence failed, a retry with unchanged records writes only the marker and does not create a second data commit or increment the durable revision.
+- `writeProfile` returns `invalid-data` for null/array runtime payloads instead of throwing synchronously.
+- Added tests for null payloads, invalid revisions, additive migration with existing records, retry after marker failure, approval-history regression rejected by the locked guard, invalid existing records, and preservation of legacy bytes/snapshot capacity.
+- Documented that synthetic profile-store revisions (1 then 2) are only validator scaffolding, not durable revision or audit evidence.
+- Added a preliminary migration threat/recovery assessment. It is explicitly not a formal security sign-off and does not authorize migration.
+
+### Restore and migration boundaries
+- A restore that would decrease profileRevision or erase approval/revocation evidence remains refused by the existing profile update guard. The follow-up adds compare-and-swap protection; it does not weaken approval-history invariants to force an older snapshot through.
+- A forward-only recovery workflow preserving approval/revocation evidence, or a separately approved owner-governed recovery procedure, remains a required design gate before PR-D.
+- Migration remains uninvoked. PR-D must coordinate the App cutover, stop the legacy writer, retain a verified raw export/rollback path, and test restart/quota behavior before any migration is run.
+- PR #23 remains untouched and Draft pending the owner's independent Claude review. No v1.2 governance change is assumed effective.
+
+### Exact-head CI evidence
+- GitHub Actions run #325 (ID `42370003826`) completed successfully on exact head `db4b5d7847f85c447e80c73c108cbc9199a4f65b`.
+- Inspected job log: Node v20.20.2; `npm ci` installed 155 packages; npm audit summary reports 0 vulnerabilities; Vitest 8 files / 201 tests passed; `tsc --noEmit`; Vite production build (29 modules) passed.
+- Run: https://github.com/Fadhel-docom/DevMate/actions/runs/42370003826.
+- PR #26 remains Draft pending independent review. No merge, deployment, `main` write, provider connection, cost, secret, permission change, or RateNest modification.
+
+### Next exact actions
+1. Keep PR #23 unchanged and wait for Claude's independent review of its corrected exact head.
+2. Obtain an independent review of PR #26 after the PR #23 review workload is complete; resolve any real blockers and rerun CI on the exact final head.
+3. Once PR #26 is accepted, fold its follow-up into PR #24's branch and reconcile PR #24's current head, description, STATUS, and operations log.
+4. Do not begin PR-C until PR-B is accepted. Do not plan PR-D migration execution until the forward-only restore/recovery design and migration cutover gates are resolved.
