@@ -86,6 +86,15 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return Reflect.ownKeys(value).every((key) => typeof key === "string" &&
     Object.prototype.hasOwnProperty.call(Object.getOwnPropertyDescriptor(value, key) ?? {}, "value"));
 }
+function isDenseDataArray(value: unknown): value is unknown[] {
+  if (!Array.isArray(value)) return false;
+  if (Reflect.ownKeys(value).some((key) => typeof key !== "string" ||
+    (key !== "length" && (!/^(0|[1-9][0-9]*)$/.test(key) || Number(key) >= value.length)))) return false;
+  return Array.from({ length: value.length }, (_, index) => {
+    const descriptor = Object.getOwnPropertyDescriptor(value, String(index));
+    return Boolean(descriptor && Object.prototype.hasOwnProperty.call(descriptor, "value"));
+  }).every(Boolean);
+}
 function hasExactKeys(value: Record<string, unknown>, required: readonly string[], optional: readonly string[] = []): boolean {
   const allowed = new Set([...required, ...optional]);
   return required.every((key) => Object.prototype.hasOwnProperty.call(value, key)) &&
@@ -306,8 +315,7 @@ export function validateProjectProfilesStore(input: unknown): ProfileValidationR
   if (input.schemaVersion !== PROJECT_PROFILE_SCHEMA_VERSION) return { ok: false, errors: [{ path: "schemaVersion", message: `Unsupported schema version: ${String(input.schemaVersion)}.` }] };
   if (!isPositiveInteger(input.revision)) addError(errors, "revision", "Expected a positive integer.");
   if (!isNonNegativeInteger(input.updatedAt)) addError(errors, "updatedAt", "Expected a non-negative timestamp.");
-  if (!Array.isArray(input.records)) addError(errors, "records", "Expected an array of project profiles.");
-  if (Array.isArray(input.records) && !Array.from({ length: input.records.length }, (_, index) => Object.prototype.hasOwnProperty.call(input.records, index)).every(Boolean)) addError(errors, "records", "Sparse profile arrays are not allowed.");
+  if (!isDenseDataArray(input.records)) addError(errors, "records", "Expected a dense data-only array of project profiles.");
   const ids = new Set<string>();
   let latestProfileUpdate = 0;
   if (Array.isArray(input.records)) {
@@ -372,7 +380,12 @@ export function migrateLegacyProjectsToProfiles(
       rejected.push({ index, reason: "Sparse legacy project entry." });
       continue;
     }
-    const candidate = legacyProjects[index];
+    const descriptor = Object.getOwnPropertyDescriptor(legacyProjects, String(index));
+    if (!descriptor || !Object.prototype.hasOwnProperty.call(descriptor, "value")) {
+      rejected.push({ index, reason: "Legacy project entry must be a data property." });
+      continue;
+    }
+    const candidate = descriptor.value;
     if (!isRecord(candidate) || typeof candidate.id !== "string" || candidate.id.trim().length === 0 ||
       candidate.id.trim() !== candidate.id || dangerousKeys.has(candidate.id)) {
       rejected.push({ index, reason: "Legacy project must have a safe, non-empty string ID." });
