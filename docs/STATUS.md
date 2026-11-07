@@ -1,6 +1,6 @@
 # DevMate Status
 
-> Current state: see "## Current state — 2026-11-07" near the end of this file. Earlier dated checkpoints, and sections marked "historical snapshot", are preserved as history and do not describe the present.
+> Current state: see "## Current state — 2026-11-07 (after PR #12 merge and PR #17 review)" at the end of this file. Earlier dated checkpoints are historical snapshots and do not describe the present.
 
 ## Current milestone
 Phase 1 — foundation and local demo.
@@ -552,3 +552,28 @@ Run the full Vitest suite, TypeScript/Vite production build, and dependency audi
 ### Owner's standing merge instruction — 2026-11-07
 - The owner explicitly instructed that routine PR merges must not wait for the owner's availability. Merge when all applicable constitution/project rules, quality gates, independent review, and evidence requirements are satisfied.
 - Stop only when an applicable rule is not met or an owner-reserved decision is genuinely required. This delegation does not override constitution §14, the explicit PR #1 hold, or approval requirements for architecture, security, permissions, costs, destructive actions, licensing, and production/public release.
+
+
+## Current state — 2026-11-07 (after PR #12 merge and PR #17 review)
+
+### Verified branch and architecture baseline
+- Repository: `Fadhel-docom/DevMate`; active foundation branch: `feature/phase-1-foundation`.
+- PR #12 is merged into this branch at `f38475485268d212eddc906ee06f762648070d37`. It accepts `docs/PROJECT-GOVERNANCE-MODEL.md` as the architecture baseline with follow-ups; it does not amend constitution v1.1 or authorize providers, external data sharing, paid usage, new permissions, deployment, or other repositories.
+- PR #12's merge commit has parent `6a402ce6f94dae14bf8c4d5bc7459b3180c94625`.
+- PR #17 remains open at `dcd0d900ed811759487b01ed61ba50a41cfe65ac`; its CI run #170 passed (6 files / 140 tests, audit 0, TypeScript and Vite build). Independent review identified blocking schema-contract issues; do not merge until corrected and independently reviewed.
+- PR #18 remains open and unmerged. Its documentation claims are superseded by this reconciliation entry; do not merge it as-is.
+
+### Current next actions
+1. Reconcile the accepted governance document and decision/status records.
+2. Correct PR #17's profile approval binding, additive migration, strict runtime validation, extension policy, approval evidence, revocation history, and task-ledger reconciliation evidence.
+3. Obtain one independent review of the corrected PR #17 head and verify exact-head CI before merge.
+4. Implement durable storage in bounded PRs A–D, preserving the legacy workspace bytes and handling interrupted multi-key writes.
+5. Register DevMate as its own managed project and prove task/PR/recovery workflows before provider integration.
+6. Provider connections remain gated by isolation, server-side secret handling, provider terms/permissions, cost controls, auditability, timeout/retry/fallback, self-management, and independent review.
+
+### Product truth and boundaries
+- The app remains a React + TypeScript + Vite browser application with localStorage persistence and a local mock chat.
+- The profile and task-ledger modules are schema/validation code only; they are not yet connected to persistence or the UI.
+- No AI provider, API key, server-side adapter, in-app GitHub connector, or autonomous orchestrator is connected.
+- Real browser/mobile, accessibility, and multi-tab Web Locks behavior remain unverified.
+- No changes to `main`, RateNest, or another repository were made.
