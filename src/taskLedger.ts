@@ -143,6 +143,8 @@ export function validateTaskLedgerStore(input: unknown, profiles?: ProjectProfil
   if (!isTimestamp(input.updatedAt)) addError(errors, "updatedAt", "Expected a non-negative timestamp.");
   if (!Array.isArray(input.records)) addError(errors, "records", "Expected a task array.");
   if (!Array.isArray(input.events)) addError(errors, "events", "Expected an event array.");
+  if (Array.isArray(input.records) && input.records.length > 2000) addError(errors, "records", "Task ledger exceeds the 2,000-task validation limit.");
+  if (Array.isArray(input.events) && input.events.length > 10000) addError(errors, "events", "Task ledger exceeds the 10,000-event validation limit.");
   const taskById = new Map<string, Record<string, unknown>>();
   if (Array.isArray(input.records)) input.records.forEach((task, index) => {
     const path = `records[${index}]`;
@@ -282,9 +284,10 @@ export function canTransitionTaskState(from: TaskState, to: TaskState, reconcili
   if (!transitions[from].has(to)) return false;
   if (from !== "indeterminate") return true;
   if (!reconciliation) return false;
+  const task = reconciliation.ledger.records.find((item) => item.taskId === reconciliation.taskId && item.projectId === reconciliation.projectId);
   const event = reconciliation.ledger.events.find((item) => item.eventId === reconciliation.eventId);
-  if (!event || event.taskId !== reconciliation.taskId || event.projectId !== reconciliation.projectId ||
-    event.type !== "task.reconciled" || !requiredString(event.details.evidenceReference)) return false;
+  if (!task || !event || event.taskId !== reconciliation.taskId || event.projectId !== reconciliation.projectId ||
+    event.type !== "task.reconciled" || event.outcome !== "succeeded" || !requiredString(event.details.evidenceReference)) return false;
   const resolution = event.details.resolution;
   return (to === "ready" && resolution === "not-applied") ||
     (to === "failed" && resolution === "failed") ||
