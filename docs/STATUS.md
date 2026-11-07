@@ -1,6 +1,6 @@
 # DevMate Status
 
-> Current state: see "## Current state — 2026-11-07 (PR #23 merged; PR-B rebased for final review)" at the end of this file. Earlier dated checkpoints are historical snapshots and do not describe the present.
+> Current state: see the latest dated PR-C / PR-D checkpoint at the end of this file. Earlier dated checkpoints are historical.
 
 ## Current milestone
 Phase 1 — foundation and local demo.
@@ -723,3 +723,33 @@ Run the full Vitest suite, TypeScript/Vite production build, and dependency audi
 ### PR-B latest exact-head check — 2026-11-07
 - PR #27 head `6811da259b4bdf2b743d3d3f3ad75a914096383f` passed Actions run #351 (`42378286215`): 8 test files / 205 tests, npm ci 155 packages, audit summary 0 vulnerabilities, TypeScript and Vite build all successful; job logs inspected.
 - This final operations/status checkpoint changes the branch head; the exact new PR head and its CI must be rechecked before merge.
+
+
+## Current state — 2026-11-07 (PR-C exact-head CI passed; PR-D recovery design documented)
+
+### Foundation
+- Governing constitution: v1.2, merged in PR #23 at `2f7f9c69e80863b3720c269cc33a36b33a841209`.
+- PR-B project-profile persistence merged in PR #27 at `3665c694d29966188096c534dc7221b84f723dd4`.
+- PR #24 and PR #26 are superseded; do not merge them.
+
+### PR-C task-ledger adapter
+- PR #28: https://github.com/Fadhel-docom/DevMate/pull/28
+- Live head: `2c7d798d2a07d5c8ec6d6a4b3e871bd164c2f17a`; base: `feature/phase-1-foundation`.
+- Exact-head Actions run #371 / ID `42380821309` completed successfully on this SHA. Inspected job log: npm ci installed 155 packages; npm audit reported 0 vulnerabilities; 9 test files / 216 tests passed; `tsc --noEmit` and Vite production build passed.
+- Coordinator code review found and fixed the profile envelope key/projectId identity gap, added regression tests, and corrected the PR-C migration wording.
+- Independent review of the exact live SHA is still outstanding. PR #28 remains open and unmerged; no merge is claimed.
+
+### Agent handoff protocol
+- PR #29: https://github.com/Fadhel-docom/DevMate/pull/29
+- Head: `924241df0f5a12906c720fe6e9494c77c2ab1ef7`; docs-only, 2 files / 130 additions.
+- Diff was inspected. No Actions run was found for this head. Because it changes shared operating instructions, the required second-contributor review remains outstanding. PR #29 remains open and unmerged.
+
+### PR-D recovery design
+- Added `docs/PR-D-RECOVERY-DESIGN.md` on branch `docs/pr-d-recovery-design`.
+- Defines a staged, observable cutover; read-only preservation of legacy tasks; no fabricated task-policy fields; forward-only profile/ledger recovery; validated raw export and quarantine; CAS/idempotence; failure-state UI; and a Sensitive-level verification matrix.
+- This is a design document only. No migration, cutover, legacy write change, UI integration, or real user-data operation has been performed.
+
+### Next actions
+1. Obtain one focused independent review of PR #28 exact head `2c7d798...`; if no blockers and the exact-head CI remains green, merge under the standing delegation.
+2. Obtain the required second-contributor review of PR #29; then merge if its scope and links are sound.
+3. After PR-C merge, implement PR-D in bounded steps using `docs/PR-D-RECOVERY-DESIGN.md`. Do not invoke migration/cutover during implementation or CI.
