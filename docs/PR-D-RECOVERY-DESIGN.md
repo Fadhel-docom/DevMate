@@ -1,6 +1,6 @@
 # PR-D — controlled application cutover and forward-only recovery design
 
-**Status:** Design baseline for implementation planning; not an authorization to run migration or cut over storage.  
+**Status:** Design baseline; the cutover controller and legacy write barrier are implemented (see section 10) but nothing in the application can start a cutover, and this is not an authorization to run migration or cut over storage.  
 **Base:** `feature/phase-1-foundation` at PR-B merge `3665c694d29966188096c534dc7221b84f723dd4`.  
 **Dependencies:** PR-B profile persistence (merged); PR-C task-ledger adapter (PR #28, merged at `9d03b9c426b06be8fb1dd4b4a54342def150ff83`).  
 **Risk:** Sensitive — local user-data migration, recovery, and persistence cutover.
@@ -168,3 +168,33 @@ Merging PR-D does not itself authorize or trigger the live migration/cutover. Th
 - No automatic conversion of legacy tasks.
 - No forced restore or automatic destructive repair.
 - No migration/cutover invocation during implementation or tests against a real user workspace.
+
+## 10. Implementation status (PR #32, 2026-11-07)
+
+Implemented and tested in `src/storage.ts`, `src/cutoverController.ts`, `src/App.tsx`, `src/BackupManager.tsx`. No UI action, startup path or test creates a marker or migrates data in a real browser storage; tests use in-memory storage only.
+
+### 10.1 Controller architecture (`src/cutoverController.ts`)
+- **Marker** (`devmate-cutover-v1:workspace`): canonical JSON with exactly `version`, `sourceFingerprint`, `startedAt`, `phase`, `profileSchemaVersion`, `ledgerSchemaVersion`. Strict parse: exact key set and types, known version/phase/schema versions, valid fingerprint, canonical serialization, at most 256 characters. Anything else (including a future version) is indeterminate and blocks writes.
+- **Fingerprint (R2):** `fnv1a32-<8 hex>-<code-unit length>` or `absent` when the legacy key does not exist (absent and `""` are different sources). It only detects change; the proof that the source is unchanged is a full-string comparison with the preserved raw copy.
+- **Phases:** `intent` -> `profiles-verified` -> `stores-verified` -> `committed`, one step per `advance()`, forward only. `startedAt` and the fingerprint never change.
+- **`readCutoverState` (restart rule):** no marker = `legacy`; intent/intermediate = `recovery` (read-only, forward resume only); committed = `durable`; unreadable/malformed/unknown version = `indeterminate`. `inspect()` additionally reports `indeterminate` (reason `source-changed`, `source-copy-missing`, `source-unreadable`) when the legacy source no longer equals the preserved copy, so restarts are deterministic.
+- **`preflight()`:** read-only; returns exact source bytes and fingerprint; refuses when any marker exists.
+- **`begin(plan)`** (inside the shared lock): re-read the source and abort with `stale-plan` if it differs from the plan byte for byte; preserve the raw bytes under `devmate-cutover-v1:source:<fingerprint>` (R3: idempotent, an exact existing copy is success, a different copy at the same key is `preserve-conflict` and is never overwritten, quota is `preserve-quota`); read the copy back; then write and read back the intent marker. A repeat call for the same source is a no-op.
+- **`advance()` / `resume()`** (inside the shared lock): read and validate the marker; revalidate the source against the preserved copy and the marker fingerprint (R1) **before** the stage and again **after** the stage immediately before the marker write; verify the marker bytes did not change during the stage (CAS on the marker); write and read back the next phase. A source divergence stops in indeterminate/read-only state, preserves the new bytes (`divergentPreserved`), and does not advance. `resume()` repeats `advance()` until `committed` or the first failure and is idempotent on a committed cutover.
+- **Stages** are injected (`CutoverStages`). `createCutoverStages` wires the PR-B profile store and PR-C ledger store with a pass-through lock runner, because the controller already holds the single shared Web Lock and a nested request would deadlock. `intent` runs the additive profile migration then verifies it; `profiles-verified` and `stores-verified` re-verify every legacy project profile and every ledger partition. Legacy tasks are never converted into ledger tasks.
+- **Never deletes:** the controller has no remove path; tests assert `removeItem` is never called by the controller.
+- **Legacy write barrier (`src/storage.ts`):** `saveProjects`, `saveProjectsLocked`, `restoreBackup` and **`deleteBackup`** (added in this PR; it previously had no barrier and could delete legacy backups) refuse when any marker bytes exist. Read failures keep an accurate reason: blocked storage (`SecurityError`) is `unavailable`, other read failures are `cutover-indeterminate`. `readProjects` still reads, and may still add a backup of unreadable data to the legacy backup namespace; that is additive and does not touch the legacy workspace key.
+- **UI:** at startup and on reload the App reads the marker; any non-legacy state locks editing, shows an explicit notice (recovery / durable archive / indeterminate), and disables backup restore and delete. No control starts or resumes a cutover.
+
+### 10.2 R1 to R6
+| Condition | Status | Evidence / remaining work |
+|---|---|---|
+| R1 source revalidation at every advance incl. `committed`; legacy write after intent | Implemented | `cutoverController.test.ts` "R1" group: write after each phase, after commit, and during stage work; barrier tests for direct legacy writes |
+| R2 fingerprint algorithm + full-byte compare with preserved copy | Implemented | Fingerprint spec above; test with equal fingerprint and different bytes |
+| R3 idempotent raw-byte preservation | Implemented | Retry after crash between preservation and marker; conflict and quota tests |
+| R4 abort-after-intent | Defined; no app deletion | `verifyAbortEligibility()` is read-only: valid `intent` marker, source equals preserved copy, and proof of no durable state. The application never deletes the marker; any abort is an owner-approved action performed outside the application after the report and a raw export. |
+| R5 snapshot-full dead end | Defined; owner action not implemented | Snapshot exhaustion stops at `intent` with `stageReason: snapshot-full` and no slot is overwritten (tested). `exportPreservedSource()` provides a byte-preserving export. Any slot release is destructive and owner-reserved; no release or prune operation exists. |
+| R6 fixed-size marker; marker-write failure per phase | Partly implemented | Size bound (256 characters, worst case tested) and marker-write failure at every phase tested in jsdom with in-memory storage. Real-browser quota and two-tab tests are NOT done. The marker is bounded, not padded to a constant length. |
+
+### 10.3 Not done
+- No real-browser (two-tab, quota, restart) tests; no cutover trigger UI; no durable workspace UI; no read-only legacy task archive view or export button; no automated slot release. The design verification matrix items that require those remain open and the cutover gates in section 8 are not satisfied for any live cutover.

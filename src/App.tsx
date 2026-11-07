@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties, FormEvent } from "react";
-import { readProjectsLocked, saveProjectsLocked, type LoadResult, type Project, type SaveResult } from "./storage";
+import { getBrowserStorage, readProjectsLocked, saveProjectsLocked, type LoadResult, type Project, type SaveResult } from "./storage";
+import { readCutoverState, type CutoverState } from "./cutoverController";
 import BackupManager from "./BackupManager";
 
 type Message = { id: string; role: "user" | "assistant"; text: string };
@@ -35,8 +36,20 @@ export function loadNotice(result: LoadResult): string | null {
     default: return null;
   }
 }
-export function canEditWorkspace(loaded: boolean, recoveryRequired: boolean, initialStatus: LoadResult["status"] | undefined, saveFailureReason?: string): boolean {
-  return loaded && !recoveryRequired && initialStatus !== "unavailable" &&
+/** Explicit, truthful cutover states. Legacy mode (no marker) shows nothing; every other state locks editing. */
+export function cutoverNotice(state: CutoverState): { tone: "status" | "alert"; text: string } | null {
+  switch (state.mode) {
+    case "legacy": return null;
+    case "recovery":
+      return { tone: "status", text: `A storage cutover was started and is not finished (phase: ${state.phase}). Legacy writes are blocked across tabs and restarts, and editing is disabled. Your legacy workspace is preserved and still readable. Recovery controls are not available in this version; no data has been changed.` };
+    case "durable":
+      return { tone: "status", text: "Durable storage mode is recorded for this browser. The legacy workspace is kept as a read-only archive, and legacy tasks are not governed or executable. Editing is disabled until the durable workspace interface is available." };
+    case "indeterminate":
+      return { tone: "alert", text: `The cutover state cannot be verified (${state.reason}). All writes are blocked until the stored state is inspected. ${state.message}` };
+  }
+}
+export function canEditWorkspace(loaded: boolean, recoveryRequired: boolean, initialStatus: LoadResult["status"] | undefined, saveFailureReason?: string, cutoverMode: CutoverState["mode"] = "legacy"): boolean {
+  return loaded && !recoveryRequired && initialStatus !== "unavailable" && cutoverMode === "legacy" &&
     saveFailureReason !== "conflict" && saveFailureReason !== "verify" &&
     saveFailureReason !== "cutover-active" && saveFailureReason !== "cutover-indeterminate";
 }
@@ -73,6 +86,7 @@ export default function App() {
   const [backupRefreshKey, setBackupRefreshKey] = useState(0);
   const [startupNotice, setStartupNotice] = useState<string | null>(null);
   const [saveFailure, setSaveFailure] = useState<Extract<SaveResult, { ok: false }> | null>(null);
+  const [cutover, setCutover] = useState<CutoverState>({ mode: "legacy" });
   const [activeId, setActiveId] = useState("starter");
   const [newProject, setNewProject] = useState("");
   const [newTask, setNewTask] = useState("");
@@ -87,6 +101,7 @@ export default function App() {
       if (!active) return;
       baselineRaw.current = result.storageRaw;
       if (result.backedUp) setBackupRefreshKey((value) => value + 1);
+      setCutover(readCutoverState(getBrowserStorage()));
       setInitial(result);
       setProjects(result.projects);
       setActiveId(result.projects[0]?.id ?? "starter");
@@ -138,6 +153,7 @@ export default function App() {
       const result = await readProjectsLocked();
       baselineRaw.current = result.storageRaw;
       if (result.backedUp) setBackupRefreshKey((value) => value + 1);
+      setCutover(readCutoverState(getBrowserStorage()));
       setRecoveryRequired(!safeToResume);
       setInitial(safeToResume ? result : { ...result, status: "unavailable" });
       setProjects(result.projects);
@@ -160,7 +176,9 @@ export default function App() {
       setLoaded(true);
     }
   }
-  const canEdit = canEditWorkspace(loaded, recoveryRequired, initial?.status, saveFailure?.reason);
+  const canEdit = canEditWorkspace(loaded, recoveryRequired, initial?.status, saveFailure?.reason, cutover.mode);
+  // When storage itself is unavailable that notice already explains the lock; do not stack a second, redundant one.
+  const cutoverBanner = loaded && initial?.status !== "unavailable" ? cutoverNotice(cutover) : null;
   function addProject(event: FormEvent) {
     event.preventDefault();
     if (!canEdit) return;
@@ -205,6 +223,7 @@ export default function App() {
       </header>
       {!loaded && <p role="status" style={noticeStyle}>Loading your workspace safely…</p>}
       {startupNotice && <p role="status" style={noticeStyle}>{startupNotice}</p>}
+      {cutoverBanner && <p role={cutoverBanner.tone} data-testid="cutover-banner" style={cutoverBanner.tone === "alert" ? errorStyle : noticeStyle}>{cutoverBanner.text}</p>}
       {saveFailure && <p role="alert" style={errorStyle}>{saveMessage(saveFailure)}</p>}
       {recoveryRequired && <p role="alert" style={errorStyle}>Editing is locked. Restore the retained pre-restore backup from the Backups panel before continuing.</p>}
       {loaded && !recoveryRequired && (initial?.status === "unavailable" || saveFailure?.reason === "conflict") && (
@@ -258,7 +277,7 @@ export default function App() {
           </form>
           <p className="privacy-note">Demo mode · Messages are not sent to an AI provider.</p>
         </section>
-        <BackupManager onRestoreStart={() => setLoaded(false)} onRestored={reloadFromStorage} refreshKey={backupRefreshKey} />
+        <BackupManager onRestoreStart={() => setLoaded(false)} onRestored={reloadFromStorage} refreshKey={backupRefreshKey} writesBlocked={cutover.mode !== "legacy"} />
       </div>
       <footer><span>DEVMATE</span><span>Built to make focused progress easier.</span></footer>
     </main>

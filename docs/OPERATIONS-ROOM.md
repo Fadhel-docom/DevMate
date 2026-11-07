@@ -1785,3 +1785,21 @@ Remote sandbox, Node v24.22.1, npm 10.8.2 (CI uses Node 20.20.2), files fetched 
 
 ### Next
 - This documentation PR needs an independent review before merge. Then start PR-D implementation step 1 (cutover-intent write barrier) per `docs/PR-D-RECOVERY-DESIGN.md` and conditions R1 to R6.
+
+
+## 2026-11-07 — PR-D takeover: audit, regression fix and cutover controller (Claude via Composio/GitHub API)
+
+### Verified at start
+- Live heads: PR #31 `32715747992d549cd9eaef3067197f7222669d77` (unchanged, CI none); PR #32 `d1ff7f72e414942bb372692f86203e761ce452fe` (the previous agent had already merged PR #31 into it; CI `verify` failed, run 42396973824). The historical SHA `13062a6...` was not the live head. No unpublished local work was visible; none was assumed.
+- Reproduced locally on `d1ff7f7`: `npm ci`, vitest 215 passed / 5 failed (220), all in `src/storage.test.ts`.
+
+### Done
+- Fixed barrier error classification; added the missing `deleteBackup` barrier; adjusted four test fixtures without changing their assertions (see STATUS for the judgement call).
+- Added `src/cutoverController.ts` and `src/cutoverController.test.ts`; App/BackupManager cutover states and tests; updated STATUS, PR-D-RECOVERY-DESIGN, DURABLE-STORAGE.
+- Local results on the final tree: vitest 312/312, `tsc --noEmit` clean, `vite build` OK, `npm audit` 0 vulnerabilities.
+
+### Not verified / open
+- Real-browser tests, CI result for the final SHA (see PR comment), independent review.
+
+### Boundaries kept
+- No real user-data migration, deletion, cutover, deployment, provider, cost, permission change, `main` change or RateNest work. Nothing merged.

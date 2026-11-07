@@ -820,3 +820,31 @@ This section supersedes the earlier dated "Current state" sections above, which 
 
 ### Next exact action
 Implement PR-D in small reviewed steps, starting with the cutover-intent barrier in `src/storage.ts` (all legacy mutators check `devmate-cutover-v1:workspace` under the shared lock) with tests, against R1 to R6. Do not run any migration or cutover against user data during development or CI. Do not start AI-provider integration.
+
+
+## Current state — 2026-11-07 (PR #32: cutover controller implemented; not merged)
+
+This section supersedes the PR-D "not started" statements above.
+
+### Pull requests
+- PR #32 (`feature/pr-d-cutover-intent-barrier` -> `feature/phase-1-foundation`, Draft) now contains the documentation of PR #31 (merge commit `d1ff7f72e414942bb372692f86203e761ce452fe`; PR #31 head `32715747992d549cd9eaef3067197f7222669d77` is an ancestor and its four documentation files are byte-identical) plus the PR-D implementation. PR #31 is superseded by PR #32.
+- Previously published PR #32 head `d1ff7f7...` failed CI job `verify` (run 42396973824). Reproduced independently: 5 failed / 215 passed of 220 in `src/storage.test.ts`.
+
+### Failure analysis and fix
+- Three tests (`quota`, `unavailable`, `unknown` classification) used a write-only storage object (`{ setItem }`) and one used a read counter that also counted the new barrier read. One test (a storage whose reads all throw `SecurityError`) exposed a real classification defect.
+- Implementation fix: a blocked storage (`SecurityError`) while reading the marker is reported as `unavailable`; other read failures remain `cutover-indeterminate`; the barrier stays fail-closed.
+- Test fixtures (not assertions) changed in four tests: three now provide `getItem: () => null` so the barrier can verify "no marker" and the original `quota`/`unavailable`/`unknown` assertions are unchanged; the `verify` test counts only reads of the workspace key. This is a judgement call: the literal instruction was to fix the implementation only, but a write-only storage cannot be proven marker-free, so it must stay fail-closed. The previous agent's replacement of "succeeds with a storage that only offers setItem" by "fails closed when a storage writer cannot inspect the cutover marker" is retained and flagged for the independent reviewer.
+- Added the missing barrier on `deleteBackup`.
+
+### Implemented
+- `src/cutoverController.ts` (marker schema, phases, fingerprint, preservation, revalidation, forward-only resume, abort eligibility, export, production stage wiring), App cutover states, backup controls disabled while a marker exists. Details and the R1 to R6 table: `docs/PR-D-RECOVERY-DESIGN.md` section 10.
+- Tests: 312 tests in 10 files passed locally on the final tree (82 new in `cutoverController.test.ts`, 10 new in `App.test.tsx`). `tsc --noEmit`, `vite build` and `npm audit` (0 vulnerabilities) also ran locally. Mutation check: removing either source revalidation in the controller makes the R1 tests fail. Exact-head CI evidence for the final SHA is recorded in the PR #32 description/comment, not here, to avoid a self-referential SHA.
+
+### Not done / risks
+- No real-browser two-tab, quota or restart tests (R6 partly open). Local runs used Node v24.22.1 and npm 10.8.2 in a remote sandbox; CI uses Node 20.
+- No cutover trigger UI, durable workspace UI, read-only legacy archive view/export UI or slot-release flow; R4 abort and R5 release are owner-approved actions outside the application (not implemented as code).
+- The fingerprint is non-cryptographic (full-byte comparison is the proof). The marker is bounded (<= 256 characters), not padded.
+- No migration, deletion, cutover, deployment or real user-data operation occurred.
+
+### Next exact action
+Independent review of the exact final PR #32 head by ChatGPT (not merged by the implementer). Merging does not authorize a live cutover.

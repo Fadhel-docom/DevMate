@@ -225,21 +225,21 @@ describe("save failures", () => {
   });
 
   it("recognises the Firefox quota error name", () => {
-    const storage = { setItem: () => { throw domError("NS_ERROR_DOM_QUOTA_REACHED", 1014); } };
+    const storage = { getItem: () => null, setItem: () => { throw domError("NS_ERROR_DOM_QUOTA_REACHED", 1014); } };
     const result = saveProjects(sample, storage);
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.reason).toBe("quota");
   });
 
   it("reports a blocked storage as unavailable", () => {
-    const storage = { setItem: () => { throw domError("SecurityError"); } };
+    const storage = { getItem: () => null, setItem: () => { throw domError("SecurityError"); } };
     const result = saveProjects(sample, storage);
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.reason).toBe("unavailable");
   });
 
   it("reports unknown errors without throwing", () => {
-    const storage = { setItem: () => { throw new Error("boom"); } };
+    const storage = { getItem: () => null, setItem: () => { throw new Error("boom"); } };
     const result = saveProjects(sample, storage);
     expect(result.ok).toBe(false);
     if (!result.ok) {
@@ -574,6 +574,7 @@ describe("protecting unreadable originals when saving", () => {
     let reads = 0;
     const storage = {
       getItem: (key: string) => {
+        if (key === CUTOVER_INTENT_KEY) return base.getItem(key);
         reads += 1;
         if (reads > 1) throw domError("SecurityError");
         return base.getItem(key);

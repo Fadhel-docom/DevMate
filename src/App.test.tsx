@@ -1,7 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { StrictMode, act } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import App, { canEditWorkspace, loadNotice, noticeAfterSave } from "./App";
+import App, { canEditWorkspace, cutoverNotice, loadNotice, noticeAfterSave } from "./App";
+import { CUTOVER_MARKER_KEY, CUTOVER_PHASES, fingerprintSource, serializeMarker, type CutoverPhase } from "./cutoverController";
 import { BACKUP_KEY, STORAGE_KEY, type LoadResult } from "./storage";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -323,5 +324,91 @@ describe("workspace edit safety gate", () => {
     expect(canEditWorkspace(true, false, "ok", "conflict")).toBe(false);
     expect(canEditWorkspace(true, false, "unavailable", undefined)).toBe(false);
     expect(canEditWorkspace(true, true, "ok", undefined)).toBe(false);
+  });
+});
+
+
+describe("cutover states in the UI", () => {
+  const LEGACY_RAW = JSON.stringify([{ id: "legacy-1", name: "Archived legacy project", tasks: [{ id: "t", title: "Legacy task", done: false, createdAt: 1 }] }]);
+  const markerRaw = (phase: CutoverPhase) => serializeMarker({
+    version: 1, sourceFingerprint: fingerprintSource(LEGACY_RAW), startedAt: 1, phase, profileSchemaVersion: 1, ledgerSchemaVersion: 1
+  });
+  class RecordingStorage extends FakeStorage {
+    writes: string[] = [];
+    setItem(key: string, value: string): void { this.writes.push(key); super.setItem(key, value); }
+  }
+  const ownDescriptor = Object.getOwnPropertyDescriptor(window, "localStorage");
+  let host: HTMLElement;
+  let root: Root;
+  beforeEach(() => { installFakeLocks(); });
+  afterEach(async () => {
+    await act(async () => root.unmount());
+    host.remove();
+    uninstallLocks();
+    if (ownDescriptor) Object.defineProperty(window, "localStorage", ownDescriptor);
+    else delete (window as { localStorage?: unknown }).localStorage;
+  });
+  async function mountWith(storage: FakeStorage) {
+    Object.defineProperty(window, "localStorage", { configurable: true, get: () => storage });
+    host = document.createElement("div"); document.body.appendChild(host); root = createRoot(host);
+    await act(async () => { root.render(<StrictMode><App /></StrictMode>); await new Promise((resolve) => setTimeout(resolve, 0)); });
+  }
+  const banner = () => host.querySelector('[data-testid="cutover-banner"]');
+  const projectInput = () => host.querySelector('input[aria-label="New project name"]') as HTMLInputElement;
+
+  it("shows no cutover banner and keeps editing enabled in legacy mode", async () => {
+    const storage = new RecordingStorage(); storage.values.set(STORAGE_KEY, LEGACY_RAW);
+    await mountWith(storage);
+    expect(banner()).toBeNull();
+    expect(projectInput().disabled).toBe(false);
+  });
+  it.each(CUTOVER_PHASES.filter((phase) => phase !== "committed"))("locks editing, explains the state and writes nothing at phase %s, while legacy data stays readable", async (phase) => {
+    const storage = new RecordingStorage(); storage.values.set(STORAGE_KEY, LEGACY_RAW); storage.values.set(CUTOVER_MARKER_KEY, markerRaw(phase));
+    await mountWith(storage);
+    expect(banner()?.getAttribute("role")).toBe("status");
+    expect(banner()?.textContent).toContain(`phase: ${phase}`);
+    expect(banner()?.textContent).toContain("Legacy writes are blocked");
+    expect(banner()?.textContent).not.toMatch(/migration complete|saved|safe to edit/i);
+    expect(projectInput().disabled).toBe(true);
+    expect((host.querySelector('input[aria-label="New task"]') as HTMLInputElement).disabled).toBe(true);
+    expect(host.textContent).toContain("Archived legacy project");
+    expect(storage.writes).toEqual([]);
+    expect(storage.values.get(STORAGE_KEY)).toBe(LEGACY_RAW);
+  });
+  it("a committed marker never falls back to the legacy writer and labels the archive as read-only", async () => {
+    const storage = new RecordingStorage(); storage.values.set(STORAGE_KEY, LEGACY_RAW); storage.values.set(CUTOVER_MARKER_KEY, markerRaw("committed"));
+    await mountWith(storage);
+    expect(banner()?.textContent).toContain("read-only archive");
+    expect(banner()?.textContent).toContain("not governed or executable");
+    expect(projectInput().disabled).toBe(true);
+    expect(storage.writes).toEqual([]);
+  });
+  it.each([["malformed bytes", "{broken"], ["empty bytes", ""], ["unknown phase", markerRaw("intent").replace("intent", "done")]])("treats %s as indeterminate: alert shown, editing locked, no writes", async (_name, raw) => {
+    const storage = new RecordingStorage(); storage.values.set(STORAGE_KEY, LEGACY_RAW); storage.values.set(CUTOVER_MARKER_KEY, raw);
+    await mountWith(storage);
+    expect(banner()?.getAttribute("role")).toBe("alert");
+    expect(banner()?.textContent).toContain("cannot be verified");
+    expect(projectInput().disabled).toBe(true);
+    expect(storage.writes).toEqual([]);
+  });
+  it("disables backup restore and delete while a marker exists", async () => {
+    const storage = new RecordingStorage();
+    storage.values.set(STORAGE_KEY, LEGACY_RAW); storage.values.set(BACKUP_KEY, JSON.stringify([{ id: "old", name: "Old", tasks: [] }]));
+    storage.values.set(CUTOVER_MARKER_KEY, markerRaw("intent"));
+    await mountWith(storage);
+    const buttons = Array.from(host.querySelectorAll(".backup-actions button")) as HTMLButtonElement[];
+    const restore = buttons.find((b) => b.textContent === "Restore"); const del = buttons.find((b) => b.textContent === "Delete");
+    expect(restore?.disabled).toBe(true); expect(del?.disabled).toBe(true);
+    expect(host.textContent).toContain("restoring or deleting legacy backups is blocked");
+  });
+  it("describes every state with an explicit, truthful notice (pure)", () => {
+    expect(cutoverNotice({ mode: "legacy" })).toBeNull();
+    expect(cutoverNotice({ mode: "indeterminate", reason: "source-changed", message: "m" })?.tone).toBe("alert");
+    expect(canEditWorkspace(true, false, "ok", undefined, "recovery")).toBe(false);
+    expect(canEditWorkspace(true, false, "ok", undefined, "durable")).toBe(false);
+    expect(canEditWorkspace(true, false, "ok", undefined, "indeterminate")).toBe(false);
+    expect(canEditWorkspace(true, false, "ok", undefined, "legacy")).toBe(true);
+    expect(canEditWorkspace(true, false, "ok", "cutover-active")).toBe(false);
+    expect(canEditWorkspace(true, false, "ok", "cutover-indeterminate")).toBe(false);
   });
 });
