@@ -359,7 +359,7 @@ export function validateAppendOnlyLedgerUpdate(previous: TaskLedgerStore, next: 
         return false;
       }
     }
-    if (!canTransitionTaskState(priorTask.state, updatedTask.state, context)) return false;
+    if (priorTask.state !== updatedTask.state && !canTransitionTaskState(priorTask.state, updatedTask.state, context)) return false;
   }
   return true;
 }
