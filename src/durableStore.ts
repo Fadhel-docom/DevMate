@@ -443,7 +443,8 @@ export function createDurableStore<T>(options: DurableStoreOptions<T>) {
           try { if (!snapshotRaw(legacyRaw, "pre-migration")) return { ok: false as const, reason: "snapshot-full" as const, message: "No free pre-migration snapshot slot; migration was cancelled." }; }
           catch (error) { return { ok: false as const, reason: "write-failed" as const, message: String(error) }; }
         }
-        const unchanged = JSON.stringify(nextRecords) === JSON.stringify(current.records);
+        const unchanged = storage.getItem(dataKey) !== null &&
+          JSON.stringify(nextRecords) === JSON.stringify(current.records);
         const written = unchanged
           ? { ok: true as const, revision: current.revision, updatedAt: current.updatedAt }
           : transactLocked("migration", { schemaVersion: 1, revision: current.revision + 1, updatedAt: now(), records: nextRecords });
