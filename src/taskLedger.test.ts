@@ -31,7 +31,7 @@ describe("task ledger schema v1", () => {
         technology: [], goals: [], governanceReferences: [], workflow: [], dataClassification: "unknown",
         allowedTools: [], forbiddenActions: [], releaseRules: [], risks: [], recoveryPlan: [], unknownFields: [],
         approval: { status: "unapproved" as const, approvedRevision: null, evidence: null, approvedAt: null,
-          approvedContentHash: null, revokedAt: null, revokedRevision: null, revocationReason: null } }] };
+          approvedContentHash: null, revokedAt: null, revokedRevision: null, revocationReason: null, revocationHistory: [] } }] };
     expect(validateTaskLedgerStore(storeWith([baseTask]), profiles).ok).toBe(true);
     expect(validateTaskLedgerStore(storeWith([{ ...baseTask, projectId: "missing" }]), profiles).ok).toBe(false);
     expect(validateTaskLedgerStore(storeWith([{ ...baseTask, policySnapshot: { ...baseTask.policySnapshot, profileApprovalStatus: "approved" as const } }]), profiles).ok).toBe(false);
