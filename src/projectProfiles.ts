@@ -247,7 +247,7 @@ function validateProfile(value: unknown, index: number, errors: ProfileValidatio
     check(Array.isArray(list) && list.every((item) => typeof item === "string"), field, "Expected an array of strings.");
   }
   if (Array.isArray(value.repositories)) {
-    const normalizedRepositories = value.repositories.map((item) => item.trim().toLowerCase());
+    const normalizedRepositories = value.repositories.map((item) => item.trim().toLowerCase().replace(/\\/+$/, ""));
     check(normalizedRepositories.every(Boolean) &&
       new Set(normalizedRepositories).size === normalizedRepositories.length,
       "repositories", "Repository identifiers must be non-empty and unique.");
@@ -287,6 +287,7 @@ function validateProfile(value: unknown, index: number, errors: ProfileValidatio
       check(a.approvedRevision !== null && a.evidence !== null && a.approvedAt !== null &&
         a.approvedContentHash !== null && a.revokedAt !== null && a.revokedRevision === a.approvedRevision &&
         a.revocationReason !== null && (a.revokedAt as number) >= (a.approvedAt as number) &&
+        (a.revocationHistory.length === 0 || a.revocationHistory[a.revocationHistory.length - 1].revokedAt <= (a.revokedAt as number)) &&
         isPositiveInteger(value.profileRevision) && (a.revokedRevision as number) <= value.profileRevision,
       "approval", "Revoked status must preserve the prior approval evidence and record when, which revision, and why it was revoked.");
     }
