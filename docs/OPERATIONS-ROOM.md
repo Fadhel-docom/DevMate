@@ -1533,7 +1533,7 @@ Remote sandbox, Node v24.22.1, npm 10.8.2 (CI uses Node 20.20.2), files fetched 
 - Updated §17 to state that v1.2 becomes the current governing version only after the amendment is merged, while v1.1 and v1.0 remain preserved at standalone versioned paths.
 - Clarified §7 that changes to the constitution and approval boundaries remain owner-reserved; uncertainty about whether an action is covered requires asking the owner.
 - Corrected D-002 from "must merge" to "may merge without asking" when all gates pass; recorded the owner's literal 2026-11-07 instruction as evidence. This does not authenticate GitHub shared-account attribution independently.
-- Updated STATUS to state that v1.1 remains effective until PR #23 merges. PR #23's new exact head still requires independent review. No CI pass is claimed: this docs-only PR's branch/base combination does not trigger the configured workflow, so CI is Not verified.
+- Updated STATUS to state that v1.1 remains effective until PR #23 merges. PR #23's new exact head still requires independent review. No workflow runs were observed for that head; CI is Not verified. No cause for the absence of runs is asserted.
 - PR #23 remains Draft and unmerged pending second independent review and exact diff check.
 
 ### Related work
@@ -1594,3 +1594,17 @@ Remote sandbox, Node v24.22.1, npm 10.8.2 (CI uses Node 20.20.2), files fetched 
 - Before any merge, the owner must provide a separate, explicit approval of this exact v1.2 constitutional amendment **and the final PR head SHA** after the latest independent review. Record the approval in a durable, attributable project record that quotes or precisely identifies the amendment and exact SHA, and records the date. A technical review verdict is not owner approval. A GitHub comment attributed only to a shared account is not sufficient identity evidence by itself.
 - Until that evidence is recorded, PR #23 remains Draft and unmerged; v1.1 remains the sole effective constitution. Do not infer approval from the standing operational delegation instruction, silence, a review result, or the PR author's shared-account activity.
 - Exact-head CI must also be checked and recorded. At the latest check, the previously reviewed head had no workflow runs or statuses; this is **Not verified**, not a pass. Recheck the final head before any approval/merge decision.
+
+
+## 61. PR #23 final follow-up corrections — 2026-11-07 — ChatGPT coordinator
+
+### Third review follow-ups
+- The latest independent review returned **APPROVE WITH FOLLOW-UP**, with no blocking defects. Its target was the then-current head `2f6e9c4edd2814a064339b08ebfb525eab5a8912`.
+- Corrected the PR description to identify the live PR head dynamically rather than retaining a stale SHA. The independent reviewer must record the exact live SHA it actually inspected; any subsequent commit creates a new review target.
+- Replaced the unsupported historical explanation for missing CI with the factual statement: **no workflow runs were observed**. CI remains **Not verified** unless evidence appears for the exact head.
+- Defined acceptable owner-approval evidence: an explicit approval message from the owner in this ChatGPT conversation, independent of the shared GitHub account, that names the exact v1.2 amendment and exact final PR head SHA. The coordinator must quote that message verbatim in this operations room and record its date before merging. A shared-account GitHub comment alone, assistant interpretation, silence, or a technical review does not qualify.
+- Exact-head CI must be rechecked immediately before seeking owner approval and again before merge if the head changes. Record observed workflow runs/checks; absence remains Not verified and is never described as a pass.
+
+### Current boundary
+- PR #23 remains Draft and unmerged. Constitution v1.1 remains the sole effective version until the owner explicitly approves the exact amendment and the approved PR is merged.
+- The routine merge delegation does not apply to this constitutional amendment. Once its separate approval gate is satisfied, resume the already-planned PR #24 then PR #26 reconciliation without reopening routine merge permissions for each qualifying PR.
