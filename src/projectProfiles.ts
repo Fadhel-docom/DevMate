@@ -243,6 +243,12 @@ function validateProfile(value: unknown, index: number, errors: ProfileValidatio
     const list = value[field];
     check(Array.isArray(list) && list.every((item) => typeof item === "string"), field, "Expected an array of strings.");
   }
+  if (Array.isArray(value.repositories)) {
+    const normalizedRepositories = value.repositories.map((item) => item.trim().toLowerCase());
+    check(normalizedRepositories.every(Boolean) &&
+      new Set(normalizedRepositories).size === normalizedRepositories.length,
+      "repositories", "Repository identifiers must be non-empty and unique.");
+  }
   check(typeof value.dataClassification === "string" && value.dataClassification.trim().length > 0, "dataClassification", "Expected an explicit classification or 'unknown'.");
   check(isRecord(value.approval) && hasExactKeys(value.approval, approvalKeys), "approval", "Expected exact approval metadata fields.");
   if (isRecord(value.approval)) {
@@ -346,12 +352,12 @@ export function migrateLegacyProjectsToProfiles(
     if (!isRecord(candidate) || typeof candidate.id !== "string" || candidate.id.trim().length === 0 ||
       candidate.id.trim() !== candidate.id || dangerousKeys.has(candidate.id)) {
       rejected.push({ index, reason: "Legacy project must have a safe, non-empty string ID." });
-      return;
+      continue;
     }
     const id = candidate.id;
     if (seenLegacyIds.has(id)) { rejected.push({ index, reason: "Duplicate legacy project ID." }); return; }
     seenLegacyIds.add(id);
-    if (ids.has(id)) return;
+    if (ids.has(id)) continue;
     let name: string;
     let nameUnknown = false;
     if (typeof candidate.name === "string" && candidate.name.trim().length > 0) name = candidate.name.trim();
