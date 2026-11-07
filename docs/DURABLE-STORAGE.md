@@ -68,3 +68,18 @@ Snapshot restoration is deliberately fail-closed: it requires a store-specific u
 - Profile persistence must call `validateProjectProfilesStoreUpdate` within the same serialized write boundary.
 
 These are explicit integration/review items, not claims that the current application already uses durable persistence.
+
+## PR-B — project-profile persistence adapter
+
+PR-B adds `src/profileStore.ts` as the only profile-facing adapter over the generic durable store:
+
+- One durable record is stored per `projectId`; reads and writes are explicitly project-scoped.
+- Every profile write requires the caller's expected durable-store revision. A stale revision returns a conflict instead of overwriting newer data.
+- The adapter validates each record against the full profile schema and calls `validateProjectProfilesStoreUpdate` from the durable store's locked update guard, using complete before/after record maps. Approval binding and append-only revocation history therefore remain enforced inside the shared lock.
+- Legacy migration is additive and idempotent. It refuses a non-array legacy payload or any rejected legacy project rather than silently migrating only a subset. It preserves the legacy workspace key and raw pre-migration snapshot.
+- Raw `pre-migration` snapshots are export-only; they are not durable profile envelopes and the profile adapter refuses to pass them to envelope restoration.
+- The generic durable-store ID validator rejects the full prototype-sensitive identifier set. Runtime validator results must be exactly boolean `true`; a Promise or other truthy value is not approval.
+
+**Migration timing gate:** PR-B exposes a migration operation but does not call it from the current App. The App still writes `devmate-workspace-v1`; running migration while that legacy writer remains active would cause the source fingerprint to change and correctly produce a conflict. PR-D must coordinate the one-time migration with the App persistence cutover, stop legacy writes before the migration is marked complete, and preserve a verified rollback/export path. No automatic migration or UI integration is claimed by PR-B.
+
+**Known availability limitation retained:** the durable envelope currently validates all existing records before a write. One invalid record can therefore block writes to otherwise valid projects. PR-B does not silently delete or quarantine invalid data; a separately reviewed, non-destructive per-project quarantine/recovery design is required before relaxing this fail-closed behavior.
