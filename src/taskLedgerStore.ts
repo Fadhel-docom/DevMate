@@ -25,9 +25,9 @@ export type TaskLedgerStoreOptions = Pick<
 function isLedgerForProject(projectId: string, value: unknown): value is TaskLedgerStore {
   if (typeof value !== "object" || value === null || Array.isArray(value)) return false;
   const ledger = value as TaskLedgerStore;
+  if (!validateTaskLedgerStore(ledger).ok) return false;
   return ledger.records.every((task) => task.projectId === projectId) &&
-    ledger.events.every((event) => event.projectId === projectId) &&
-    validateTaskLedgerStore(ledger).ok;
+    ledger.events.every((event) => event.projectId === projectId);
 }
 
 function readCurrentProfiles(readStorage: Pick<Storage, "getItem">): ProjectProfilesStore | null {
