@@ -231,7 +231,7 @@ export function createDurableStore<T>(options: DurableStoreOptions<T>) {
         if (loaded.failure) return loaded.failure;
         const value = loaded.envelope!.records[projectId];
         if (value === undefined) return { ok: true as const, status: "empty" as const, revision: loaded.envelope!.revision, value: null };
-        if (!options.validateRecord(projectId, value)) return { ok: false as const, reason: "corrupt" as const, message: "The project-scoped record failed its validator." };
+        if (!options.validateRecord(projectId, clone(value))) return { ok: false as const, reason: "corrupt" as const, message: "The project-scoped record failed its validator." };
         return { ok: true as const, status: "found" as const, revision: loaded.envelope!.revision, value: clone(value) };
       });
       if (!locked.ok) return { ok: false, reason: locked.reason, message: locked.message };
@@ -251,10 +251,10 @@ export function createDurableStore<T>(options: DurableStoreOptions<T>) {
         if (expectedRevision !== undefined && current.revision !== expectedRevision)
           return { ok: false as const, reason: "conflict" as const, message: "The durable store revision changed; reload before writing." };
         const previous = current.records[projectId] ?? null;
-        if (options.validateUpdate && !options.validateUpdate(projectId, previous, value, current.records))
+        if (options.validateUpdate && !options.validateUpdate(projectId, previous === null ? null : clone(previous), clone(candidate), clone(current.records)))
           return { ok: false as const, reason: "invalid-data" as const, message: "The project-scoped update violated its store contract." };
         const records = clone(current.records);
-        records[projectId] = clone(value);
+        records[projectId] = clone(candidate);
         const next: DurableEnvelope<T> = { schemaVersion: 1, revision: current.revision + 1, updatedAt: now(), records };
         return transactLocked(projectId, next);
       });
@@ -307,10 +307,10 @@ export function createDurableStore<T>(options: DurableStoreOptions<T>) {
           !Object.entries(currentEnvelope.records).every(([id, item]) => safeId(id) && options.validateRecord(id, item)))
           return { ok: false as const, reason: "corrupt" as const, message: "Current data failed validation; restore was refused without changing it." };
         const nextRecord = restored.records[projectId];
-        if (nextRecord === undefined || !options.validateRecord(projectId, nextRecord))
+        if (nextRecord === undefined || !options.validateRecord(projectId, clone(nextRecord)))
           return { ok: false as const, reason: "not-found" as const, message: "The selected snapshot has no valid record for this project." };
         const previous = currentEnvelope.records[projectId] ?? null;
-        if (!options.validateUpdate(projectId, previous, nextRecord, currentEnvelope.records))
+        if (!options.validateUpdate(projectId, previous === null ? null : clone(previous), clone(nextRecord), clone(currentEnvelope.records)))
           return { ok: false as const, reason: "invalid-data" as const, message: "The project-specific update guard rejected this restore." };
         if (currentRaw !== null) {
           try { if (!snapshotRaw(currentRaw, "pre-restore")) return { ok: false as const, reason: "snapshot-full" as const, message: "No free snapshot slot; restore was cancelled." }; }
