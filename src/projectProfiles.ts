@@ -361,7 +361,7 @@ export function migrateLegacyProjectsToProfiles(
       continue;
     }
     const id = candidate.id;
-    if (seenLegacyIds.has(id)) { rejected.push({ index, reason: "Duplicate legacy project ID." }); return; }
+    if (seenLegacyIds.has(id)) { rejected.push({ index, reason: "Duplicate legacy project ID." }); continue; }
     seenLegacyIds.add(id);
     if (ids.has(id)) continue;
     let name: string;
