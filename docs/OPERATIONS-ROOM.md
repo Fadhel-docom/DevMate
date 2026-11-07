@@ -1444,3 +1444,44 @@ Remote sandbox, Node v24.22.1, npm 10.8.2 (CI uses Node 20.20.2), files fetched 
 - Last verified foundation commit: `8117ab98c4a86f44e45dcfc1cb7a313f6f771d95`.
 - Next: complete owner review of PR #12's architecture proposal. In parallel, prepare a bounded schema/ledger design that explicitly defines profile versioning, validation, migrations, approval evidence, task states, checkpoints, recovery, and project isolation. Do not connect providers or begin external-repository work.
 - Handoff owner: ChatGPT coordinator.
+
+
+---
+
+## 54. PR #12 owner approval, PR #17 schema implementation and CI repair — 2026-11-07 — ChatGPT coordinator
+
+### Starting checkpoint and governing sources
+- Repository: `Fadhel-docom/DevMate`.
+- Foundation base: `feature/phase-1-foundation` at `6a402ce6f94dae14bf8c4d5bc7459b3180c94625`.
+- Governing constitution: v1.1, approved; source file at the foundation base. Session navigation: `docs/SESSION-START.md`. Relevant architecture: `docs/ARCHITECTURE.md`, `docs/PROJECT-GOVERNANCE-MODEL.md` (PR #12).
+- Read STATUS, OPERATIONS-ROOM, SESSION-START, DECISIONS, ARCHITECTURE, constitution v1.1, and inspected the current storage implementation. `CLAUDE.md` is not present at this base; no substitute was assumed.
+- Owner's explicit PR #12 approval is recorded in PR #12's description. Standing routine-merge delegation remains in effect, but does not bypass independent review or constitution requirements.
+
+### PR #12 — owner-approved design, review gate remains
+- PR #12 URL: https://github.com/Fadhel-docom/DevMate/pull/12
+- Exact latest head: `4ae15ba5de1b2af75e1dbb48073ce73dbf60ca4f`; base `feature/phase-1-foundation` at `6a402ce6f94dae14bf8c4d5bc7459b3180c94625`.
+- The proposal defines the two-level governance model, project profile requirements, task ledger, project isolation, evidence/auditability, recovery, and the pre-provider build sequence.
+- The latest exact head has no independent review recorded. The earlier ChatGPT review was for `2ec0f8365c736c33a7bd1f072df191cef4608333`, not the current head.
+- No design defect was established in this inspection. The remaining merge condition is the constitution-required independent review of the exact latest head, followed by the applicable gates. Do not describe this as a renewed owner-approval request.
+
+### PR #17 — schema implementation and exact CI repair
+- PR #17 URL: https://github.com/Fadhel-docom/DevMate/pull/17
+- Initial combined head `1d452bb37a27e6103c579ab7047c69ecb239d858` had 140/140 tests pass and 0 dependency vulnerabilities, but TypeScript build failed at five points in `src/taskLedger.ts`: validated identifiers remained typed as `unknown`.
+- Changed `requiredString` from a boolean helper to a TypeScript type predicate (`value is string`), allowing the existing runtime validation to narrow identifiers safely. File changed: `src/taskLedger.ts`.
+- Commit: `dcd0d900ed811759487b01ed61ba50a41cfe65ac`.
+- GitHub Actions run #170, ID `42348321315`, passed on that exact commit. Job logs confirm: npm ci installed 155 packages; audit 0 vulnerabilities; 6 test files / 140 tests passed; `tsc --noEmit` and Vite production build passed.
+- PR description was corrected to distinguish the failed initial head from the successful latest head.
+- PR #17 remains open. No independent review is recorded for its exact latest head.
+
+### Implementation review notes / boundaries
+- Project Profiles and Task Ledger are currently pure schema/validation modules. No storage writes, migration, UI integration, or legacy task import has been implemented.
+- Existing `src/storage.ts` still owns the legacy browser workspace persistence and its backup/recovery behavior. The next persistence PR must preserve that store, back up before writes, validate, persist, read back, verify, and roll back on failure.
+- The current validators do not yet demonstrate browser-level durability or real cross-tab behavior. Do not claim those properties from unit tests alone.
+- No provider SDK, API key, provider call, external data transfer, new permission, cost, deployment, `main` change, PR #1 change, or other-repository change was made.
+- No merge was performed.
+
+### Last verified checkpoint and next exact action
+- PR #12 latest head: `4ae15ba5de1b2af75e1dbb48073ce73dbf60ca4f`; independent review required.
+- PR #17 latest head: `dcd0d900ed811759487b01ed61ba50a41cfe65ac`; exact CI run #170 passed; independent review required.
+- Next: obtain independent, non-overlapping reviews of PR #12 architecture and PR #17 code. After those gates, implement persistence as a separate bounded PR. Keep AI providers disconnected until all approved pre-provider gates are demonstrably satisfied.
+- Handoff owner: ChatGPT coordinator.
