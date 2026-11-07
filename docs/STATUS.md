@@ -1,6 +1,6 @@
 # DevMate Status
 
-> Current state: see "## Current state — 2026-11-07 (PR-A merged; PR-B profile persistence prepared)" at the end of this file. Earlier dated checkpoints are historical snapshots and do not describe the present.
+> Current state: see "## Current state — 2026-11-07 (PR-B follow-up implemented; exact-head CI passed)" at the end of this file. Earlier dated checkpoints are historical snapshots and do not describe the present.
 
 ## Current milestone
 Phase 1 — foundation and local demo.
@@ -640,3 +640,19 @@ Run the full Vitest suite, TypeScript/Vite production build, and dependency audi
 - PR-D will coordinate App integration, one-time migration, recovery UI, and stopping legacy writes without data loss.
 - Do not connect providers, add paid usage, expose secrets, modify `main`, or touch RateNest.
 - Real browser multi-tab contention, crash/restart timing, actual quota exhaustion, Android/Safari, and accessibility remain not verified.
+
+
+## Current state — 2026-11-07 (PR-B follow-up implemented; exact-head CI passed)
+
+### Verified PR-B follow-up
+- Repository: `Fadhel-docom/DevMate`; all work remains isolated to this repository.
+- PR #24 remains Draft and unmerged, targeting `feature/phase-1-foundation`; its original reviewed head is `5e0eaffc68fee2cae58e2fba73b3925bde56a165`.
+- PR #26 is a Draft stacked follow-up targeting PR #24's branch: https://github.com/Fadhel-docom/DevMate/pull/26.
+- Follow-up head: `db4b5d7847f85c447e80c73c108cbc9199a4f65b`.
+- GitHub Actions run #325 (ID `42370003826`) completed successfully on that exact head. Logs confirm Node 20.20.2, npm ci installed 155 packages, npm audit summary 0 vulnerabilities, 8 test files / 201 tests passed, `tsc --noEmit`, and Vite production build. Run: https://github.com/Fadhel-docom/DevMate/actions/runs/42370003826.
+- Follow-up fixes: strict boolean validation of existing records during restore/migration; expected durable revision compare-and-swap for profile restore; migration validation before snapshot-slot allocation; idempotent retry after a committed data write and failed migration-marker write; null runtime payload returns `invalid-data`; tests for additive migration with existing records, marker retry, approval-history regression inside the lock, invalid expected revisions, and corrupt-record fail-closed behavior.
+- Synthetic profile-store revisions (1 then 2) are documented as validator scaffolding only; durable envelope revision and expectedRevision remain the actual compare-and-swap mechanism.
+- A preliminary migration threat/recovery assessment is documented. It is not a formal security sign-off or authorization to invoke migration.
+- Restore remains fail-closed when a snapshot would decrease profileRevision or erase approval/revocation history. A forward-only recovery workflow or explicit owner-governed recovery procedure remains a prerequisite before PR-D.
+- PR #23 remains Draft and untouched while awaiting the owner's independent Claude review. No constitution amendment is effective from this follow-up.
+- No App/UI cutover, migration invocation, provider integration, new dependency, cost, secret, permission, deployment, `main` write, or RateNest change occurred.
