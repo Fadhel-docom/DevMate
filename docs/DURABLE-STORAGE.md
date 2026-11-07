@@ -106,3 +106,8 @@ PR-B adds `src/profileStore.ts` as the only profile-facing adapter over the gene
 | Restore would erase approval/revocation evidence or decrease profile revision | Profile update guard refuses the restore; restore requires expected durable revision | PR-D needs a forward-only recovery UX that preserves approval evidence, or an explicit owner-governed recovery procedure; rollback of approved state is not supported |
 
 This is a preliminary engineering threat assessment, not a formal security sign-off. Migration must remain uninvoked until PR-D demonstrates the cutover, backup/export, restart recovery, and owner-visible failure handling. No migration permission is granted by this document.
+
+
+## PR-D recovery design reference
+
+The controlled application cutover and forward-only recovery requirements are specified in [PR-D-RECOVERY-DESIGN.md](./PR-D-RECOVERY-DESIGN.md). This design is not migration authorization; the legacy writer must remain unchanged until the Sensitive-level cutover gates are met.
