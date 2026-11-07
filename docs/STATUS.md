@@ -1,6 +1,6 @@
 # DevMate Status
 
-> Current state: see "## Current state — 2026-11-07 (after PR #21 merge and PR-A durable-store foundation)" at the end of this file. Earlier dated checkpoints are historical snapshots and do not describe the present.
+> Current state: see "## Current state — 2026-11-07 (PR-A merged; PR-B profile persistence prepared)" at the end of this file. Earlier dated checkpoints are historical snapshots and do not describe the present.
 
 ## Current milestone
 Phase 1 — foundation and local demo.
@@ -612,3 +612,31 @@ Run the full Vitest suite, TypeScript/Vite production build, and dependency audi
 - The durable-store foundation is a new unused persistence primitive until PR-B/PR-C integrate it.
 - No AI provider, API key, server-side adapter, in-app GitHub connector, autonomous orchestrator, paid service, or external data transfer is connected or authorized.
 - No change to `main`, RateNest, or any other repository.
+
+
+## Current state — 2026-11-07 (PR-A merged; PR-B profile persistence prepared)
+
+### Verified foundation
+- Repository: `Fadhel-docom/DevMate`.
+- Foundation branch: `feature/phase-1-foundation`.
+- PR #22 (PR-A durable-store foundation) merged by squash into the foundation branch at `f3b2e4f4fe748ae75aba0095c837b30c9635f692`, after independent **APPROVE WITH FOLLOW-UP** review and exact-head CI success.
+- PR-A exact reviewed head: `f35d8692e402368a7deb71e8276ed6008793019d`; run #311 passed. Reviewer-reported 186 tests and zero vulnerabilities were independently checked from the CI job logs by the coordinator.
+- Owner's 2026-11-07 standing instruction: do not ask for per-PR merge permission when every applicable gate and independent review passes. A proposed v1.2 constitution amendment and decision D-002 are in PR #23; it remains Draft pending independent review because it changes governance/approval boundaries.
+- PR #23: https://github.com/Fadhel-docom/DevMate/pull/23 — owner-approved documentation amendment; no merge yet.
+
+### PR-B — profile persistence
+- PR #24: https://github.com/Fadhel-docom/DevMate/pull/24 — Draft, targets `feature/phase-1-foundation`.
+- Branch: `feature/project-profile-durable-integration`.
+- Exact current head: `4e060090fd5fc6cab7db3121d35217d88495ef50`.
+- Exact-head Actions run #322 (ID `42366544091`) passed: 155 packages installed; dependency audit 0 vulnerabilities; 8 test files / 194 tests passed; TypeScript check and Vite production build passed. Job logs were inspected. Run: https://github.com/Fadhel-docom/DevMate/actions/runs/42366544091.
+- Adds `src/profileStore.ts`, tests, strict prototype-sensitive durable IDs, strict boolean validator results, and the PR-B integration contract in `docs/DURABLE-STORAGE.md`.
+- Profile writes require an expected durable revision; complete before/after profile maps are checked by `validateProjectProfilesStoreUpdate` inside the shared lock.
+- Migration is exposed but not invoked by the App. The App still writes the legacy workspace key; migration must wait for PR-D's coordinated persistence cutover.
+- Known limitation: one invalid existing durable record still blocks writes to other projects. No data is deleted or silently quarantined; recovery design remains a follow-up.
+
+### Boundaries and next work
+- PR #24 remains Draft pending independent review of exact head `4e060090fd5fc6cab7db3121d35217d88495ef50`.
+- PR-C will integrate the append-only task ledger with profile cross-validation inside the same shared-lock boundary.
+- PR-D will coordinate App integration, one-time migration, recovery UI, and stopping legacy writes without data loss.
+- Do not connect providers, add paid usage, expose secrets, modify `main`, or touch RateNest.
+- Real browser multi-tab contention, crash/restart timing, actual quota exhaustion, Android/Safari, and accessibility remain not verified.
