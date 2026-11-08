@@ -8,7 +8,7 @@ This change remains an isolated P1 experiment. It does not import the CAS module
 
 ## New proof: backup-write failure is atomic
 
-The browser harness intercepts the backup-store `add()`, queues the backup request, and immediately aborts the encompassing readwrite transaction at that persistence boundary. It then verifies both object stores roll back together:
+The browser harness intercepts the backup-store `add()`, queues the backup request, then aborts the encompassing readwrite transaction from the backup request's success event before the queued workspace write can commit. It then verifies both object stores roll back together:
 
 1. The injection was reached.
 2. The attempted CAS write does not report success.
