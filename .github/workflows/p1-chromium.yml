@@ -1,0 +1,44 @@
+name: P1 IndexedDB CAS Chromium proof
+
+on:
+  pull_request:
+    branches: ["feature/**"]
+  push:
+    branches: ["fix/**"]
+
+jobs:
+  chromium-cas:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - run: npm ci
+      - name: Install real Chromium and required system libraries
+        run: npx --yes playwright@1.56.1 install --with-deps chromium
+      - name: Build and start isolated harness server
+        run: |
+          npm run build
+          npm run dev -- --host 127.0.0.1 --port 4173 > /tmp/devmate-vite.log 2>&1 &
+          for attempt in $(seq 1 60); do
+            if curl --fail --silent http://127.0.0.1:4173/e2e/cas-store-harness/ >/dev/null; then
+              echo "Vite harness server ready"
+              exit 0
+            fi
+            sleep 1
+          done
+          cat /tmp/devmate-vite.log
+          exit 1
+      - name: Run two-tab CAS and backup-failure assertions in Chromium
+        env:
+          CHROMIUM_BIN: /home/runner/.cache/ms-playwright/chromium-*/chrome-linux/chrome
+          DEVMATE_TEST_URL: http://127.0.0.1:4173
+        run: |
+          CHROMIUM_BIN="$(find "$HOME/.cache/ms-playwright" -type f \( -path '*/chrome-linux/chrome' -o -path '*/chrome-linux64/chrome' \) -perm -u+x | head -n 1)"
+          test -n "$CHROMIUM_BIN"
+          export CHROMIUM_BIN
+          node e2e/cas-store-harness/run-chromium.mjs
