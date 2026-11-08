@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>IndexedDB CAS P1 browser spike</title></head>
+<body>
+<main>
+<h1>IndexedDB CAS P1 — isolated Chromium spike</h1>
+<p>This page uses only devmate-cas-spike-v1. It does not access application data or localStorage.</p>
+<pre id="output">Starting…</pre>
+</main>
+<script type="module">
+import { openCasStore, CAS_DB_NAME } from "/src/casStore/indexedDbCasStore.ts";
+const output = document.querySelector("#output");
+const log = (line) => { output.textContent += `\n${line}`; };
+const params = new URLSearchParams(location.search);
+const workerMode = params.get("worker") === "1";
+const channel = new BroadcastChannel("devmate-cas-p1-harness");
+let store;
+try { store = await openCasStore(); } catch (error) {
+  output.textContent = `OPEN FAILED: ${error?.name ?? "unknown"}: ${error?.message ?? error}`;
+  throw error;
+}
+if (workerMode) {
+  output.textContent = "Worker tab ready; leave this tab open.";
+  channel.postMessage({ type: "ready" });
+  channel.onmessage = async ({ data }) => {
+    if (data?.type !== "race") return;
+    const result = await store.write({ expectedVersion: data.expectedVersion, raw: data.raw, writer: "worker" });
+    channel.postMessage({ type: "worker-result", id: data.id, result });
+  };
+} else {
+  const child = window.open(`${location.pathname}?worker=1`, "devmate-cas-p1-worker");
+  if (!child) { output.textContent = "POPUP BLOCKED: allow popups for this local test page and reload."; throw new Error("popup blocked"); }
+  const ready = new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error("worker tab did not become ready")), 10000);
+    channel.addEventListener("message", function onReady(event) {
+      if (event.data?.type === "ready") { clearTimeout(timer); channel.removeEventListener("message", onReady); resolve(); }
+    });
+  });
+  await ready;
+  const dbRequest = indexedDB.open(CAS_DB_NAME, 1);
+  const db = await new Promise((resolve, reject) => { dbRequest.onsuccess = () => resolve(dbRequest.result); dbRequest.onerror = () => reject(dbRequest.error); });
+  const resetBackups = () => new Promise((resolve, reject) => {
+    const tx = db.transaction(["backups"], "readwrite"); tx.objectStore("backups").clear();
+    tx.oncomplete = resolve; tx.onabort = () => reject(tx.error);
+  });
+  const initial = await store.read();
+  if (!initial.ok) throw new Error(`initial read failed: ${JSON.stringify(initial)}`);
+  let expectedVersion = initial.version;
+  let successes = 0; let conflicts = 0; let bothSucceeded = 0; let neitherSucceeded = 0; let wrongVersion = 0;
+  const pending = new Map();
+  channel.addEventListener("message", (event) => {
+    if (event.data?.type === "worker-result") { const resolve = pending.get(event.data.id); if (resolve) { pending.delete(event.data.id); resolve(event.data.result); } }
+  });
+  const trials = 100;
+  log(`Running ${trials} same-baseline races in two real tabs; Web Locks are not used.`);
+  for (let i = 0; i < trials; i++) {
+    const id = `race-${i}`;
+    const workerResultPromise = new Promise((resolve) => pending.set(id, resolve));
+    channel.postMessage({ type: "race", id, expectedVersion, raw: `worker-${i}` });
+    const parentPromise = store.write({ expectedVersion, raw: `parent-${i}`, writer: "parent" });
+    const [parentResult, workerResult] = await Promise.all([parentPromise, workerResultPromise]);
+    const pair = [parentResult, workerResult];
+    const okCount = pair.filter((item) => item.ok).length;
+    const conflictCount = pair.filter((item) => item.ok === false && "conflict" in item).length;
+    successes += okCount; conflicts += conflictCount;
+    if (okCount === 2) bothSucceeded++;
+    if (okCount === 0) neitherSucceeded++;
+    const actual = await store.read();
+    if (!actual.ok || actual.version !== expectedVersion + 1) wrongVersion++;
+    if (okCount !== 1 || conflictCount !== 1) log(`FAIL trial ${i}: ${JSON.stringify(pair)}`);
+    expectedVersion += 1;
+    await resetBackups(); // test-fixture cleanup only; backup deletion is not part of the CAS API
+  }
+  const pass = bothSucceeded === 0 && neitherSucceeded === 0 && wrongVersion === 0 && successes === trials && conflicts === trials;
+  log(`${pass ? "PASS" : "FAIL"}: successes=${successes}, conflicts=${conflicts}, bothSucceeded=${bothSucceeded}, neitherSucceeded=${neitherSucceeded}, wrongVersion=${wrongVersion}`);
+  log("LIMITS: this spike does not test SIGKILL durability, quota, restore, migration, 3+ tabs, or other browsers.");
+  log("Close the worker tab when finished. The isolated test database can be removed from DevTools Application > IndexedDB.");
+  db.close();
+}
+</script>
+</body>
+</html>
