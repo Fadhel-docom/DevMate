@@ -24,41 +24,117 @@ if (workerMode) {
   channel.postMessage({ type: "ready" });
   channel.onmessage = async ({ data }) => {
     if (data?.type !== "race") return;
-    const result = await store.write({ expectedVersion: data.expectedVersion, raw: data.raw, writer: "worker" });
-    channel.postMessage({ type: "worker-result", id: data.id, result });
+    try {
+      const result = await store.write({ expectedVersion: data.expectedVersion, raw: data.raw, writer: "worker" });
+      channel.postMessage({ type: "worker-result", id: data.id, result });
+    } catch (error) {
+      channel.postMessage({ type: "worker-result", id: data.id, result: { ok: false, error: String(error) } });
+    }
   };
 } else {
   const child = window.open(`${location.pathname}?worker=1`, "devmate-cas-p1-worker");
-  if (!child) { output.textContent = "POPUP BLOCKED: allow popups for this local test page and reload."; throw new Error("popup blocked"); }
+  if (!child) { output.textContent = "POPUP BLOCKED: Chromium must be launched with --disable-popup-blocking."; throw new Error("popup blocked"); }
   const ready = new Promise((resolve, reject) => {
-    const timer = setTimeout(() => reject(new Error("worker tab did not become ready")), 10000);
+    const timer = setTimeout(() => reject(new Error("worker tab did not become ready within 10s")), 10000);
     channel.addEventListener("message", function onReady(event) {
       if (event.data?.type === "ready") { clearTimeout(timer); channel.removeEventListener("message", onReady); resolve(); }
     });
   });
   await ready;
   const dbRequest = indexedDB.open(CAS_DB_NAME, 1);
-  const db = await new Promise((resolve, reject) => { dbRequest.onsuccess = () => resolve(dbRequest.result); dbRequest.onerror = () => reject(dbRequest.error); });
+  const db = await new Promise((resolve, reject) => {
+    dbRequest.onsuccess = () => resolve(dbRequest.result);
+    dbRequest.onerror = () => reject(dbRequest.error);
+    dbRequest.onblocked = () => reject(new Error("test database open was blocked"));
+  });
   const resetBackups = () => new Promise((resolve, reject) => {
-    const tx = db.transaction(["backups"], "readwrite"); tx.objectStore("backups").clear();
-    tx.oncomplete = resolve; tx.onabort = () => reject(tx.error);
+    const tx = db.transaction(["backups"], "readwrite");
+    tx.objectStore("backups").clear();
+    tx.oncomplete = resolve;
+    tx.onabort = () => reject(tx.error ?? new Error("backup reset aborted"));
+    tx.onerror = () => reject(tx.error ?? new Error("backup reset failed"));
+  });
+  const countBackups = () => new Promise((resolve, reject) => {
+    const tx = db.transaction(["backups"], "readonly");
+    const request = tx.objectStore("backups").count();
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+    tx.onabort = () => reject(tx.error ?? new Error("backup count aborted"));
   });
   const initial = await store.read();
   if (!initial.ok) throw new Error(`initial read failed: ${JSON.stringify(initial)}`);
-  let expectedVersion = initial.version;
+  let baseline = initial;
+  await resetBackups();
+  if (baseline.version === 0) {
+    const seeded = await store.write({ expectedVersion: 0, raw: "atomicity-baseline", writer: "harness-seed" });
+    if (!seeded.ok) throw new Error(`baseline seed failed: ${JSON.stringify(seeded)}`);
+    baseline = await store.read();
+    if (!baseline.ok) throw new Error("baseline read after seed failed");
+  }
+
+  // Inject a synchronous failure specifically at backup insertion. IndexedDB
+  // must abort the whole readwrite transaction, including the workspace put.
+  const originalAdd = IDBObjectStore.prototype.add;
+  let injectionObserved = false;
+  IDBObjectStore.prototype.add = function(...args) {
+    if (this.name === "backups") {
+      injectionObserved = true;
+      throw new DOMException("Injected backup insertion failure", "QuotaExceededError");
+    }
+    return originalAdd.apply(this, args);
+  };
+  let failedWrite;
+  try {
+    failedWrite = await store.write({
+      expectedVersion: baseline.version,
+      raw: "MUST_NOT_COMMIT_AFTER_BACKUP_FAILURE",
+      writer: "backup-failure-test"
+    });
+  } finally {
+    IDBObjectStore.prototype.add = originalAdd;
+  }
+  const afterFailure = await store.read();
+  const backupCountAfterFailure = await countBackups();
+  const atomicityPass = injectionObserved
+    && !failedWrite.ok
+    && afterFailure.ok
+    && afterFailure.version === baseline.version
+    && afterFailure.raw === baseline.raw
+    && backupCountAfterFailure === 0;
+  log(`BACKUP-FAILURE ${atomicityPass ? "PASS" : "FAIL"}: injected=${injectionObserved}, write=${JSON.stringify(failedWrite)}, workspaceVersion=${afterFailure.ok ? afterFailure.version : "read-error"}, workspaceUnchanged=${afterFailure.ok && afterFailure.raw === baseline.raw}, backups=${backupCountAfterFailure}`);
+  if (!atomicityPass) throw new Error("backup failure did not preserve workspace atomicity");
+
+  let expectedVersion = baseline.version;
   let successes = 0; let conflicts = 0; let bothSucceeded = 0; let neitherSucceeded = 0; let wrongVersion = 0;
   const pending = new Map();
   channel.addEventListener("message", (event) => {
-    if (event.data?.type === "worker-result") { const resolve = pending.get(event.data.id); if (resolve) { pending.delete(event.data.id); resolve(event.data.result); } }
+    if (event.data?.type === "worker-result") {
+      const resolve = pending.get(event.data.id);
+      if (resolve) { pending.delete(event.data.id); resolve(event.data.result); }
+    }
   });
   const trials = 100;
+  const workerTimeoutMs = 10000;
   log(`Running ${trials} same-baseline races in two real tabs; Web Locks are not used.`);
   for (let i = 0; i < trials; i++) {
     const id = `race-${i}`;
-    const workerResultPromise = new Promise((resolve) => pending.set(id, resolve));
+    let timeoutId;
+    const workerResultPromise = new Promise((resolve, reject) => {
+      pending.set(id, resolve);
+      timeoutId = setTimeout(() => {
+        pending.delete(id);
+        reject(new Error(`worker result timed out after ${workerTimeoutMs}ms at trial ${i}`));
+      }, workerTimeoutMs);
+    });
     channel.postMessage({ type: "race", id, expectedVersion, raw: `worker-${i}` });
     const parentPromise = store.write({ expectedVersion, raw: `parent-${i}`, writer: "parent" });
-    const [parentResult, workerResult] = await Promise.all([parentPromise, workerResultPromise]);
+    let parentResult, workerResult;
+    try {
+      [parentResult, workerResult] = await Promise.all([parentPromise, workerResultPromise]);
+    } finally {
+      clearTimeout(timeoutId);
+      pending.delete(id);
+    }
     const pair = [parentResult, workerResult];
     const okCount = pair.filter((item) => item.ok).length;
     const conflictCount = pair.filter((item) => item.ok === false && "conflict" in item).length;
@@ -71,11 +147,12 @@ if (workerMode) {
     expectedVersion += 1;
     await resetBackups(); // test-fixture cleanup only; backup deletion is not part of the CAS API
   }
-  const pass = bothSucceeded === 0 && neitherSucceeded === 0 && wrongVersion === 0 && successes === trials && conflicts === trials;
-  log(`${pass ? "PASS" : "FAIL"}: successes=${successes}, conflicts=${conflicts}, bothSucceeded=${bothSucceeded}, neitherSucceeded=${neitherSucceeded}, wrongVersion=${wrongVersion}`);
-  log("LIMITS: this spike does not test SIGKILL durability, quota, restore, migration, 3+ tabs, or other browsers.");
+  const racePass = bothSucceeded === 0 && neitherSucceeded === 0 && wrongVersion === 0 && successes === trials && conflicts === trials;
+  log(`${racePass ? "PASS" : "FAIL"}: successes=${successes}, conflicts=${conflicts}, bothSucceeded=${bothSucceeded}, neitherSucceeded=${neitherSucceeded}, wrongVersion=${wrongVersion}`);
+  log("LIMITS: this spike does not test SIGKILL durability, real quota exhaustion, restore, migration, 3+ tabs, or other browsers.");
   log("Close the worker tab when finished. The isolated test database can be removed from DevTools Application > IndexedDB.");
   db.close();
+  if (!racePass) throw new Error("two-tab CAS race assertions failed");
 }
 </script>
 </body>
