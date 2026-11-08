@@ -82,13 +82,13 @@ try {
       });
       output = result.result?.value ?? "";
     } catch {}
-    if (output.includes("BACKUP-FAILURE PASS") && output.includes("PASS: successes=100, conflicts=100")) break;
+    if (output.includes("BACKUP-ATOMICITY PASS") && output.includes("PASS: successes=100, conflicts=100")) break;
     if (output.includes("FAIL") || output.includes("Error:") || output.includes("OPEN FAILED")) {
       throw new Error(`Chromium harness failed:\\n${output}`);
     }
     await delay(250);
   }
-  if (!output.includes("BACKUP-FAILURE PASS") || !output.includes("PASS: successes=100, conflicts=100")) {
+  if (!output.includes("BACKUP-ATOMICITY PASS") || !output.includes("PASS: successes=100, conflicts=100")) {
     throw new Error(`Chromium harness timed out. Last output:\\n${output}`);
   }
   console.log("CHROMIUM_HARNESS_RESULT");
