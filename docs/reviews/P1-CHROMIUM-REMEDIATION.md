@@ -71,4 +71,18 @@ The first clean Chromium run was on exact PR head `3f5acda522112db4dc5a8b5fa6be4
 - This fault injection verifies atomic rollback at the backup-persistence boundary; it is not a physical disk-quota exhaustion simulation.
 - SIGKILL durability, real quota exhaustion, restore races, 3+ tabs, mobile, and non-Chromium browsers remain untested.
 - R1 remains unresolved. S2-16 remains FAIL.
-- These runs verify code head `c038fea5dcbfe43a54f0327153b6ea2b11d4e3f3`. If later documentation edits move the PR head, rerun exact-head CI before merge. The PR is not merge-ready until an independent evidence-based review of the final SHA approves it.
+- The c038fea runs verify the latest code-bearing commit; the later 749405 runs
+verify the exact PR head after documentation-only changes. Any subsequent
+commit, including a documentation-only commit, requires fresh CI and Chromium
+runs whose `head_sha` equals the new PR head. The PR is not merge-ready until
+an independent evidence-based review of the final SHA approves it.
+
+## Review remediation status
+
+- B1 (incorrect run IDs attributed to c038fea): corrected above. The c038fea
+  run IDs are 42485394375 and 42485398569; 42485219245 and 42485223078 are not
+  evidence for that commit.
+- B2 (negative controls and deterministic transaction interleaving): still
+  open. The current harness does not yet prove it rejects a deliberately
+  split backup/workspace implementation, nor does its message ordering force
+  both writers to contend at the transaction boundary.
