@@ -47,6 +47,7 @@ try {
   });
 
   let commandId = 0;
+  let runtimeExceptionCount = 0;
   const pending = new Map();
   socket.addEventListener("message", (event) => {
     const message = JSON.parse(event.data);
@@ -56,6 +57,7 @@ try {
       if (message.error) reject(new Error(message.error.message));
       else resolve(message.result);
     } else if (message.method === "Runtime.exceptionThrown") {
+      runtimeExceptionCount++;
       const details = message.params.exceptionDetails;
       console.error("BROWSER_EXCEPTION", details.text, details.exception?.description ?? "");
     } else if (message.method === "Log.entryAdded") {
@@ -91,6 +93,7 @@ try {
   if (!output.includes("BACKUP-ATOMICITY PASS") || !output.includes("PASS: successes=100, conflicts=100")) {
     throw new Error(`Chromium harness timed out. Last output:\\n${output}`);
   }
+  if (runtimeExceptionCount > 0) throw new Error(`Chromium reported ${runtimeExceptionCount} uncaught runtime exception(s)`);
   console.log("CHROMIUM_HARNESS_RESULT");
   console.log(output);
   console.log("CHROMIUM_HARNESS_EXIT=PASS");
