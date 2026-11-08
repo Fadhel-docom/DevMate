@@ -1844,3 +1844,12 @@ Remote sandbox, Node v24.22.1, npm 10.8.2 (CI uses Node 20.20.2), files fetched 
 - Not complete: no fence; no independent S1 reviewer yet; S2 required scenarios (two-tab write contention, quota failure, marker read/write failure, restart at each phase, lock contention) are **not run**.
 - Next: continue only safe work that does not pass the S1 review gate (S2 browser tests, test-only); S3 is not started.
 - Boundaries kept: no real cutover/migration/deletion/deployment/merge.
+
+## 2026-11-08 — S1 review addendum and S2 real-Chromium run (Claude #2)
+
+- Done: verified PR #32 head `a853f2a` and PR #33 head `752445c` (open, unmerged); reviewed `legacyWriterMatrix.test.ts` and the fixture (identical to base); built `e2e/s2-browser-persistence/` (15 scenarios, real Chromium 153, real Web Locks/quota/restart/SIGKILL) and ran it on `src/` identical to PR #33 head: 13 PASS, 2 FAIL, 64/66 checks.
+- Evidence: `docs/reviews/S2-CHROMIUM-REPORT.md`, `e2e/s2-browser-persistence/results.json`, ledger record "S1 review addendum / S2 record 1".
+- Discoveries: two-tab `begin()` race can double-report `changed:true` (7/60) though the state stays consistent; Web Lock does not prevent lost updates for cross-tab localStorage read-modify-write; old `deleteBackup` undetected at every phase; Chromium loses writes made within ≈4 s of a SIGKILL.
+- Not done / why: real App UI (React 19 vs pinned 18, no vite/vitest); BFCache probe inconclusive; OS crash/power loss and other browsers not testable here.
+- Help request to partner: independent review of S2 record 1 and of the two FAILs (decide whether the S2-02 expectation should be relaxed to "idempotent" or the controller revalidation tightened — not decided here).
+- Boundaries kept: no production code change, no S3, no cutover/migration, nothing merged.

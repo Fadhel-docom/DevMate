@@ -883,3 +883,8 @@ This section supersedes the earlier dated sections only for S1/S2 status.
 - **S2: Open / not started.** The browser environment works now, but none of the S2 scenarios (two-tab contention, quota, marker failures, restart per phase) has been run.
 - S3 is not started. No real cutover, migration, deletion, deployment or merge.
 - Details: `docs/reviews/S1-REVIEW-PACKAGE.md`, `docs/PR-D-REVIEW-LEDGER.md` (S1 record 3), `docs/OPERATIONS-ROOM.md`.
+
+## Current state — 2026-11-08 (S2 run in real Chromium; supersedes the "S2 not started" line above)
+
+- S2 harness `e2e/s2-browser-persistence/` ran all 15 scenarios against `src/` identical to PR #33 head `752445c` in Chromium 153.0.8010.12: 13 PASS, 2 FAIL (S2-02 double `changed:true` under a two-tab race, 7/60; S2-04 lost updates under a real Web Lock for cross-tab localStorage read-modify-write). Report: `docs/reviews/S2-CHROMIUM-REPORT.md`.
+- Old writers confirmed in real Chromium (autosave 20/20 after every phase; `deleteBackup` undetected). **R1 unresolved. S1 Open (review pending). S2: run, not closed (independent review pending).** S3 not started; no cutover, migration or merge.
