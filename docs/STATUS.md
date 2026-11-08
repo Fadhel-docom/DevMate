@@ -789,3 +789,12 @@ Run the full Vitest suite, TypeScript/Vite production build, and dependency audi
 
 ### PR-D restart-safety correction
 - Design review identified a restart gap between profile migration and final cutover marker. PR-D design now requires a durable cutover-intent marker before any migration, checked under the shared lock by every legacy write path. An intent/intermediate marker forces read-only recovery mode across reloads and tabs; it cannot silently fall back to legacy writes.
+
+## Current state — 2026-11-08 (keyboard accessibility PR open; other work unchanged)
+
+- Branch `feature/keyboard-accessibility`, base `feature/phase-1-foundation` at `3c60a8529ae99d869c3c98970c2df9ff37895d42`. One PR, ready for review, not merged.
+- Scope: focus indicator, skip link and landmarks, accessible names, polite announcements for actions, chat log semantics, loading/error semantics, focus return after reload, backup-group/dialog semantics. No storage, recovery, dependency, provider or design changes.
+- Local verification (sandbox, Node 24.22.1, npm 10.9.2): 9 test files / 227 tests passed (216 before + 11 new); `tsc --noEmit && vite build` passed. CI result for the exact head: see the next line once recorded.
+- Not verified: real browser, Android, screen readers, automated axe/Lighthouse, and colour contrast of existing small text.
+- PR #32 and PR #33 are untouched and keep their own status; expect a textual conflict in `src/App.tsx`, `src/BackupManager.tsx` and `src/App.test.tsx` for whichever merges second.
+- No merge, deployment, or `main` change was made by this task.

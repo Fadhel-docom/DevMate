@@ -1757,3 +1757,54 @@ Remote sandbox, Node v24.22.1, npm 10.8.2 (CI uses Node 20.20.2), files fetched 
 - Defined the cutover marker key as `devmate-cutover-v1:workspace` and its exact phase set: `intent`, `profiles-verified`, `stores-verified`, `committed`.
 - All legacy mutators (workspace saves, backup restoration, and helpers that set/remove the legacy workspace key) must check this marker inside the existing shared lock. Any marker or unreadable marker blocks legacy mutation; legacy reads remain available for archive/export.
 - If marker persistence/read-back is uncertain, migration is not started and the app enters read-only recovery if any marker bytes exist.
+
+## 69. Keyboard accessibility and screen-reader semantics (Phase 1 UI) — 2026-11-08 — Claude
+
+### Start and isolation
+- Started about 2026-11-08 07:25 UTC. Branch `feature/keyboard-accessibility`, created from the live head of `feature/phase-1-foundation`: base SHA `3c60a8529ae99d869c3c98970c2df9ff37895d42` (merge of PR #30). Baseline observed before any edit: `npm ci` (155 packages, 0 vulnerabilities), `npm test` 9 files / 216 tests passed, `npm run build` passed.
+- Single task: keyboard and screen-reader accessibility of the existing Phase 1 UI. No redesign, no new features, no new dependencies, no provider integration.
+- Isolation: no PR #32 / PR #33 branch was modified. `src/storage.ts`, `src/durableStore.ts`, `src/cutoverController.ts` (not present on this base) and all storage/recovery logic are untouched. No change to `package.json`, the lockfile, the CI workflow, `main`, or any other repository.
+- Provenance note: the early entries of this section were written together with the later ones, after the implementation, because the tooling batches repository writes. The facts come from the tool outputs of this session; nothing was reconstructed from memory.
+
+### Plan and file boundaries
+- Allowed: `src/App.tsx`, `src/BackupManager.tsx` (semantics only), `src/styles.css` (append only), `src/App.test.tsx`, `docs/OPERATIONS-ROOM.md`, `docs/STATUS.md`.
+- Inspected first: all UI source, the CSS, and the existing tests, to find which assertions constrain the markup (see decision D5).
+
+### Technical decisions and reasons
+- **D1 Focus ring.** Appended `a/button/input/[tabindex]:focus-visible { outline: 3px solid #3a2fb0; outline-offset: 2px }`. Before this, text inputs had `outline:none` with only a border-colour change, the chat input had no visible focus at all (transparent, borderless input), and buttons relied on browser defaults. `outline` (not `box-shadow`) is used so the ring survives forced-colours / high-contrast modes. Contrast of the ring against white and the page background was estimated by hand (about 9:1), not measured with a tool. The old `outline:none` rules were left untouched; the new rule wins by source order and equal specificity, which keeps the diff small.
+- **D2 Landmarks and skip link.** `<main>` used to wrap the header and footer, so the header was not a banner landmark. Now: `div.shell` > skip link, `header`, `main#main-content` (tabindex -1), `footer`. The skip link is the first tab stop and is visible only on focus. The `main` element suppresses its own focus ring because it is only a programmatic focus target.
+- **D3 Names.** Decorative glyphs are `aria-hidden` (brand mark "D", project symbol, empty-state check) so a project button reads "My first project", not "black square with grid, My first project". Icon-only buttons already had names ("Add project", "Send message"); a test now guards every button, link and field. Visible count badges gained screen-reader text ("2 projects", "1 backup").
+- **D4 Navigation.** Active project has `aria-current="true"`. Panels are labelled regions (`aria-labelledby` on the Projects, Tasks, Chat sections); the task list is a group named "Tasks for <project>".
+- **D5 Announcer instead of new status regions.** Outcomes that had no text on screen (project/task added, empty submit, project switched, task completed/reopened, workspace ready) are announced through one persistent, visually hidden `aria-live="polite" aria-atomic="true"` node. It deliberately has no `role="status"`/`role="alert"`: existing tests and notices use "the first `[role=status]`/`[role=alert]` element" as the notice, and a persistent status node would break the null/“no notice” assertions. The text sits in a keyed child so an identical message is announced again.
+- **D6 Chat log.** The message list is `role="log"` with a name, `aria-live="polite"`, `aria-atomic="false"`, `aria-relevant="additions"`, and `tabindex="0"` (it scrolls, so keyboard users must be able to focus it). Existing messages keep their DOM nodes when a message is appended, so only the new user message and reply are read, never the whole history. The input is described by the "Demo mode · Messages are not sent to an AI provider" note.
+- **D7 Loading and errors.** `main` carries `aria-busy` while loading; the existing `role="status"` loading text and `role="alert"` error text were kept as they are (already correct). Empty submits now say why nothing happened.
+- **D8 Focus after reload.** The "Reload saved workspace" button unmounts while reloading, which drops focus onto `<body>`. After the reload completes, focus goes to the button if it is still shown, otherwise to `main`. A dedicated state tick triggers this instead of watching `loaded`, because the `loaded` false→true flip can be coalesced by React batching (this was observed in the test environment).
+- **D9 Backups.** Per-slot actions are a `role="group"` named by the slot title, and the confirmation dialog has `aria-describedby`. Per-button `aria-label`s were not used because PR #32 edits exactly those button lines; the group gives screen-reader users the slot context without creating a textual conflict. Native `<dialog>.showModal()` is unchanged (browser-managed focus trap, Escape, focus return).
+- **D10 Tests.** 11 tests added to `src/App.test.tsx`, inserted before the last `describe` (not at end of file) to limit conflicts with PR #32's appended block. The CSS check reads `src/styles.css` from disk because Vitest replaces imported CSS (including `?raw`) with an empty string; this was found by running it, and the specifier is untyped on purpose because the project has no `@types/node`. It is a static source check and is labelled as not a rendered check.
+
+### Files changed
+- `src/App.tsx`, `src/BackupManager.tsx`, `src/styles.css`, `src/App.test.tsx`, `docs/OPERATIONS-ROOM.md`, `docs/STATUS.md`.
+
+### Tests, commands and actual results (local sandbox)
+- Environment: Node v24.22.1 (CI uses Node 20), npm 10.9.2 (the sandbox had no `npm`; it was downloaded from the npm registry and run with `node`). Differences from CI are therefore possible.
+- Before changes: `npm ci` OK; `npm test` 9 files / 216 tests passed; `npm run build` OK.
+- After changes: `npm test` 9 files / **227 tests passed** (216 + 11 new); `npm run build` (`tsc --noEmit && vite build`) OK, 29 modules transformed.
+- Negative check: with the three non-test source files reverted (tests kept), `src/App.test.tsx` shows 11 failed / 14 passed, so each new test depends on the change it describes.
+- What the new tests prove: landmark structure and skip-link target; accessible names of all buttons/links/fields (simplified name computation, not a real accessibility engine); `aria-current`; announcer attributes and messages; chat log attributes and node stability; loading `status` + `aria-busy`; focus return after reload; backup grouping and dialog description; CSS source rules. Keyboard behaviour is tested only as far as jsdom allows: elements are focusable and native buttons/checkboxes are activated with `click()`. jsdom does not implement Tab order or implicit form submission on Enter.
+- **Not done:** no real-browser test, no Android test, no screen-reader test (NVDA, VoiceOver, TalkBack), no automated axe/Lighthouse run. None of these is claimed.
+
+### Problems found and how they were handled
+- First test run: 2 failures. (1) Focus after reload did not move because the `loaded` transition was coalesced; fixed with the tick state (D8). (2) The CSS check saw an empty string because Vitest blanks CSS imports; fixed by reading the file from disk (D10).
+- A stray `git checkout -p` was issued while debugging; it had no input and discarded nothing (verified with `git status` / `git diff --stat` afterwards).
+
+### Merge-conflict risk with PR #32 (disclosed, not resolved here)
+- PR #32 (`feature/pr-d-cutover-intent-barrier`) edits `src/App.tsx` (cutover state, banner, `canEditWorkspace`, `saveMessage`, BackupManager props), `src/BackupManager.tsx` (button `disabled` expressions, a note) and `src/App.test.tsx` (appended describe). This branch edits other lines of the same files; a textual conflict near `App.tsx` lines around the notices and the closing `</main>`/footer is likely and must be resolved by whoever merges second. The two changes are logically independent. This PR targets `feature/phase-1-foundation` as instructed and was not rebased onto PR #32.
+
+### Remaining risks and known gaps (not changed, out of scope)
+- Colour contrast was not altered and was not measured. Small muted text (for example `.eyebrow`, `.top-note`, `.privacy-note`, backup detail text) is likely below WCAG AA 4.5:1 on white; this needs a separate, measured pass.
+- Disabled controls (locked editing) use the native `disabled` attribute, so they are skipped by Tab and the reason is only in the notices.
+- `.backup-preview` is a scrollable box that is not keyboard focusable; touch-target sizes were not changed; the project list uses Tab/Enter/Space (no arrow-key roving), which is valid for a list of buttons.
+- Screen-reader wording was written but never heard on a real screen reader.
+
+### Final SHA and CI
+- Implementation commit: recorded in the next entry below once pushed. CI result: recorded after the exact-head run is observed. Not merged, not deployed, `main` unchanged.

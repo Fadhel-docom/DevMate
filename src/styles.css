@@ -34,3 +34,12 @@
 @media(max-width:600px){
   .confirm-dialog{margin:auto 0 0;max-width:none;width:100%;border-radius:14px 14px 0 0}
 }
+
+/* Keyboard accessibility: visible focus ring, skip link, screen-reader-only text.
+   Appended after the base rules so it overrides their outline:none by source order. */
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+a:focus-visible,button:focus-visible,input:focus-visible,[tabindex]:focus-visible{outline:3px solid #3a2fb0;outline-offset:2px}
+.chat-form input:focus-visible{outline-offset:0}
+main[tabindex="-1"]:focus-visible{outline:none}
+.skip-link{position:absolute;left:12px;top:0;transform:translateY(-150%);z-index:100;padding:10px 14px;border:1px solid #c9c4f4;border-radius:9px;background:#fff;color:#172338;font-size:14px;font-weight:700;text-decoration:none}
+.skip-link:focus-visible{transform:translateY(12px)}
