@@ -50,7 +50,7 @@ The runner prints:
 
 ## Execution evidence
 
-Final verification at this record was run on exact PR head `3f5acda522112db4dc5a8b5fa6be41fae09678b0`:
+The first clean Chromium run was on exact PR head `3f5acda522112db4dc5a8b5fa6be41fae09678b0`. After the error-classification assertion was added, the latest code verification ran on exact head `c038fea5dcbfe43a54f0327153b6ea2b11d4e3f3`:
 
 - DevMate CI: run `42485219245` — **success** (npm ci, tests, TypeScript check, build).
 - Real-Chromium proof: run `42485223078` — **success**.
@@ -71,4 +71,4 @@ Final verification at this record was run on exact PR head `3f5acda522112db4dc5a
 - This fault injection verifies atomic rollback at the backup-persistence boundary; it is not a physical disk-quota exhaustion simulation.
 - SIGKILL durability, real quota exhaustion, restore races, 3+ tabs, mobile, and non-Chromium browsers remain untested.
 - R1 remains unresolved. S2-16 remains FAIL.
-- The PR is still not merge-ready until an independent evidence-based review of the final SHA approves it.
+- These runs verify code head `c038fea5dcbfe43a54f0327153b6ea2b11d4e3f3`. If later documentation edits move the PR head, rerun exact-head CI before merge. The PR is not merge-ready until an independent evidence-based review of the final SHA approves it.
