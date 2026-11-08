@@ -6,14 +6,28 @@ on:
   push:
     branches: ["fix/**"]
 
+# Least privilege: this job only reads the repository.
+permissions:
+  contents: read
+
 jobs:
   chromium-cas:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
+    env:
+      EXPECTED_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
     steps:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Assert the checked-out commit is the expected PR head
+        run: |
+          actual="$(git rev-parse HEAD)"
+          echo "TESTED_SHA=$actual"
+          echo "EXPECTED_SHA=$EXPECTED_SHA"
+          echo "RUNNER_OS=$(. /etc/os-release && echo "$PRETTY_NAME")"
+          test "$actual" = "$EXPECTED_SHA"
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -22,10 +36,15 @@ jobs:
       - run: npm ci
       - name: Install real Chromium and required system libraries
         run: npx --yes playwright@1.56.1 install --with-deps chromium
+      - name: Locate Chromium executable
+        run: |
+          bin="$(find "$HOME/.cache/ms-playwright" -type f \( -path '*/chrome-linux/chrome' -o -path '*/chrome-linux64/chrome' \) -perm -u+x | head -n 1)"
+          test -n "$bin"
+          echo "CHROMIUM_BIN=$bin" >> "$GITHUB_ENV"
       - name: Build and start isolated harness server
         run: |
           npm run build
-          npm run dev -- --host 127.0.0.1 --port 4173 > /tmp/devmate-vite.log 2>&1 &
+          npm run dev -- --host 127.0.0.1 --port 4173 --strictPort > /tmp/devmate-vite.log 2>&1 &
           for attempt in $(seq 1 60); do
             if curl --fail --silent http://127.0.0.1:4173/e2e/cas-store-harness/ >/dev/null; then
               echo "Vite harness server ready"
@@ -35,11 +54,24 @@ jobs:
           done
           cat /tmp/devmate-vite.log
           exit 1
-      - name: Run two-tab CAS and backup-failure assertions in Chromium
+      - name: Run atomicity, two-tab race and negative-control assertions in Chromium
         env:
           DEVMATE_TEST_URL: http://127.0.0.1:4173
+        run: node e2e/cas-store-harness/run-chromium.mjs
+      - name: Runner self-test - uncaught page and worker exceptions must fail fast
+        env:
+          DEVMATE_TEST_URL: http://127.0.0.1:4173
+          DEVMATE_HARNESS_TIMEOUT_MS: "60000"
         run: |
-          CHROMIUM_BIN="$(find "$HOME/.cache/ms-playwright" -type f \( -path '*/chrome-linux/chrome' -o -path '*/chrome-linux64/chrome' \) -perm -u+x | head -n 1)"
-          test -n "$CHROMIUM_BIN"
-          export CHROMIUM_BIN
-          node e2e/cas-store-harness/run-chromium.mjs
+          for mode in page-exception worker-exception; do
+            start="$(date +%s)"
+            if DEVMATE_HARNESS_QUERY="?selftest=${mode}" node e2e/cas-store-harness/run-chromium.mjs > "/tmp/selftest-${mode}.log" 2>&1; then
+              echo "runner PASSED a deliberately failing page (${mode})"; cat "/tmp/selftest-${mode}.log"; exit 1
+            fi
+            elapsed=$(( $(date +%s) - start ))
+            echo "selftest ${mode}: runner failed as expected after ${elapsed}s"
+            grep -n "SELFTEST\|monitored\|worker=1" "/tmp/selftest-${mode}.log" | head -n 8
+            grep -q "SELFTEST" "/tmp/selftest-${mode}.log" || { echo "failure was not caused by the injected exception"; cat "/tmp/selftest-${mode}.log"; exit 1; }
+            test "$elapsed" -lt 45
+          done
+          grep -q "worker=1" /tmp/selftest-worker-exception.log || { echo "worker tab was not monitored by the runner"; exit 1; }
