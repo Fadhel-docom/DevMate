@@ -52,8 +52,18 @@ The runner prints:
 
 The first clean Chromium run was on exact PR head `3f5acda522112db4dc5a8b5fa6be41fae09678b0`. After the error-classification assertion was added, the latest code verification ran on exact head `c038fea5dcbfe43a54f0327153b6ea2b11d4e3f3`:
 
-- DevMate CI: run `42485219245` — **success** (npm ci, tests, TypeScript check, build).
-- Real-Chromium proof: run `42485223078` — **success**.
+- DevMate CI: run `42485394375` — **success** (npm ci, tests, TypeScript check, build).
+- Real-Chromium proof: run `42485398569` — **success**.
+
+After the documentation-only follow-up commits, exact PR head
+`749405281175ed107143de279380cbf3390eba84` was re-verified:
+
+- DevMate CI: run `42485495472` — **success**.
+- Real-Chromium proof: run `42485499657` — **success**.
+- Both run records report `head_sha=749405281175ed107143de279380cbf3390eba84`.
+- Logs report Chromium 141.0.7390.37 and Node v22.23.4. Ubuntu 24.04.5
+  is the configured runner image; the reviewer did not independently verify
+  the image version from API evidence.
 - Runner image: Ubuntu 24.04.5 LTS (`ubuntu-24.04`).
 - Browser executable: Chromium 141.0.7390.37; CDP product: Chrome/141.0.7390.37.
 - Runtime: Node v22.23.4, Linux x64.
