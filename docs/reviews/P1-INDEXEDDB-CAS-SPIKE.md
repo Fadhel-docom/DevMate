@@ -25,7 +25,7 @@ Date: 2026-11-08
 
 - GitHub Actions run `42484007481` on exact head `e06370551d373fabb20948bb6557f97b57373f90`: **success**.
 - Workflow includes `npm ci`, dependency audit reporting, `npm test`, and `npm run build`.
-- Follow-up real-Chromium proof on head `3f5acda522112db4dc5a8b5fa6be41fae09678b0`: run `42485223078` **success**; full environment and assertions are recorded in `P1-CHROMIUM-REMEDIATION.md`.
+- Latest real-Chromium proof on code head `c038fea5dcbfe43a54f0327153b6ea2b11d4e3f3`: run `42485398569` **success**; latest DevMate CI run `42485394375` **success**. Full environment and assertions are recorded in `P1-CHROMIUM-REMEDIATION.md`.
 - Not tested here: SIGKILL durability, quota exhaustion, restore races, migration, 3+ tabs, other browsers, or mobile.
 
 ## How to run the browser spike
