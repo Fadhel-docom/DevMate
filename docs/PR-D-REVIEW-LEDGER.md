@@ -124,3 +124,13 @@ After completing a stage, append a dated immutable record below before moving to
 - **Technical conclusion:** nothing in this repository can force an already-loaded pre-barrier bundle to stop writing; the marker detects, it does not prevent.
 - **Residual risks:** see the package (post-commit overwrite by old tabs, unbounded detection window, lock loss on holder death, no crash/BFCache coverage).
 - **Verdict:** **R1 UNRESOLVED. S1: Open** (evidence implemented and CI-verified; independent review pending; no fence).
+
+
+## Stage S1 — R1, record 4: real-writer matrix and impossibility finding (2026-11-08)
+
+- **Scope:** independent re-examination of the code at PR #32 head `a853f2af71383fb863171533e05588f54a86c86b` (CI `verify` success on that SHA), not of earlier reports. Read in full: `src/storage.ts`, `src/cutoverController.ts`, the legacy fixture, `src/legacyWriterFence.test.ts`, `e2e/s1-legacy-writer/*`.
+- **Added:** `src/legacyWriterMatrix.test.ts` (17 tests). It executes the real, hash-checked pre-barrier `saveProjects`, `saveProjectsLocked`, `restoreBackup` and `deleteBackup` against the real controller after `intent` and after `committed`; plus stale plan before intent, an old writer queued behind the controller lock, an unlocked old write during a stage, restart, and verifier-contract tests. No test edits the storage map to imitate an old tab. Mutation checks: dropping the post-stage source revalidation, or accepting truthy verifier values, each fails a test.
+- **Findings:** (1) the marker blocks none of the four old mutators; (2) three are detected after the fact, never prevented; (3) **old `deleteBackup` is undetected** and can delete legacy backup slots after `intent`/`committed`; (4) detection is byte-based (ABA hides a restored original); (5) the lock serializes an old locked writer behind the controller but does not stop it afterwards.
+- **No change to production code.** `begin()` already fails closed and the app supplies no verifier; a guard test now fails if an application source file wires one.
+- **Verdict:** no real guarantee is possible with the current constraints (see `docs/PR-D-RECOVERY-DESIGN.md` section 11.1). **R1 remains UNRESOLVED. Cutover remains closed.** Residual risks: post-commit overwrite by old tabs, undetected legacy-backup deletion, unbounded detection window, lock loss on holder death, crash/BFCache/suspend untested, other browsers untested.
+- Exact-head CI for the commit carrying this record is recorded in the PR description of the work PR, not here.
