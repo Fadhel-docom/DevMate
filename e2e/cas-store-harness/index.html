@@ -16,7 +16,8 @@ const params = new URLSearchParams(location.search);
 const workerMode = params.get("worker") === "1";
 const selftest = params.get("selftest") ?? "";
 const channel = new BroadcastChannel("devmate-cas-p1-harness");
-const nowMs = () => performance.timeOrigin + performance.now();
+// Wall clock: identical across tabs (performance.timeOrigin + now() differs per tab and skewed the barrier proof).
+const nowMs = () => Date.now();
 const describe = (e) => `${e?.name ?? "Error"}: ${e?.message ?? e}`;
 
 // The runner polls window.__casHarness; "running" until the page decides.
@@ -283,7 +284,7 @@ async function main() {
     const worker = await workerResultPromise;
     const actual = await store.read();
     const backups = await readBackups();
-    return { trialId, expectedVersion, previousRaw: base.raw, raws, workerReadyAt: workerReadyMsg.at, parentReadyAt, goSentAt, parent, worker, actual, backups };
+    return { trialId, expectedVersion, previousRaw: base.raw, raws, workerReadyAt: workerReadyMsg.at, parentReadyAt, goSentAt, startAt, parent, worker, actual, backups };
   }
 
   function evaluateRaceTrial(t) {
@@ -293,8 +294,9 @@ async function main() {
     const conflicts = sides.filter(([, r]) => r?.ok === false && r.conflict === true);
     const next = t.expectedVersion + 1;
     if (t.worker.protocolViolation) v.push("protocol-violation");
-    const barrierProven = t.workerReadyAt < t.goSentAt && t.parentReadyAt < t.goSentAt
-      && t.parent.startedAt >= t.goSentAt - 2 && t.worker.startedAt >= t.goSentAt - 2;
+    // Both READY messages precede GO, and neither write started before the agreed start time.
+    const barrierProven = t.workerReadyAt <= t.goSentAt && t.parentReadyAt <= t.goSentAt && t.goSentAt <= t.startAt
+      && t.parent.startedAt >= t.startAt && t.worker.startedAt >= t.startAt;
     if (!barrierProven) v.push("barrier-not-proven");
     if (oks.length > 1) v.push("double-success");
     if (oks.length === 0) v.push("no-success");
@@ -316,8 +318,8 @@ async function main() {
   const fmt = (r) => r?.ok === true ? `ok(v${r.version})` : r?.conflict ? `conflict(actual=${r.actualVersion})` : `error(${r?.error})`;
   const traceTrial = (t, violations) => {
     const winner = ["parent", "worker"].filter((n, idx) => (idx === 0 ? t.parent.result : t.worker.result)?.ok === true);
-    const skew = Math.abs(t.parent.startedAt - t.worker.startedAt).toFixed(2);
-    const overlap = t.parent.startedAt < t.worker.finishedAt && t.worker.startedAt < t.parent.finishedAt;
+    const skew = Math.abs(t.parent.startedAt - t.worker.startedAt);
+    const overlap = t.parent.startedAt <= t.worker.finishedAt && t.worker.startedAt <= t.parent.finishedAt;
     log(`  trial ${t.trialId}: winner=${winner.join("+") || "none"} parent=${fmt(t.parent.result)} worker=${fmt(t.worker.result)} base=v${t.expectedVersion} final=v${t.actual.ok ? t.actual.version : "?"} backups=${t.backups.length} startSkewMs=${skew} overlap=${overlap} violations=[${violations.join(",")}]`);
     return { winner, overlap };
   };
