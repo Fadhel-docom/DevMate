@@ -100,6 +100,7 @@ if (workerMode) {
   const backupCountAfterFailure = await countBackups();
   const atomicityPass = injectionObserved
     && !failedWrite.ok
+    && failedWrite.error === "tx-aborted"
     && afterFailure.ok
     && afterFailure.version === baseline.version
     && afterFailure.raw === baseline.raw
