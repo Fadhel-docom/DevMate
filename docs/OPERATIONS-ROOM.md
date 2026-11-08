@@ -1853,3 +1853,12 @@ Remote sandbox, Node v24.22.1, npm 10.8.2 (CI uses Node 20.20.2), files fetched 
 - Not done / why: real App UI (React 19 vs pinned 18, no vite/vitest); BFCache probe inconclusive; OS crash/power loss and other browsers not testable here.
 - Help request to partner: independent review of S2 record 1 and of the two FAILs (decide whether the S2-02 expectation should be relaxed to "idempotent" or the controller revalidation tightened — not decided here).
 - Boundaries kept: no production code change, no S3, no cutover/migration, nothing merged.
+
+## 2026-11-08 (later) — PR #35 preliminary-review follow-up (Claude #2)
+
+- Done: S2-15 reclassified NOT TESTED; added and ran S2-16 (real `readProjectsLocked`/`saveProjectsLocked` + `expectedRaw`, two real tabs); recorded SHAs/versions/commands. Only these two scenarios were run (rerun command in the report addendum); the 15-scenario results are untouched.
+- Evidence: `docs/reviews/S2-CHROMIUM-REPORT.md` (Addendum 1), `results.addendum-1.json`, ledger record "S2 record 2". Harness commit `dc2983e`; production code = PR #33 head `752445c`.
+- Discovered: S2-16 FAIL — both tabs acknowledged the same-baseline save in 15/40 trials (acknowledged edit then missing), and a sustained 2×25-edit run lost 1–2 acknowledged edits. The existing legacy-compatible save path can silently overwrite across tabs even with the Web Lock and `expectedRaw`.
+- Not done / why: no fix (production code is out of scope); BFCache not testable in this headless build; real UI not run.
+- Help request to partner/owner: decide whether this save-path defect is in scope for PR-D or a separate issue; independent review of record 2.
+- Boundaries kept: no production change, PR #32/#33 untouched, no S3, no cutover, nothing merged.

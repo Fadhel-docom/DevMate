@@ -888,3 +888,7 @@ This section supersedes the earlier dated sections only for S1/S2 status.
 
 - S2 harness `e2e/s2-browser-persistence/` ran all 15 scenarios against `src/` identical to PR #33 head `752445c` in Chromium 153.0.8010.12: 13 PASS, 2 FAIL (S2-02 double `changed:true` under a two-tab race, 7/60; S2-04 lost updates under a real Web Lock for cross-tab localStorage read-modify-write). Report: `docs/reviews/S2-CHROMIUM-REPORT.md`.
 - Old writers confirmed in real Chromium (autosave 20/20 after every phase; `deleteBackup` undetected). **R1 unresolved. S1 Open (review pending). S2: run, not closed (independent review pending).** S3 not started; no cutover, migration or merge.
+
+## Current state — 2026-11-08 (later; addendum, supersedes only the S2 numbers above)
+
+- S2-15 (BFCache) is **NOT TESTED**, not PASS. Original run honestly totals 12 PASS / 2 FAIL / 1 NOT TESTED. New S2-16 **FAIL**: the real `saveProjectsLocked` with `expectedRaw` from two real tabs silently lost acknowledged updates (15/40 simultaneous trials; 1–2 of 50 in sustained runs). Production code unchanged. R1 unresolved; S2 not closed. Details: `docs/reviews/S2-CHROMIUM-REPORT.md` (Addendum 1), `docs/PR-D-REVIEW-LEDGER.md` (S2 record 2).

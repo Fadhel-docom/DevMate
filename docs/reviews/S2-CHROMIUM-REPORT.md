@@ -196,3 +196,19 @@
 - OS crash / power loss (SIGKILL keeps the OS page cache), renderer-only crash, other browsers, mobile browsers, suspend/resume, a deployment during a pending write.
 - The vitest suite was not run locally (relied on CI run 42454182359).
 - No S3, no cutover, no migration, no production code change, nothing merged.
+
+
+---
+
+## Addendum 1 (2026-11-08) — BFCache reclassified, S2-16 added (appended after review of PR #35; nothing above was changed)
+
+- **Reproducibility:** production code tested = PR #33 head `752445ced37d8dcf2bb35402de543812f0e0e3b9` (`src/` diff empty; recorded in the results file). Harness commit that produced this addendum = `dc2983e51dddc468e672637f1167a0dccdf7a26d` (clean tree at run time). The original full run (`results.json`) was made at harness commit `2632eec` and is kept unchanged; its numbers above still describe that run. Final PR head (documentation/results commit) is stated in the PR #35 conversation and the room entry. Environment: Chromium 153.0.8010.12, Playwright 1.63.0, Node v22.23.4, esbuild 0.28.2, Linux 6.18.44 x64, 2 CPUs. Raw data: `e2e/s2-browser-persistence/results.addendum-1.json`.
+- **Re-run:** `node e2e/s2-browser-persistence/run.mjs S2-15 S2-16 --out=results.addendum-1.json` (about 35 s). The full suite: `node e2e/s2-browser-persistence/run.mjs` (about 4 minutes).
+- **Correction — S2-15 (BFCache) is NOT TESTED, not PASS.** In headless Chromium 153 `goBack()` reloaded the page (`pageshow persisted=false`, in-memory marker lost), so a BFCache-restored stale tab was never exercised. The earlier "PASS (1/1)" in the table above recorded only that the probe ran; it is superseded by this classification. The totals for the original run therefore read, honestly: 12 PASS, 2 FAIL, 1 NOT TESTED (not 13/2). BFCache behaviour remains unknown.
+- **New — S2-16: FAIL (1/4). The real production `saveProjectsLocked` with `expectedRaw` from two real tabs DOES silently overwrite acknowledged updates.** Real functions (`readProjectsLocked`, `saveProjectsLocked` from `src/storage.ts`); the helper only builds the edited project list.
+  - (A) 40 trials, both tabs loaded the same baseline (verified equal to storage), then saved simultaneously: exactly one succeeded in 25, **both reported `ok` in 15** (conflict was reported in none of those); in each of those 15 trials one acknowledged edit is absent from the final workspace. Repeated run: 15/40 again. First (exploratory) run: 15/40.
+  - (B) 2 tabs × 25 edits, each edit = load, append a uniquely titled task, save with that load's raw as `expectedRaw`, retry on conflict: **1 and 2 acknowledged edits were missing from the final workspace** in two runs (50 acknowledged; 49 and 48 present); conflicts were reported 12 and 6 times, so the check works part of the time.
+  - (C) strictly sequential, second save 1.5 s after the first with the outdated baseline: PASS — conflict reported, nothing overwritten.
+  - Reading: the `expectedRaw` comparison and the `setItem` are not atomic across tabs even under the Web Lock, because cross-tab localStorage reads can be stale (same mechanism as S2-02/S2-04). This is a defect of the *legacy-compatible save path itself*, independent of cutover; it is reported, not fixed (no production change was asked or made). The expectations were not relaxed.
+  - Not tested for S2-16: the real React UI; more than two tabs; other browsers; whether the cutover marker could mitigate it (it is out of scope here).
+- **Remaining risks recorded, unchanged:** R1 unresolved; S2-02 (double `changed:true`) and S2-04 (counter loss under Web Lock) remain FAIL; crash loss window; OS crash/power loss, renderer crash, other browsers, real UI, BFCache not tested.

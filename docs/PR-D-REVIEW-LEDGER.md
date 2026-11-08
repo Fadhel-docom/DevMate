@@ -145,3 +145,13 @@ After completing a stage, append a dated immutable record below before moving to
 - **Not tested:** real App UI, BFCache (probe inconclusive), OS crash/power loss, renderer-only crash, other browsers/mobile, local vitest run.
 - **Review:** none; this is implementer evidence, not an independent review.
 - **Verdict:** **R1 remains UNRESOLVED** (now also shown in real Chromium); **R6** gains two real-browser findings (S2-02/S2-04) for the reviewer. **S2: tests implemented and run in real Chromium with the limits above; stage not closed — awaiting independent review.** S3 not started; cutover remains closed.
+
+
+## Stage S2 — real-Chromium record 2 (addendum to record 1; record 1 is unchanged) (2026-11-08)
+
+- **Reason:** preliminary review of PR #35 asked for a corrected BFCache classification, an application-level test of lost updates, and reproducibility data. Only S2-15 and the new S2-16 were run; the 15-scenario run in record 1 was not repeated.
+- **Code under test:** PR #33 head `752445ced37d8dcf2bb35402de543812f0e0e3b9` (`src/` byte-identical; PR #32 head `a853f2a` and PR #33 unchanged). Harness commit for this run: `dc2983e51dddc468e672637f1167a0dccdf7a26d` (clean tree). Chromium 153.0.8010.12, Playwright 1.63.0, Node v22.23.4, esbuild 0.28.2, Linux 6.18.44. Raw: `e2e/s2-browser-persistence/results.addendum-1.json`. Rerun: `node e2e/s2-browser-persistence/run.mjs S2-15 S2-16 --out=results.addendum-1.json`.
+- **S2-15 BFCache: NOT TESTED** (goBack did not restore from BFCache). Supersedes the "PASS" label of record 1 for that scenario; record 1 stays as written. Honest totals of the original run: 12 PASS, 2 FAIL, 1 NOT TESTED.
+- **S2-16 (new): FAIL 1/4.** Real `readProjectsLocked`/`saveProjectsLocked` with `expectedRaw`, two real tabs: simultaneous saves from the same verified baseline both reported ok in 15/40 trials with one acknowledged edit missing from the final workspace each time; sustained 2×25 edits lost 1–2 acknowledged edits per run (two runs); the sequential outdated-baseline case correctly reports conflict. Expectations not relaxed.
+- **Not tested:** real UI, >2 tabs, other browsers, BFCache, OS crash.
+- **Review:** none yet. **Verdict:** R1 UNRESOLVED; S2 not closed; new finding F-S2-16 (silent overwrite in the existing save path, independent of cutover) needs an owner/reviewer decision — nothing was changed.
