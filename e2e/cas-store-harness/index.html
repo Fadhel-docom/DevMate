@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>IndexedDB CAS P1 browser spike</title></head>
+<head><link rel="icon" href="data:,"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>IndexedDB CAS P1 browser spike</title></head>
 <body>
 <main>
 <h1>IndexedDB CAS P1 — isolated Chromium spike</h1>
@@ -72,15 +72,16 @@ if (workerMode) {
     if (!baseline.ok) throw new Error("baseline read after seed failed");
   }
 
-  // Queue the backup write, then force the transaction to abort at the
-  // backup-persistence boundary. Both object stores must roll back together.
+  // Queue the backup write, then abort from its success event before the
+  // queued workspace put can commit. Both object stores must roll back together.
   const originalAdd = IDBObjectStore.prototype.add;
   let injectionObserved = false;
   IDBObjectStore.prototype.add = function(...args) {
     if (this.name === "backups") {
       injectionObserved = true;
+      const transaction = this.transaction;
       const request = originalAdd.apply(this, args);
-      this.transaction.abort();
+      request.addEventListener("success", () => transaction.abort(), { once: true });
       return request;
     }
     return originalAdd.apply(this, args);
