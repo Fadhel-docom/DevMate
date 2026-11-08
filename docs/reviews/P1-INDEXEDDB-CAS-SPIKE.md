@@ -7,7 +7,7 @@ Date: 2026-11-08
 - PR: https://github.com/Fadhel-docom/DevMate/pull/38
 - Branch: `feature/p1-indexeddb-cas-spike`
 - Base: `feature/phase-1-foundation` at `3c60a8529ae99d869c3c98970c2df9ff37895d42`
-- Current head at this record: `d5b0ea34a8e51ce3cda5d082159126b31230d2c5`
+- Initial isolated-spike head: `e06370551d373fabb20948bb6557f97b57373f90`
 
 ## Implementation added
 
@@ -23,7 +23,7 @@ Date: 2026-11-08
 
 ## Verification
 
-- GitHub Actions run `42483940949` on the exact head above: **success**.
+- GitHub Actions run `42484007481` on exact head `e06370551d373fabb20948bb6557f97b57373f90`: **success**.
 - Workflow includes `npm ci`, dependency audit reporting, `npm test`, and `npm run build`.
 - The real-Chromium harness has **not yet been executed**. Therefore the P1 browser acceptance criteria are not yet met and this PR is not merge-ready.
 - Not tested here: SIGKILL durability, quota exhaustion, restore races, migration, 3+ tabs, other browsers, or mobile.
@@ -37,3 +37,8 @@ Date: 2026-11-08
 5. Preserve the full output and environment versions with the review evidence.
 
 The harness clears only its own test-backup rows between iterations to avoid exhausting its deliberate 20-backup safety cap. It does not alter the workspace version between races except through the two competing CAS writes.
+
+
+## Follow-up verification work
+
+See [P1-CHROMIUM-REMEDIATION.md](./P1-CHROMIUM-REMEDIATION.md) for the added backup-write fault-injection assertion, bounded two-tab worker waits, and automated real-Chromium runner. Those checks must pass on the final PR head before merge.
