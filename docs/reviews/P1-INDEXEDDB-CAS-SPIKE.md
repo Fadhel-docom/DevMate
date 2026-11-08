@@ -12,7 +12,7 @@ Date: 2026-11-08
 ## Implementation added
 
 - `src/casStore/indexedDbCasStore.ts`: isolated database `devmate-cas-spike-v1`; versioned workspace record; CAS comparison and write inside one IndexedDB readwrite transaction; pre-write backup in the same transaction; strict durability requested; fail-closed error mapping; backup limit of 20 with no automatic eviction.
-- `e2e/cas-store-harness/index.html`: manual real-Chromium two-tab race harness. It runs 100 same-baseline races without Web Locks and checks exactly one success, one conflict, and one version increment per trial.
+- `e2e/cas-store-harness/index.html`: isolated two-tab real-Chromium harness. It runs 100 same-baseline races without Web Locks, verifies one success and one conflict per trial, and checks atomic rollback at the backup-persistence boundary. `run-chromium.mjs` drives it headlessly through CDP.
 
 ## Safety boundaries
 
@@ -25,7 +25,7 @@ Date: 2026-11-08
 
 - GitHub Actions run `42484007481` on exact head `e06370551d373fabb20948bb6557f97b57373f90`: **success**.
 - Workflow includes `npm ci`, dependency audit reporting, `npm test`, and `npm run build`.
-- The real-Chromium harness has **not yet been executed**. Therefore the P1 browser acceptance criteria are not yet met and this PR is not merge-ready.
+- Follow-up real-Chromium proof on head `3f5acda522112db4dc5a8b5fa6be41fae09678b0`: run `42485223078` **success**; full environment and assertions are recorded in `P1-CHROMIUM-REMEDIATION.md`.
 - Not tested here: SIGKILL durability, quota exhaustion, restore races, migration, 3+ tabs, other browsers, or mobile.
 
 ## How to run the browser spike
