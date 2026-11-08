@@ -8,7 +8,7 @@ This change remains an isolated P1 experiment. It does not import the CAS module
 
 ## New proof: backup-write failure is atomic
 
-The browser harness injects a synchronous `QuotaExceededError` specifically when the `backups` object store receives `add()`. It then verifies all of the following:
+The browser harness intercepts the backup-store `add()`, queues the backup request, and immediately aborts the encompassing readwrite transaction at that persistence boundary. It then verifies both object stores roll back together:
 
 1. The injection was reached.
 2. The attempted CAS write does not report success.
@@ -50,7 +50,7 @@ The runner prints:
 
 ## Evidence status
 
-- Backup-failure atomicity assertion: added; execution pending CI.
+- Backup-transaction-abort atomicity assertion: added; execution pending CI.
 - 100 two-tab Chromium races: automated; execution pending CI.
 - Browser/OS/Node versions: emitted by the runner at execution.
 - SIGKILL durability, physical quota exhaustion, restore races, 3+ tabs, mobile, and non-Chromium browsers: not tested by this P1 spike.
