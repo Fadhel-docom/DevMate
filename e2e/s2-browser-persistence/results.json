@@ -1,0 +1,234 @@
+{
+  "chromium": "131.0.6778.33",
+  "origin": "http://localhost:47831",
+  "scenarios": {
+    "A1-begin-race": {
+      "both": [
+        {
+          "ok": true,
+          "changed": true,
+          "reason": null
+        },
+        {
+          "ok": true,
+          "changed": false,
+          "reason": null
+        }
+      ],
+      "changedCount": 1,
+      "markerRaw": "{\"version\":1,\"sourceFingerprint\":\"fnv1a32-0cbfe9ab-42\",\"startedAt\":1794121986804,\"phase\":\"intent\",\"profileSchemaVersion\":1,\"ledgerSchemaVersion\":1}"
+    },
+    "A2-resume-race": {
+      "resumes": [
+        {
+          "ok": true,
+          "mode": "durable",
+          "changed": true,
+          "reason": null
+        },
+        {
+          "ok": true,
+          "mode": "durable",
+          "changed": false,
+          "reason": null
+        }
+      ],
+      "total": {
+        "migrate": 1,
+        "verifyProfiles": 1,
+        "verifyStores": 2
+      },
+      "finalState": "durable"
+    },
+    "B-malformed-marker": {
+      "mode": "indeterminate",
+      "reason": "malformed",
+      "preflightOk": false,
+      "preflightReason": "marker-present"
+    },
+    "B-restart-every-phase": {
+      "phases": [
+        {
+          "after": "begin",
+          "began": true
+        },
+        {
+          "reopenedSeen": "recovery",
+          "phase": "intent",
+          "expected": "intent",
+          "legacyIntact": true
+        },
+        {
+          "advanced": {
+            "ok": true,
+            "changed": true
+          }
+        },
+        {
+          "reopenedSeen": "recovery",
+          "phase": "profiles-verified",
+          "expected": "profiles-verified",
+          "legacyIntact": true
+        },
+        {
+          "advanced": {
+            "ok": true,
+            "changed": true
+          }
+        },
+        {
+          "reopenedSeen": "recovery",
+          "phase": "stores-verified",
+          "expected": "stores-verified",
+          "legacyIntact": true
+        },
+        {
+          "advanced": {
+            "ok": true,
+            "changed": true
+          }
+        },
+        {
+          "reopenedSeen": "durable",
+          "phase": "committed",
+          "expected": "committed",
+          "legacyIntact": true
+        }
+      ]
+    },
+    "C1-quota-at-raw-copy": {
+      "paddedChars": 130943,
+      "result": {
+        "ok": false,
+        "reason": "preserve-quota",
+        "mode": "legacy"
+      },
+      "markerWritten": false,
+      "legacyIntact": true
+    },
+    "C2-quota-at-marker": {
+      "freedChars": 87,
+      "first": {
+        "ok": false,
+        "reason": "marker-write-failed",
+        "mode": "legacy"
+      },
+      "stateAfterFailure": {
+        "marker": null,
+        "copies": 1,
+        "mode": "legacy"
+      },
+      "retryAfterFreeingSpace": {
+        "ok": true,
+        "changed": true,
+        "mode": "recovery"
+      },
+      "copiesAfterRetry": 1
+    },
+    "C3-quota-at-phase-advance": {
+      "intentStarted": true,
+      "markerLengths": {
+        "intent": 147,
+        "profilesVerified": 158,
+        "growth": 11
+      },
+      "rows": [
+        {
+          "freeChars": 10,
+          "ok": false,
+          "reason": "marker-write-failed",
+          "mode": "recovery",
+          "markerPhase": "intent"
+        },
+        {
+          "freeChars": 11,
+          "ok": true,
+          "reason": null,
+          "mode": "recovery",
+          "markerPhase": "profiles-verified"
+        }
+      ]
+    },
+    "D-storage-unavailable": {
+      "access": "SecurityError",
+      "inspectMode": "indeterminate",
+      "inspectReason": "unreadable",
+      "preflightOk": false,
+      "preflightReason": "storage-unavailable",
+      "readState": "indeterminate"
+    }
+  },
+  "checks": [
+    {
+      "name": "A1 exactly one tab declares intent; the other is an idempotent no-op",
+      "ok": true,
+      "detail": "[{\"ok\":true,\"changed\":true,\"reason\":null},{\"ok\":true,\"changed\":false,\"reason\":null}]"
+    },
+    {
+      "name": "A2 concurrent resume ends durable; every transition ran exactly once across both tabs (migrate 1, verifyProfiles 1, verifyStores 2)",
+      "ok": true,
+      "detail": "{\"resumes\":[{\"ok\":true,\"mode\":\"durable\",\"changed\":true,\"reason\":null},{\"ok\":true,\"mode\":\"durable\",\"changed\":false,\"reason\":null}],\"total\":{\"migrate\":1,\"verifyProfiles\":1,\"verifyStores\":2},\"finalState\":\"durable\"}"
+    },
+    {
+      "name": "B reopen sees phase intent",
+      "ok": true,
+      "detail": "{\"mode\":\"recovery\",\"phase\":\"intent\",\"legacyIntact\":\"[{\\\"id\\\":\\\"p1\\\",\\\"name\\\":\\\"original\\\",\\\"tasks\\\":[]}]\"}"
+    },
+    {
+      "name": "B reopen sees phase profiles-verified",
+      "ok": true,
+      "detail": "{\"mode\":\"recovery\",\"phase\":\"profiles-verified\",\"legacyIntact\":\"[{\\\"id\\\":\\\"p1\\\",\\\"name\\\":\\\"original\\\",\\\"tasks\\\":[]}]\"}"
+    },
+    {
+      "name": "B reopen sees phase stores-verified",
+      "ok": true,
+      "detail": "{\"mode\":\"recovery\",\"phase\":\"stores-verified\",\"legacyIntact\":\"[{\\\"id\\\":\\\"p1\\\",\\\"name\\\":\\\"original\\\",\\\"tasks\\\":[]}]\"}"
+    },
+    {
+      "name": "B reopen sees phase committed",
+      "ok": true,
+      "detail": "{\"mode\":\"durable\",\"phase\":\"committed\",\"legacyIntact\":\"[{\\\"id\\\":\\\"p1\\\",\\\"name\\\":\\\"original\\\",\\\"tasks\\\":[]}]\"}"
+    },
+    {
+      "name": "B malformed marker is indeterminate and blocks a new plan",
+      "ok": true,
+      "detail": "{\"mode\":\"indeterminate\",\"reason\":\"malformed\",\"message\":\"The cutover marker is not valid JSON.\"}"
+    },
+    {
+      "name": "C1 full storage: begin fails closed (preserve-quota), no marker, legacy intact",
+      "ok": true,
+      "detail": "{\"ok\":false,\"reason\":\"preserve-quota\",\"mode\":\"legacy\"}"
+    },
+    {
+      "name": "C2 no room for the marker: begin fails, no marker, state stays legacy, raw copy kept",
+      "ok": true,
+      "detail": "{\"c2\":{\"ok\":false,\"reason\":\"marker-write-failed\",\"mode\":\"legacy\"},\"c2State\":{\"marker\":null,\"copies\":1,\"mode\":\"legacy\"}}"
+    },
+    {
+      "name": "C2 retry after freeing space succeeds without a second raw copy (R3)",
+      "ok": true,
+      "detail": "{\"c2Retry\":{\"ok\":true,\"changed\":true,\"mode\":\"recovery\"},\"c2Copies\":1}"
+    },
+    {
+      "name": "C3 marker is NOT fixed-size across phases (intent -> profiles-verified grows)",
+      "ok": true,
+      "detail": "{\"intent\":147,\"profilesVerified\":158,\"growth\":11}"
+    },
+    {
+      "name": "C3 with growth-1 free chars the advance fails closed and the intent marker is intact",
+      "ok": true,
+      "detail": "{\"freeChars\":10,\"ok\":false,\"reason\":\"marker-write-failed\",\"mode\":\"recovery\",\"markerPhase\":\"intent\"}"
+    },
+    {
+      "name": "C3 with exactly the growth free the advance succeeds",
+      "ok": true,
+      "detail": "{\"freeChars\":11,\"ok\":true,\"reason\":null,\"mode\":\"recovery\",\"markerPhase\":\"profiles-verified\"}"
+    },
+    {
+      "name": "D real SecurityError: state is indeterminate/unreadable and preflight refuses",
+      "ok": true,
+      "detail": "{\"access\":\"SecurityError\",\"inspectMode\":\"indeterminate\",\"inspectReason\":\"unreadable\",\"preflightOk\":false,\"preflightReason\":\"storage-unavailable\",\"readState\":\"indeterminate\"}"
+    }
+  ],
+  "allChecksPassed": true
+}
