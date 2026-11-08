@@ -32,14 +32,14 @@ if (workerMode) {
     }
   };
 } else {
-  const child = window.open(`${location.pathname}?worker=1`, "devmate-cas-p1-worker");
-  if (!child) { output.textContent = "POPUP BLOCKED: Chromium must be launched with --disable-popup-blocking."; throw new Error("popup blocked"); }
   const ready = new Promise((resolve, reject) => {
     const timer = setTimeout(() => reject(new Error("worker tab did not become ready within 10s")), 10000);
     channel.addEventListener("message", function onReady(event) {
       if (event.data?.type === "ready") { clearTimeout(timer); channel.removeEventListener("message", onReady); resolve(); }
     });
   });
+  const child = window.open(`${location.pathname}?worker=1`, "devmate-cas-p1-worker");
+  if (!child) { output.textContent = "POPUP BLOCKED: Chromium must be launched with --disable-popup-blocking."; throw new Error("popup blocked"); }
   await ready;
   const dbRequest = indexedDB.open(CAS_DB_NAME, 1);
   const db = await new Promise((resolve, reject) => {
