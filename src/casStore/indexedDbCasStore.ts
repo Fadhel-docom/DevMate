@@ -33,6 +33,7 @@ interface BackupRecord {
 }
 
 function classifyError(error: unknown): CasError {
+  if (error == null) return "tx-aborted";
   const name = error && typeof error === "object" && "name" in error
     ? String((error as { name?: unknown }).name) : "";
   if (name === "QuotaExceededError") return "quota";
