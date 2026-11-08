@@ -32,13 +32,14 @@ const server = http.createServer((req, res) => {
 });
 await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
 
-const only = process.argv.slice(2);
+const only = process.argv.slice(2).filter((a) => !a.startsWith("--"));
+const outArg = process.argv.slice(2).find((a) => a.startsWith("--out="))?.slice(6) ?? null;
 const git = (...a) => { try { return execFileSync("git", a, { cwd: here + "../..", encoding: "utf8" }).trim(); } catch { return null; } };
 const results = {
   meta: {
     codeUnderTest: { pr33Head: "752445ced37d8dcf2bb35402de543812f0e0e3b9", pr32Head: "a853f2af71383fb863171533e05588f54a86c86b", legacyFixtureBase: "3c60a8529ae99d869c3c98970c2df9ff37895d42" },
     srcDiffVsPr33Head: git("diff", "--stat", "752445ced37d8dcf2bb35402de543812f0e0e3b9", "--", "src") || "(empty: src/ is byte-identical to PR #33 head)",
-    harnessHead: git("rev-parse", "HEAD"), harnessDirty: git("status", "--porcelain", "--", "src", "package.json") || "(clean)",
+    harnessHead: git("rev-parse", "HEAD"), harnessDirty: git("status", "--porcelain", "--", "src", "package.json", "e2e/s2-browser-persistence/run.mjs", "e2e/s2-browser-persistence/entry-current.ts", "e2e/s2-browser-persistence/entry-legacy.ts") || "(clean)",
     node: process.version, playwright: require("playwright/package.json").version, esbuild: esbuild.version,
     os: `${os.type()} ${os.release()} ${os.arch()}`, cpus: os.cpus().length, startedAt: new Date().toISOString(), origin: `http://localhost:${PORT}`
   },
@@ -70,7 +71,7 @@ async function scenario(id, title, expected, steps, fn) {
   process.stdout.write(`${id} ${title} ... `);
   try { await fn(s); } catch (e) { s.error = String(e?.stack ?? e).slice(0, 1800); }
   s.durationMs = Date.now() - t0;
-  s.status = s.error ? "ERROR" : s.checks.every((c) => c.pass) ? "PASS" : "FAIL";
+  s.status = s.error ? "ERROR" : s.forceStatus ? s.forceStatus : s.checks.every((c) => c.pass) ? "PASS" : "FAIL";
   results.scenarios.push(s);
   console.log(`${s.status} (${s.checks.filter((c) => c.pass).length}/${s.checks.length}, ${s.durationMs} ms)`);
   for (const c of s.checks.filter((c) => !c.pass)) console.log(`   FAILED CHECK: ${c.desc} -> ${JSON.stringify(c.observed)?.slice(0, 300)}`);
@@ -584,6 +585,66 @@ await scenario("S2-14", "OLD tab waits behind the controller's real lock, then w
       await ctx.close(); }
   });
 
+// ------------------------------------------------------------------ S2-16
+await scenario("S2-16", "Real saveProjectsLocked from two real tabs with expectedRaw: are app updates ever silently overwritten?", "with expectedRaw, two tabs never both succeed from the same baseline, and every update a tab was told succeeded is present in the final workspace",
+  ["(A) 40 trials: fresh context, seed, two tabs each load the baseline with the real readProjectsLocked, then both call the real saveProjectsLocked(projects, undefined, baseline) at the same instant with different edits", "(B) 2 tabs x 25 edits each: each edit = real readProjectsLocked, append one uniquely titled task, real saveProjectsLocked(..., loadedRaw); on conflict reload and retry. After both finish compare every acknowledged edit against the final stored workspace", "(C) one tab saves, then the second tab (same baseline) saves after the first save returned and a settle wait"], async (s) => {
+    const mkProjects = `(raw, title) => { const ps = JSON.parse(raw); ps[0].tasks.push({ id: title, title, done: false, createdAt: Date.now() }); return ps; }`;
+    // (A) simultaneous, same baseline
+    const A = [];
+    for (let t = 0; t < 40; t++) {
+      const ctx = await browser.newContext(); const a = await tab(ctx, "new"), b = await tab(ctx, "new"); await seed(a); await sleep(150);
+      const load = (p) => p.evaluate(async () => { const r = await cur.storage.readProjectsLocked(); window.__base = r.storageRaw; return r.storageRaw === localStorage.getItem("devmate-workspace-v1"); });
+      const baseOk = [await load(a), await load(b)];
+      const go = (p, title) => p.evaluate(async ({ title, mk }) => { const ps = eval(mk)(window.__base, title); const r = await cur.storage.saveProjectsLocked(ps, undefined, window.__base); return { ok: r.ok, reason: r.ok ? null : r.reason }; }, { title, mk: mkProjects });
+      const [ra, rb] = await Promise.all([go(a, `A-${t}-a`), go(b, `A-${t}-b`)]);
+      await sleep(300);
+      const final = await a.evaluate(() => localStorage.getItem("devmate-workspace-v1")); const titles = JSON.parse(final)[0].tasks.map((x) => x.title).filter((x) => x.startsWith("A-"));
+      A.push({ t, baseOk, ra, rb, finalTitles: titles });
+      await ctx.close();
+    }
+    const bothOk = A.filter((r) => r.ra.ok && r.rb.ok), oneOk = A.filter((r) => r.ra.ok !== r.rb.ok), noneOk = A.filter((r) => !r.ra.ok && !r.rb.ok);
+    const silentLossA = A.filter((r) => (r.ra.ok && !r.finalTitles.includes(`A-${r.t}-a`)) || (r.rb.ok && !r.finalTitles.includes(`A-${r.t}-b`)));
+    s.evidence.A_simultaneousSameBaseline = { trials: A.length, exactlyOneSucceeded: oneOk.length, bothSucceeded: bothOk.length, noneSucceeded: noneOk.length, conflictReasons: [...new Set(A.flatMap((r) => [r.ra, r.rb]).filter((x) => !x.ok).map((x) => x.reason))], acknowledgedButMissingInFinal: silentLossA.length, staleBaselineTrials: A.filter((r) => r.baseOk.includes(false)).length, sampleBothSucceeded: bothOk.slice(0, 3) };
+    check(s, "(A) never both tabs acknowledged from the same baseline (no silent overwrite)", bothOk.length === 0, s.evidence.A_simultaneousSameBaseline);
+    check(s, "(A) every acknowledged update is present in the final workspace", silentLossA.length === 0, silentLossA.slice(0, 3));
+    // (B) sustained alternating edits
+    {
+      const ctx = await browser.newContext(); const a = await tab(ctx, "new"), b = await tab(ctx, "new"); await seed(a); await sleep(150);
+      const work = (p, who) => p.evaluate(async ({ who, mk }) => {
+        const acked = []; let conflicts = 0, other = 0;
+        for (let i = 0; i < 25; i++) {
+          for (let attempt = 0; attempt < 50; attempt++) {
+            const r = await cur.storage.readProjectsLocked(); const title = `B-${who}-${i}`;
+            const ps = eval(mk)(r.storageRaw, title);
+            const w = await cur.storage.saveProjectsLocked(ps, undefined, r.storageRaw);
+            if (w.ok) { acked.push(title); break; }
+            if (w.reason === "conflict") { conflicts++; await new Promise((x) => setTimeout(x, 2)); continue; }
+            other++; break;
+          }
+        }
+        return { acked, conflicts, other };
+      }, { who, mk: mkProjects });
+      const [ra, rb] = await Promise.all([work(a, "a"), work(b, "b")]); await sleep(500);
+      const final = await a.evaluate(() => localStorage.getItem("devmate-workspace-v1")); const have = new Set(JSON.parse(final)[0].tasks.map((x) => x.title));
+      const acked = [...ra.acked, ...rb.acked]; const missing = acked.filter((t) => !have.has(t));
+      s.evidence.B_sustainedTwoTabs = { editsAttemptedPerTab: 25, acknowledged: acked.length, conflictsReported: ra.conflicts + rb.conflicts, otherFailures: ra.other + rb.other, presentInFinal: [...have].filter((t) => t.startsWith("B-")).length, acknowledgedButMissing: missing.length, missingTitles: missing.slice(0, 10) };
+      check(s, "(B) every update acknowledged as saved is present in the final workspace (none silently overwritten)", missing.length === 0 && ra.other + rb.other === 0, s.evidence.B_sustainedTwoTabs);
+      await ctx.close();
+    }
+    // (C) strictly sequential, same baseline
+    {
+      const ctx = await browser.newContext(); const a = await tab(ctx, "new"), b = await tab(ctx, "new"); await seed(a); await sleep(150);
+      const base = [await a.evaluate(async () => (window.__base = (await cur.storage.readProjectsLocked()).storageRaw)), await b.evaluate(async () => (window.__base = (await cur.storage.readProjectsLocked()).storageRaw))];
+      const go = (p, title) => p.evaluate(async ({ title, mk }) => { const r = await cur.storage.saveProjectsLocked(eval(mk)(window.__base, title), undefined, window.__base); return { ok: r.ok, reason: r.ok ? null : r.reason }; }, { title, mk: mkProjects });
+      const first = await go(a, "C-first"); await sleep(1500); const second = await go(b, "C-second");
+      const final = JSON.parse(await a.evaluate(() => localStorage.getItem("devmate-workspace-v1")))[0].tasks.map((x) => x.title);
+      s.evidence.C_sequentialSameBaseline = { sameBaseline: base[0] === base[1], first, second, finalTitles: final.filter((t) => t.startsWith("C-")) };
+      check(s, "(C) the second tab, using the now-outdated baseline 1.5 s after the first save, gets conflict and does not overwrite", first.ok && !second.ok && second.reason === "conflict" && final.includes("C-first") && !final.includes("C-second"), s.evidence.C_sequentialSameBaseline);
+      await ctx.close();
+    }
+    s.notTested.push("Edits are produced by a minimal helper that appends one task (the real App/React UI was not run); the production functions readProjectsLocked and saveProjectsLocked are the real ones from src/storage.ts at PR #33 head.", "Only two tabs of one browser profile; no more than 25 edits per tab; timing is host-specific.");
+  });
+
 // ------------------------------------------------------------------ S2-15
 await scenario("S2-15", "Back/forward cache (BFCache) probe for a stale old tab", "if the old tab is restored from BFCache, record that it can still write; otherwise record that BFCache was not exercised",
   ["old tab loads and baselines, navigates to another same-origin page, goBack()", "read pageshow.persisted", "if persisted: drive the real controller to intent in another tab, then run the restored tab's autosave"], async (s) => {
@@ -599,16 +660,17 @@ await scenario("S2-15", "Back/forward cache (BFCache) probe for a stale old tab"
       s.evidence.restoredTabWrite = { write: w, controller: { mode: mode.mode, reason: mode.reason } };
       check(s, "BFCache restoration happened (window state survived goBack) -- the restored old tab's autosave still succeeds and is only detected afterwards", w.ok === true && mode.mode === "indeterminate", s.evidence.restoredTabWrite);
     } else {
-      s.notTested.push("BFCache was NOT exercised: after goBack() the page was reloaded (in-memory marker lost), so a BFCache-restored stale tab could not be tested in this headless Chromium.");
-      check(s, "recorded honestly: goBack() did not restore from BFCache in this build (probe result stored in evidence)", true, probe);
+      s.forceStatus = "NOT TESTED";
+      s.notTested.push("BFCache was NOT exercised: after goBack() the page was reloaded (in-memory marker lost, pageshow persisted=false), so a BFCache-restored stale tab could not be tested in this headless Chromium. This scenario proves nothing about BFCache and must not be counted as a pass.");
+      s.evidence.reason = "goBack() did not restore the page from the back/forward cache in this build";
     }
     await ctx.close();
   });
 
 await browser.close(); server.close();
 results.meta.finishedAt = new Date().toISOString();
-results.summary = { scenarios: results.scenarios.length, pass: results.scenarios.filter((s) => s.status === "PASS").length, fail: results.scenarios.filter((s) => s.status === "FAIL").length, error: results.scenarios.filter((s) => s.status === "ERROR").length, checks: results.scenarios.reduce((n, s) => n + s.checks.length, 0), checksPassed: results.scenarios.reduce((n, s) => n + s.checks.filter((c) => c.pass).length, 0) };
-const target = only.length ? `${out}results.partial.json` : `${here}results.json`;
+results.summary = { scenarios: results.scenarios.length, pass: results.scenarios.filter((s) => s.status === "PASS").length, fail: results.scenarios.filter((s) => s.status === "FAIL").length, error: results.scenarios.filter((s) => s.status === "ERROR").length, notTested: results.scenarios.filter((s) => s.status === "NOT TESTED").length, checks: results.scenarios.reduce((n, s) => n + s.checks.length, 0), checksPassed: results.scenarios.reduce((n, s) => n + s.checks.filter((c) => c.pass).length, 0) };
+const target = outArg ? `${here}${outArg}` : only.length ? `${out}results.partial.json` : `${here}results.json`;
 writeFileSync(target, JSON.stringify(results, null, 2) + "\n");
 console.log("\n" + JSON.stringify(results.summary), "->", target);
 process.exit(results.summary.fail || results.summary.error ? 1 : 0);
