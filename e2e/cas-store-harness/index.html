@@ -72,14 +72,16 @@ if (workerMode) {
     if (!baseline.ok) throw new Error("baseline read after seed failed");
   }
 
-  // Inject a synchronous failure specifically at backup insertion. IndexedDB
-  // must abort the whole readwrite transaction, including the workspace put.
+  // Queue the backup write, then force the transaction to abort at the
+  // backup-persistence boundary. Both object stores must roll back together.
   const originalAdd = IDBObjectStore.prototype.add;
   let injectionObserved = false;
   IDBObjectStore.prototype.add = function(...args) {
     if (this.name === "backups") {
       injectionObserved = true;
-      throw new DOMException("Injected backup insertion failure", "QuotaExceededError");
+      const request = originalAdd.apply(this, args);
+      this.transaction.abort();
+      return request;
     }
     return originalAdd.apply(this, args);
   };
@@ -101,7 +103,7 @@ if (workerMode) {
     && afterFailure.version === baseline.version
     && afterFailure.raw === baseline.raw
     && backupCountAfterFailure === 0;
-  log(`BACKUP-FAILURE ${atomicityPass ? "PASS" : "FAIL"}: injected=${injectionObserved}, write=${JSON.stringify(failedWrite)}, workspaceVersion=${afterFailure.ok ? afterFailure.version : "read-error"}, workspaceUnchanged=${afterFailure.ok && afterFailure.raw === baseline.raw}, backups=${backupCountAfterFailure}`);
+  log(`BACKUP-ATOMICITY ${atomicityPass ? "PASS" : "FAIL"}: abortInjected=${injectionObserved}, write=${JSON.stringify(failedWrite)}, workspaceVersion=${afterFailure.ok ? afterFailure.version : "read-error"}, workspaceUnchanged=${afterFailure.ok && afterFailure.raw === baseline.raw}, backups=${backupCountAfterFailure}`);
   if (!atomicityPass) throw new Error("backup failure did not preserve workspace atomicity");
 
   let expectedVersion = baseline.version;
