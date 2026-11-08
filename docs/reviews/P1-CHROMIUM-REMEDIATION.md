@@ -48,11 +48,27 @@ The runner prints:
 5. Set `CHROMIUM_BIN` to that executable and run:
    `DEVMATE_TEST_URL=http://127.0.0.1:4173 node e2e/cas-store-harness/run-chromium.mjs`
 
-## Evidence status
+## Execution evidence
 
-- Backup-transaction-abort atomicity assertion: added; execution pending CI.
-- 100 two-tab Chromium races: automated; execution pending CI.
-- Browser/OS/Node versions: emitted by the runner at execution.
-- SIGKILL durability, physical quota exhaustion, restore races, 3+ tabs, mobile, and non-Chromium browsers: not tested by this P1 spike.
+Final verification at this record was run on exact PR head `3f5acda522112db4dc5a8b5fa6be41fae09678b0`:
+
+- DevMate CI: run `42485219245` — **success** (npm ci, tests, TypeScript check, build).
+- Real-Chromium proof: run `42485223078` — **success**.
+- Runner image: Ubuntu 24.04.5 LTS (`ubuntu-24.04`).
+- Browser executable: Chromium 141.0.7390.37; CDP product: Chrome/141.0.7390.37.
+- Runtime: Node v22.23.4, Linux x64.
+- Backup transaction-abort assertion: **PASS** — write returned `tx-aborted`; workspace version stayed 1; raw payload was unchanged; backup count stayed 0.
+- Two-tab race: **PASS** — 100 successes, 100 conflicts, zero double-success, zero double-failure, zero wrong-version outcomes.
+- Runner also checks for uncaught runtime exceptions; none were reported in this successful run.
+
+## Earlier runner corrections
+
+- The first workflow attempt used Ubuntu 26.04, which Playwright 1.56.1 did not support; the workflow was pinned to Ubuntu 24.04.
+- An intermediate Chromium run passed the data assertions but surfaced an uncaught `TransactionInactiveError` from the fault injector. The injector was changed to abort from the backup request's success event, and the runner now fails on uncaught page exceptions. The final run above passed cleanly.
+
+## Remaining untested boundaries
+
+- This fault injection verifies atomic rollback at the backup-persistence boundary; it is not a physical disk-quota exhaustion simulation.
+- SIGKILL durability, real quota exhaustion, restore races, 3+ tabs, mobile, and non-Chromium browsers remain untested.
 - R1 remains unresolved. S2-16 remains FAIL.
-- This PR is not merge-ready until exact-head CI and an independent evidence-based review pass.
+- The PR is still not merge-ready until an independent evidence-based review of the final SHA approves it.
