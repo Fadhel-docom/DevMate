@@ -892,3 +892,13 @@ This section supersedes the earlier dated sections only for S1/S2 status.
 - No repeated review carousel, no partial-fix claims, no parallel task drift while the current branch awaits repair/verification/closure. If the repair does not satisfy acceptance, mark BLOCKED / NOT ACCEPTED with exact evidence; never merge or claim completion.
 - This is an operating rule, not a claim that any existing PR has passed. PR #32 remains open; R1 and R6 are still recorded as unresolved/open.
 - Next exact action: reconcile the existing open PRs sequentially under this protocol, starting with the oldest foundational dependency; do not open another branch/task.
+
+
+## 2026-11-09 — PR #32 review checkpoint / Claude repair pending
+
+- Review target: `60ec4450f36a9981cdc37d7346b3d12e2d4f8d40`; report: `docs/reviews/PR32-CONSOLIDATED-REVIEW-2026-11-09.md`.
+- Review report commit: `7b1554f763e1381eeccad8ccf7a66b563ab38965`; Operations Room update commit: `cf9d346d27eb17b45d63adeb596ae9f58a6c0948`.
+- Status: **BLOCKED / NOT ACCEPTED — REQUEST CHANGES. PR #32 remains open and must not be merged yet.**
+- Claude has one consolidated repair assignment for F1/R1 stale-writer fencing, F2/R6 real-browser failure matrix, F3/S3 recovery/archive UX, and F4/S5 project-isolation/retry evidence. Claude has freedom to refactor safely; impossible safety guarantees must remain blocked, never papered over.
+- Waiting for Claude's direct repository handoff: exact final SHA, changed files, per-finding results, tests, browser evidence, exact-head CI and residual risks.
+- Next: ChatGPT verifies that exact SHA once; merge and verify closure only if all acceptance criteria pass. No parallel branch/task.
