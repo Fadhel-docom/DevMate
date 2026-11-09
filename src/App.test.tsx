@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { StrictMode, act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import App, { canEditWorkspace, cutoverNotice, loadNotice, noticeAfterSave } from "./App";
-import { CUTOVER_MARKER_KEY, CUTOVER_PHASES, fingerprintSource, serializeMarker, type CutoverPhase } from "./cutoverController";
+import { CUTOVER_MARKER_KEY, CUTOVER_PHASES, CUTOVER_SOURCE_COPY_PREFIX, fingerprintSource, serializeMarker, type CutoverPhase } from "./cutoverController";
 import { BACKUP_KEY, STORAGE_KEY, type LoadResult } from "./storage";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -333,6 +333,7 @@ describe("cutover states in the UI", () => {
   const markerRaw = (phase: CutoverPhase) => serializeMarker({
     version: 1, sourceFingerprint: fingerprintSource(LEGACY_RAW), startedAt: 1, phase, profileSchemaVersion: 1, ledgerSchemaVersion: 1
   });
+  const withCopy = <S extends FakeStorage>(s: S): S => { s.values.set(CUTOVER_SOURCE_COPY_PREFIX + fingerprintSource(LEGACY_RAW), LEGACY_RAW); return s; };
   class RecordingStorage extends FakeStorage {
     writes: string[] = [];
     setItem(key: string, value: string): void { this.writes.push(key); super.setItem(key, value); }
@@ -357,13 +358,13 @@ describe("cutover states in the UI", () => {
   const projectInput = () => host.querySelector('input[aria-label="New project name"]') as HTMLInputElement;
 
   it("shows no cutover banner and keeps editing enabled in legacy mode", async () => {
-    const storage = new RecordingStorage(); storage.values.set(STORAGE_KEY, LEGACY_RAW);
+    const storage = withCopy(new RecordingStorage()); storage.values.set(STORAGE_KEY, LEGACY_RAW);
     await mountWith(storage);
     expect(banner()).toBeNull();
     expect(projectInput().disabled).toBe(false);
   });
   it.each(CUTOVER_PHASES.filter((phase) => phase !== "committed"))("locks editing, explains the state and writes nothing at phase %s, while legacy data stays readable", async (phase) => {
-    const storage = new RecordingStorage(); storage.values.set(STORAGE_KEY, LEGACY_RAW); storage.values.set(CUTOVER_MARKER_KEY, markerRaw(phase));
+    const storage = withCopy(new RecordingStorage()); storage.values.set(STORAGE_KEY, LEGACY_RAW); storage.values.set(CUTOVER_MARKER_KEY, markerRaw(phase));
     await mountWith(storage);
     expect(banner()?.getAttribute("role")).toBe("status");
     expect(banner()?.textContent).toContain(`phase: ${phase}`);
@@ -376,7 +377,7 @@ describe("cutover states in the UI", () => {
     expect(storage.values.get(STORAGE_KEY)).toBe(LEGACY_RAW);
   });
   it("a committed marker never falls back to the legacy writer and labels the archive as read-only", async () => {
-    const storage = new RecordingStorage(); storage.values.set(STORAGE_KEY, LEGACY_RAW); storage.values.set(CUTOVER_MARKER_KEY, markerRaw("committed"));
+    const storage = withCopy(new RecordingStorage()); storage.values.set(STORAGE_KEY, LEGACY_RAW); storage.values.set(CUTOVER_MARKER_KEY, markerRaw("committed"));
     await mountWith(storage);
     expect(banner()?.textContent).toContain("read-only archive");
     expect(banner()?.textContent).toContain("not governed or executable");
@@ -384,7 +385,7 @@ describe("cutover states in the UI", () => {
     expect(storage.writes).toEqual([]);
   });
   it.each([["malformed bytes", "{broken"], ["empty bytes", ""], ["unknown phase", markerRaw("intent").replace("intent", "done")]])("treats %s as indeterminate: alert shown, editing locked, no writes", async (_name, raw) => {
-    const storage = new RecordingStorage(); storage.values.set(STORAGE_KEY, LEGACY_RAW); storage.values.set(CUTOVER_MARKER_KEY, raw);
+    const storage = withCopy(new RecordingStorage()); storage.values.set(STORAGE_KEY, LEGACY_RAW); storage.values.set(CUTOVER_MARKER_KEY, raw);
     await mountWith(storage);
     expect(banner()?.getAttribute("role")).toBe("alert");
     expect(banner()?.textContent).toContain("cannot be verified");
@@ -392,7 +393,7 @@ describe("cutover states in the UI", () => {
     expect(storage.writes).toEqual([]);
   });
   it("disables backup restore and delete while a marker exists", async () => {
-    const storage = new RecordingStorage();
+    const storage = withCopy(new RecordingStorage());
     storage.values.set(STORAGE_KEY, LEGACY_RAW); storage.values.set(BACKUP_KEY, JSON.stringify([{ id: "old", name: "Old", tasks: [] }]));
     storage.values.set(CUTOVER_MARKER_KEY, markerRaw("intent"));
     await mountWith(storage);

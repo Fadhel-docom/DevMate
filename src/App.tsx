@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties, FormEvent } from "react";
 import { getBrowserStorage, readProjectsLocked, saveProjectsLocked, type LoadResult, type Project, type SaveResult } from "./storage";
-import { readCutoverState, type CutoverState } from "./cutoverController";
+import { inspectCutoverState, type CutoverState } from "./cutoverState";
 import BackupManager from "./BackupManager";
+import RecoveryArchive from "./RecoveryArchive";
 
 type Message = { id: string; role: "user" | "assistant"; text: string };
 const noticeStyle: CSSProperties = {
@@ -41,7 +42,7 @@ export function cutoverNotice(state: CutoverState): { tone: "status" | "alert"; 
   switch (state.mode) {
     case "legacy": return null;
     case "recovery":
-      return { tone: "status", text: `A storage cutover was started and is not finished (phase: ${state.phase}). Legacy writes are blocked across tabs and restarts, and editing is disabled. Your legacy workspace is preserved and still readable. Recovery controls are not available in this version; no data has been changed.` };
+      return { tone: "status", text: `A storage cutover was started and is not finished (phase: ${state.phase}). Legacy writes are blocked across tabs and restarts, and editing is disabled. Your legacy workspace is preserved and still readable. Open the recovery panel below to inspect and download your data; this version cannot finish or undo the cutover, and no data has been changed.` };
     case "durable":
       return { tone: "status", text: "Durable storage mode is recorded for this browser. The legacy workspace is kept as a read-only archive, and legacy tasks are not governed or executable. Editing is disabled until the durable workspace interface is available." };
     case "indeterminate":
@@ -101,7 +102,7 @@ export default function App() {
       if (!active) return;
       baselineRaw.current = result.storageRaw;
       if (result.backedUp) setBackupRefreshKey((value) => value + 1);
-      setCutover(readCutoverState(getBrowserStorage()));
+      setCutover(inspectCutoverState(getBrowserStorage()));
       setInitial(result);
       setProjects(result.projects);
       setActiveId(result.projects[0]?.id ?? "starter");
@@ -153,7 +154,7 @@ export default function App() {
       const result = await readProjectsLocked();
       baselineRaw.current = result.storageRaw;
       if (result.backedUp) setBackupRefreshKey((value) => value + 1);
-      setCutover(readCutoverState(getBrowserStorage()));
+      setCutover(inspectCutoverState(getBrowserStorage()));
       setRecoveryRequired(!safeToResume);
       setInitial(safeToResume ? result : { ...result, status: "unavailable" });
       setProjects(result.projects);
@@ -224,6 +225,7 @@ export default function App() {
       {!loaded && <p role="status" style={noticeStyle}>Loading your workspace safely…</p>}
       {startupNotice && <p role="status" style={noticeStyle}>{startupNotice}</p>}
       {cutoverBanner && <p role={cutoverBanner.tone} data-testid="cutover-banner" style={cutoverBanner.tone === "alert" ? errorStyle : noticeStyle}>{cutoverBanner.text}</p>}
+      {loaded && <RecoveryArchive state={cutover} />}
       {saveFailure && <p role="alert" style={errorStyle}>{saveMessage(saveFailure)}</p>}
       {recoveryRequired && <p role="alert" style={errorStyle}>Editing is locked. Restore the retained pre-restore backup from the Backups panel before continuing.</p>}
       {loaded && !recoveryRequired && (initial?.status === "unavailable" || saveFailure?.reason === "conflict") && (
