@@ -1875,3 +1875,19 @@ The owner has explicitly reiterated that the Operations Room is the single sourc
 This instruction supersedes any earlier workflow language that permits repeated review loops or relies on the owner to relay handoffs. Existing PRs must be reconciled against this rule one at a time; this entry does not falsely mark any existing PR reviewed, repaired, approved, or merged.
 
 **Checkpoint at recording time:** PR #32 remains open and not accepted. R1 is unresolved/partial and R6 browser verification remains open as recorded in the PR body. This protocol entry is not evidence of a technical fix or merge.
+
+
+## 2026-11-09 — PR #32 consolidated ChatGPT review; single Claude repair assigned
+
+- Reviewed exact PR #32 head before this record: `60ec4450f36a9981cdc37d7346b3d12e2d4f8d40`, branch `feature/pr-d-cutover-intent-barrier`, base `feature/phase-1-foundation`.
+- Review report: [`docs/reviews/PR32-CONSOLIDATED-REVIEW-2026-11-09.md`](./reviews/PR32-CONSOLIDATED-REVIEW-2026-11-09.md). Report commit: `7b1554f763e1381eeccad8ccf7a66b563ab38965`.
+- Verdict: **REQUEST CHANGES — BLOCKED / NOT ACCEPTED. No merge.**
+- Consolidated blockers:
+  1. **F1 / R1:** real Chromium evidence proves the unmodified pre-barrier writer succeeds after both `intent` and `committed`; no production host-level quiescence fence exists. A test callback or tab-held lock is not a fix.
+  2. **F2 / R6:** real-browser two-tab, quota, marker failure, restart-per-phase and lock-contention matrix is incomplete; current controller tests are primarily in-memory/jsdom.
+  3. **F3 / S3:** usable durable workspace + read-only legacy archive/raw export recovery path is missing.
+  4. **F4 / S5:** cross-project isolation, interleaving, conflict/retry and crash-injection matrix remains open.
+- Claude is explicitly assigned **one consolidated repair pass** with freedom to refactor/redesign safely. The report defines acceptance evidence and says if a robust R1 fence is impossible, keep cutover disabled and the PR blocked; do not weaken the safety gate or claim completion.
+- Claude must write its final SHA, changed paths, per-finding disposition, test commands/results, raw browser evidence, exact-head CI run and residual risks directly into this Operations Room and STATUS. Owner is not a courier.
+- After Claude's handoff, ChatGPT owns exact-final-SHA verification. Merge and verify PR closure only if every acceptance gate passes; otherwise retain BLOCKED / NOT ACCEPTED.
+- No other branch/task is to be started while this repair is pending. No real user-data migration/cutover, deletion/pruning, deployment, provider integration, permission expansion, main-branch change, or RateNest work.
