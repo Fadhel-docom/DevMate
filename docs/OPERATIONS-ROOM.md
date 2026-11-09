@@ -1907,3 +1907,9 @@ The owner is opening a fresh ChatGPT session and a fresh Claude session. These h
 **Binding coordination rule:** This Operations Room is the single central workplace and source of truth. Every new worker must read it and `docs/STATUS.md` first; every assignment, decision, change, test, evidence item, SHA, blocker and handoff must be written here. Handoffs are linked here so neither worker relies on the owner's chat or memory. Do not ask the owner to relay messages.
 
 **Current boundary:** PR #32 only. Claude performs one consolidated repair pass for F1/R1, F2/R6, F3/S3 and F4/S5. ChatGPT performs one final exact-SHA verification. Merge/close only if all acceptance criteria are proven; otherwise leave BLOCKED / NOT ACCEPTED. No parallel branch or unrelated project work.
+
+
+### Verified handoff checkpoint — 2026-11-09
+- After committing both handoffs and indexing them, PR #32 was re-fetched: **OPEN / NOT MERGED**, head `0c9890964586dbc9be1931406dacc88150eca83d`, base `feature/phase-1-foundation`.
+- The two handoff documents, this Operations Room and STATUS were fetched again and verified present on the assigned branch.
+- These commits are coordination/documentation only. They do not fix F1–F4, do not constitute a fresh technical test run, and do not authorize merge.
