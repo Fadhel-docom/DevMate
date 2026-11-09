@@ -1844,3 +1844,34 @@ Remote sandbox, Node v24.22.1, npm 10.8.2 (CI uses Node 20.20.2), files fetched 
 - Not complete: no fence; no independent S1 reviewer yet; S2 required scenarios (two-tab write contention, quota failure, marker read/write failure, restart at each phase, lock contention) are **not run**.
 - Next: continue only safe work that does not pass the S1 review gate (S2 browser tests, test-only); S3 is not started.
 - Boundaries kept: no real cutover/migration/deletion/deployment/merge.
+
+
+## 2026-11-09 — Mandatory single-review / single-repair workflow and operations-room coordination
+
+**Owner instruction — binding operating rule**
+
+The owner has explicitly reiterated that the Operations Room is the single source of truth and the mandatory coordination point for every contributor. The owner must never be used as a message relay between ChatGPT, Claude, or any other worker.
+
+### Required workflow for every branch / PR
+1. **One comprehensive ChatGPT review per branch.** Inspect the complete relevant diff and current evidence once; consolidate every finding, severity, acceptance condition, and required test into one review report. Do not scatter findings across repeated review rounds.
+2. **One consolidated Claude repair pass.** Claude receives that complete report from the Operations Room, fixes the findings together, and returns the exact final commit SHA, changed paths, test commands/results, CI evidence, and any residual limitation. Claude must not treat partial mitigations or documentation-only changes as resolution of a blocking defect.
+3. **Close the work item permanently when the acceptance gate passes.** Verify the exact final SHA and required checks. If all findings are resolved and gates pass, merge the PR under the standing delegation and verify GitHub reports it merged/closed. Record merge commit and post-merge validation in this room immediately.
+4. **No review carousel.** Do not create a new review round for routine follow-up comments or partial fixes. If the single repair pass fails its acceptance criteria, the branch remains explicitly BLOCKED / NOT ACCEPTED; record the precise failed criterion and evidence here. Do not call it complete, merge it, or silently start a replacement branch. Any exceptional further repair must be treated as completion of the original assigned repair, not as a fresh review cycle, and its status must remain visible here.
+5. **No parallel drift.** Do not move to another branch/task while the current assigned branch is awaiting its repair, exact-SHA verification, or merge/closure, unless the owner explicitly reprioritizes it.
+
+### Operations Room is mandatory for all coordination
+- Every worker must read `docs/OPERATIONS-ROOM.md` and `docs/STATUS.md` before acting.
+- Assignments, review findings, repair instructions, decisions, evidence, changed files, commit SHAs, test/CI results, blockers, merge/closure outcomes, and the next exact action must be recorded here. Update STATUS to reflect the current checkpoint.
+- A worker must pick up the task directly from these records and return its handoff directly to these records. Do not ask the owner to copy/paste, relay, summarize, or reconcile messages between workers.
+- If a worker cannot access or update the repository, it must state that limitation in its handoff; it must not claim the record was updated.
+- The newest dated checkpoint governs current work. Older entries remain historical and must not be silently rewritten or treated as current when superseded.
+
+### Accountability
+- ChatGPT: coordinator; owns the single consolidated review, shared handoff, exact-SHA verification, and merge/closure follow-through.
+- Claude: owns the single consolidated repair pass and evidence-based delivery.
+- The Operations Room: authoritative shared memory and coordination log.
+- Owner: product owner and decision-maker for reserved approval gates; not the courier between agents.
+
+This instruction supersedes any earlier workflow language that permits repeated review loops or relies on the owner to relay handoffs. Existing PRs must be reconciled against this rule one at a time; this entry does not falsely mark any existing PR reviewed, repaired, approved, or merged.
+
+**Checkpoint at recording time:** PR #32 remains open and not accepted. R1 is unresolved/partial and R6 browser verification remains open as recorded in the PR body. This protocol entry is not evidence of a technical fix or merge.
