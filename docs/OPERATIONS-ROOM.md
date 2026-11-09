@@ -1891,3 +1891,5 @@ This instruction supersedes any earlier workflow language that permits repeated 
 - Claude must write its final SHA, changed paths, per-finding disposition, test commands/results, raw browser evidence, exact-head CI run and residual risks directly into this Operations Room and STATUS. Owner is not a courier.
 - After Claude's handoff, ChatGPT owns exact-final-SHA verification. Merge and verify PR closure only if every acceptance gate passes; otherwise retain BLOCKED / NOT ACCEPTED.
 - No other branch/task is to be started while this repair is pending. No real user-data migration/cutover, deletion/pruning, deployment, provider integration, permission expansion, main-branch change, or RateNest work.
+
+- Explicit Claude start request posted on PR #32: https://github.com/Fadhel-docom/DevMate/pull/32#issuecomment-6742842838 (comment ID `6742842838`). Claude is directed to read the committed review report and perform the single consolidated repair pass directly on the branch.
