@@ -883,3 +883,12 @@ This section supersedes the earlier dated sections only for S1/S2 status.
 - **S2: Open / not started.** The browser environment works now, but none of the S2 scenarios (two-tab contention, quota, marker failures, restart per phase) has been run.
 - S3 is not started. No real cutover, migration, deletion, deployment or merge.
 - Details: `docs/reviews/S1-REVIEW-PACKAGE.md`, `docs/PR-D-REVIEW-LEDGER.md` (S1 record 3), `docs/OPERATIONS-ROOM.md`.
+
+
+## 2026-11-09 — Current coordination rule (binding)
+- The Operations Room is the mandatory single source of truth. Every worker reads `docs/OPERATIONS-ROOM.md` and this file before acting; all assignments, findings, repair instructions, decisions, exact SHAs, evidence, tests/CI, blockers, merge/closure results, and next actions are recorded there.
+- The owner is never a relay between ChatGPT and Claude. Workers exchange handoffs through the repository records.
+- Per branch: one comprehensive ChatGPT review → one consolidated Claude repair pass → exact-final-SHA verification → merge and verify PR closure if all gates pass.
+- No repeated review carousel, no partial-fix claims, no parallel task drift while the current branch awaits repair/verification/closure. If the repair does not satisfy acceptance, mark BLOCKED / NOT ACCEPTED with exact evidence; never merge or claim completion.
+- This is an operating rule, not a claim that any existing PR has passed. PR #32 remains open; R1 and R6 are still recorded as unresolved/open.
+- Next exact action: reconcile the existing open PRs sequentially under this protocol, starting with the oldest foundational dependency; do not open another branch/task.
