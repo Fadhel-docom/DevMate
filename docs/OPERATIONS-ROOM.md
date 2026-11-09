@@ -1893,3 +1893,17 @@ This instruction supersedes any earlier workflow language that permits repeated 
 - No other branch/task is to be started while this repair is pending. No real user-data migration/cutover, deletion/pruning, deployment, provider integration, permission expansion, main-branch change, or RateNest work.
 
 - Explicit Claude start request posted on PR #32: https://github.com/Fadhel-docom/DevMate/pull/32#issuecomment-6742842838 (comment ID `6742842838`). Claude is directed to read the committed review report and perform the single consolidated repair pass directly on the branch.
+
+
+## 2026-11-09 — Two complete incoming-worker handoffs; Operations Room remains central
+
+The owner is opening a fresh ChatGPT session and a fresh Claude session. These handoffs are committed repository documents, not chat-only instructions:
+
+- **Incoming ChatGPT coordinator/final verifier:** [`docs/handoffs/CHATGPT-NEW-SESSION-2026-11-09.md`](./handoffs/CHATGPT-NEW-SESSION-2026-11-09.md) — read Operations Room → STATUS → consolidated review → live PR/current diff/checks. Starts at PR #32 on `feature/pr-d-cutover-intent-barrier`; waits for Claude's repair handoff; ends with exact-SHA verification and either verified merge/closure or a documented BLOCKED / NOT ACCEPTED outcome.
+- **Incoming first-time Claude implementer:** [`docs/handoffs/CLAUDE-NEW-SESSION-2026-11-09.md`](./handoffs/CLAUDE-NEW-SESSION-2026-11-09.md) — explains repository, branch, PR, architecture/evidence to read, F1–F4 repair assignment, freedom to redesign safely, required tests and exact handoff. Starts by reading this room and STATUS; ends by committing the one consolidated repair and recording all evidence here; Claude must not merge.
+- The consolidated review remains [`docs/reviews/PR32-CONSOLIDATED-REVIEW-2026-11-09.md`](./reviews/PR32-CONSOLIDATED-REVIEW-2026-11-09.md).
+- Claude's direct start request remains PR #32 comment [#6742842838](https://github.com/Fadhel-docom/DevMate/pull/32#issuecomment-6742842838).
+
+**Binding coordination rule:** This Operations Room is the single central workplace and source of truth. Every new worker must read it and `docs/STATUS.md` first; every assignment, decision, change, test, evidence item, SHA, blocker and handoff must be written here. Handoffs are linked here so neither worker relies on the owner's chat or memory. Do not ask the owner to relay messages.
+
+**Current boundary:** PR #32 only. Claude performs one consolidated repair pass for F1/R1, F2/R6, F3/S3 and F4/S5. ChatGPT performs one final exact-SHA verification. Merge/close only if all acceptance criteria are proven; otherwise leave BLOCKED / NOT ACCEPTED. No parallel branch or unrelated project work.
