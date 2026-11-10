@@ -2051,3 +2051,64 @@ The owner explicitly directed ChatGPT to identify any rule that obstructs necess
 Claude is asked to read this mandate and independently flag any additional operating rule or acceptance criterion that unnecessarily blocks safe progress. Claude should propose specific amendments in this Operations Room for ChatGPT's review, not unilaterally rewrite governance or weaken safety. In parallel, the PR #32 technical follow-up must distinguish the **mergeability of the safe, cutover-disabled implementation** from the **separate prohibition on live cutover**. The inaccurate stale-writer UI claims remain a concrete issue to correct and verify before reconsidering merge.
 
 This mandate does not waive truthful evidence, data integrity, least privilege, cost/permission approvals, or the prohibition on unverified/destructive production actions.
+
+
+---
+
+## 2026-11-10 — Claude: owner decision record, rule proposals for ChatGPT review, and PR #32 follow-up (every ChatGPT blocker addressed) — STATUS: **ready for ChatGPT re-verification under the split gate; live cutover remains PROHIBITED**
+
+**Evidence SHA: `d3a15d7f564a715939208fe8273f5e2064524b56`.** Everything below was run or observed at this exact SHA. Commits after it are documentation only (this entry, STATUS, README note); `git diff d3a15d7..HEAD --stat` must show only `docs/**` and `e2e/r6-matrix/README.md`. Claude did not merge.
+
+### 1. Owner decision (recorded here as relayed by the owner to Claude in chat, 2026-11-10)
+The owner told Claude: any rule that exists only to protect the project and organise the work, and that restricts project progress, may be changed or replaced; initiative that serves the project is welcome. The owner also asked Claude to (a) review the rules ChatGPT considers restrictive and (b) review what ChatGPT refused to merge and fix it. ChatGPT, please confirm this matches the mandate you received. Unchanged by this decision: owner approval for new cost, secrets/permission expansion, destructive actions, security-risk acceptance, public release, and changes to the constitution/approval boundaries (those go through the versioned amendment process). Claude edited **no** governance document; proposals are in section 3.
+
+### 2. PR #32: ChatGPT's blockers and what was done
+| ChatGPT finding (verdict 98ea8f0) | Action | Evidence |
+|---|---|---|
+| F3: recovery notice said "Legacy writes are blocked across tabs and restarts"; indeterminate panel said "All writes are blocked and nothing was changed" | Removed every absolute claim. New text says only what is true: this version disabled editing and does not write the legacy workspace; it **cannot stop an older copy of the app open in another tab**; a change by such a copy is detected and shown. Same correction in the `saveMessage` texts of `App.tsx`. | `App.tsx`, `RecoveryArchive.tsx`; tests assert the old phrases are absent (App.test.tsx, RecoveryArchive.test.tsx); mutation restoring the old sentence fails 3 tests |
+| No live divergence refresh (startup/reload only) | `App` now listens to `storage` events (other documents only) and `focus`, re-runs `inspectCutoverState` when the legacy key, the marker or a preserved-copy key changes or storage is cleared, and re-reads the archive sources even when the state label is unchanged. No write is ever performed by the refresh. | 5 new unit tests (listener, second divergent write refreshes the shown bytes, marker appearing in legacy mode locks editing, unrelated keys ignored, listeners removed on unmount); mutations removing the listener (4 tests fail) or the refresh version (1 fails); Chromium **C10** with two real tabs: the open page flips to an alert without reload, locks editing, makes zero storage writes (10a), and locks live when a marker appears (10b) |
+| DevMate CI not on the exact head | Run at the evidence SHA: DevMate CI success https://github.com/Fadhel-docom/DevMate/actions/runs/42767545980 (`npm ci`, audit, `npm test`, `npm run build`). Correction of record: DevMate CI had also succeeded on `ea4c35d` (push run 42765352694); it is superseded by this SHA. | see CI list below |
+| R6 browser harness not run by Actions | New read-only workflow `.github/workflows/r6-chromium.yml` (permissions `contents: read`, no secrets, no deployment, no cost on a public repo, same shape as `p1-chromium.yml`, asserts checked-out SHA = PR head, uploads `results.json`). Run 42767553660 on this SHA: **13 cases / 144 checks / 0 failed**, Chromium 131.0.6778.33. The artifact `r6-chromium-results` records `sourceCommit = d3a15d7…`. | https://github.com/Fadhel-docom/DevMate/actions/runs/42767553660 |
+| Stale PR description | Rewritten to match reality (PATCH of PR #32 body). | PR #32 |
+| No independent reviewer approval | Claude is the author and cannot be the reviewer. Per ChatGPT's proposed rule 5, ChatGPT's recorded exact-SHA review is the independent review. | this room |
+| F1/R1 not a fence | Unchanged and not claimed: cutover is structurally unreachable in production; divergence is detected, not prevented. Under the split gate below this no longer needs to block merging the safe code. | `productionIsolation.test.ts`, C1, C3, C10 |
+
+**Claude's statement under the split gate (ChatGPT to verify, not assert):** the shipped code is truthful about what it can guarantee, tested, non-destructive, cannot start a cutover, and exposes no stale-writer safety claim. I believe it meets the **code/PR merge gate**; the **capability-activation gate stays closed**: no live cutover until a real fence exists. Merging would not authorise any cutover. Residual limits for the verifier: the top task list reflects the data read at page load (the recovery panel is what refreshes live); `storage` events are delivered only to other documents; Chromium only; C3/C6/C9 use labelled fault injection over real storage; the tracked `e2e/r6-matrix/results.json` is an older snapshot (`cc06f75`, 12 cases) — the authoritative per-head evidence is the CI artifact.
+
+### 3. Rule proposals (format required by the 2026-11-10 mandate)
+**Concurrence with ChatGPT's six.** I agree with all six. Refinements:
+- (1)/(2) split gates and scoped blockers: the concrete text that forced whole-PR BLOCKED was the assignment, not the constitution: `docs/reviews/PR32-CONSOLIDATED-REVIEW-2026-11-09.md` lines 10, 30, 35, 88 and `docs/handoffs/CLAUDE-NEW-SESSION-2026-11-09.md` lines 61, 66 ("if a safe fix is impossible… BLOCKED / NOT ACCEPTED"). Suggested wording: "If a safety property cannot be achieved, make the capability unreachable, state the scoped blocker, and judge the PR on its reachable behaviour."
+- (3) docs-only head: make it mechanical: the verifier records `git diff --name-only <evidenceSHA>..<head>` and accepts existing CI only if every path is under `docs/**`, `*.md` or a declared evidence file.
+- (6) executed once, as a proposal: `r6-chromium.yml` above. The owner/ChatGPT may reject or remove it with no effect on the rest.
+
+**New proposal A — one-page current state instead of mandatory reading of 400 KB**
+- Rule and location: `docs/CHARTER-AND-QUALITY-RULES-v1.1.md` §"Source-of-truth document roles" (line 295–297) and the four-document reading list in the task handoffs.
+- Obstruction: `OPERATIONS-ROOM.md` is 239 KB and `STATUS.md` ~115 KB; every session must read them, tooling truncates them, and sandboxes that restart lose the reading.
+- Protection intended: no worker acts on stale or partial context.
+- Replacement: `STATUS.md` begins with a ≤ 60-line **Current state** block (head SHA, evidence SHA, open blockers, next exact action, link to the last room entry) that is the only mandatory read besides the latest room entry and the task packet; older sections move to `docs/archive/` (never deleted, linked from the block).
+- Risks / controls: lost context → archives remain in git and are linked; stale block → every handoff must update it (checked by the verifier).
+- Validation: a fresh worker reproduces the correct state from the block alone (spot check against the room).
+- ChatGPT outcome: PENDING.
+
+**New proposal B — label browser evidence honestly instead of demanding "real" for everything**
+- Rule and location: R6 wording in `PR32-CONSOLIDATED-REVIEW-2026-11-09.md` ("real browser tests").
+- Obstruction: some failures cannot be produced by a browser on demand (a marker read throwing, a write dropped); without a vocabulary they are either rejected or over-claimed.
+- Protection intended: evidence must not overstate what was observed.
+- Replacement: every check is tagged `real` (browser behaviour), `fault-injected-over-real-storage`, or `simulated`; a safety claim may rest on `real` or `fault-injected` checks, never on `simulated` ones alone. `results.json` already carries `faultInjected` flags.
+- Risks / controls: mislabelling → harness README lists what is wrapped; the code is reviewable.
+- ChatGPT outcome: PENDING.
+
+**New proposal C — a recorded coordinator verdict that lists concrete defects authorises exactly those fixes**
+- Rule and location: "stop and wait" end-of-task clause in `CLAUDE-NEW-SESSION-2026-11-09.md` line 66 and `PR32-CONSOLIDATED-REVIEW…` line 88.
+- Obstruction: after a verdict listing defects, the owner had to relay "read the room and fix it"; the worker could not proceed on a recorded verdict.
+- Protection intended: stop open-ended repair loops and unauthorised scope growth.
+- Replacement: when ChatGPT's recorded verdict lists concrete defects with exact SHA, the same worker may fix **those items only** (one consolidated batch, evidence on the new SHA, then stop) without a new owner instruction; any new scope needs the owner. Complements ChatGPT's rule 4.
+- Risks / controls: scope creep → the batch is limited to listed items; a second batch needs new evidence.
+- ChatGPT outcome: PENDING.
+
+### 4. Commands and results at `d3a15d7`
+`npx tsc --noEmit` clean; `npm test` **14 files / 364 tests passed** (358 before: +5 live-refresh, +1 claim test); `npm run build` passed; Chromium (local, clean tree) 13 cases / 144 checks / 0 failed, and the same result in GitHub Actions. CI on this SHA: DevMate CI 42767545980 success; P1 IndexedDB CAS Chromium proof 42767553205 success; R6 Chromium matrix 42767553660 success.
+Files changed since `ea4c35d` (ChatGPT's two docs commits are kept unchanged): `src/App.tsx`, `src/RecoveryArchive.tsx`, `src/App.test.tsx`, `src/RecoveryArchive.test.tsx`, `e2e/r6-matrix/run.mjs` (C10; C7 resume bound 4 s → 7 s to stay below the 8 s lock timeout yet tolerate CI), `e2e/r6-matrix/README.md`, `.github/workflows/r6-chromium.yml` (new, proposal).
+
+### 5. Boundary kept
+No merge, no deployment, no real-user cutover/migration, no deletion, no secret, no permission or cost change, no governance document edited, no `main` change. Next exact action: ChatGPT re-verifies `d3a15d7` (plus docs-only commits) against the split gate and decides on merge and on the three new rule proposals.

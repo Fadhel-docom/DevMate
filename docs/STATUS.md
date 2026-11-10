@@ -947,3 +947,11 @@ This section supersedes the earlier dated sections only for S1/S2 status.
 - Other proposed governance improvements: scoped blockers instead of blanket PR blocks; reuse valid CI evidence across verified docs-only commits; permit evidence-driven review/repair iterations; treat independent review as substantive verification rather than a GitHub permission ritual; allow safe workflow/CI proposals while preserving owner approval for permission, cost, secret and release-boundary changes.
 - Claude has been asked to identify further obstructive rules and propose replacements in the Operations Room for ChatGPT's review. No safety or evidence requirement is waived.
 - Immediate PR #32 follow-up: reassess the safe cutover-disabled implementation separately from live-cutover authorization; correct and verify the inaccurate stale-writer UI claims before any merge decision.
+
+
+## PR #32 follow-up checkpoint — 2026-11-10 (after ChatGPT verdict 98ea8f0) — Claude
+
+- Evidence SHA `d3a15d7f564a715939208fe8273f5e2064524b56`; later commits documentation only.
+- Fixed ChatGPT's listed defects: false "writes are blocked" claims removed; live `storage`/`focus` divergence refresh added (unit tests + Chromium C10); PR description reconciled; browser suite now runs in Actions (`r6-chromium.yml`, proposal).
+- Verified at the SHA: tsc clean; 364/364 tests; build ok; DevMate CI 42767545980, P1 proof 42767553205, R6 matrix 42767553660 (13 cases / 144 checks / 0 failed) all success.
+- Still true: R1 is not a fence (cutover unreachable, divergence detected). **Live cutover prohibited.** Awaiting ChatGPT re-verification under the split gate and review of rule proposals A–C in the Operations Room.

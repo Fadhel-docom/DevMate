@@ -11,7 +11,7 @@ cd e2e/r6-matrix && npm ci && npx playwright install chromium && cd ../..
 node e2e/r6-matrix/run.mjs               # builds dist/, bundles the harness, runs Chromium headless, writes results.json
 ```
 On Linux you may also need Chromium's system libraries (`npx playwright install-deps chromium`, or apt packages libnss3 libatk1.0-0 libgbm1 libasound2 ...).
-Exit code 1 means at least one check failed. `results.json` records the Chromium/Playwright/Node versions, `sourceCommit` and whether the working tree was dirty.
+Exit code 1 means at least one check failed. GitHub Actions runs this suite on every PR head (`.github/workflows/r6-chromium.yml`); the artifact `r6-chromium-results` of that run is the authoritative evidence for that head. The tracked `results.json` is only a dated snapshot (see its `sourceCommit`). `results.json` records the Chromium/Playwright/Node versions, `sourceCommit` and whether the working tree was dirty.
 
 ## What is real and what is injected
 
