@@ -134,6 +134,12 @@ describe("S5 — conflicts: a writer that bypasses the barrier", () => {
     expect(mem.getItem(`devmate-cutover-v1:source:${fingerprintSource(diverged)}`)).toBe(diverged);
     expect(await profilesOf(mem)).toEqual({ "proj-a": "absent", "proj-b": "absent", "proj-c": "absent", ghost: "absent" });
   });
+  it("a workspace that did not exist at intent but appears later is detected (absent-source fingerprint)", async () => {
+    const mem = seed(null); const c = make(mem); expect((await begin(c)).ok).toBe(true);
+    mem.values.set(STORAGE_KEY, LEGACY);
+    const r = await c.resume(); expect(r.ok).toBe(false); if (!r.ok) { expect(r.reason).toBe("source-changed"); expect(r.divergentPreserved).toBe(true); }
+    expect(phaseOf(mem)).toBe(phaseIndex("intent"));
+  });
   it("a legacy write DURING a stage is caught by the post-stage revalidation and nothing advances", async () => {
     const mem = seed(); const real = createCutoverStages({ storage: mem, now: NOW });
     const stages: CutoverStages = { ...real, verifyProfiles: async () => { const r = await real.verifyProfiles(); mem.values.set(STORAGE_KEY, LEGACY + " "); return r; } };

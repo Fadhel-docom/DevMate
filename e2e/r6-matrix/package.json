@@ -1,0 +1,9 @@
+{
+  "name": "devmate-e2e-r6-matrix",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Isolated real-Chromium harness for DevMate PR-D (R1 evidence, R6 matrix). Not part of the app's dependency tree or CI.",
+  "type": "module",
+  "scripts": { "test": "node run.mjs" },
+  "dependencies": { "playwright": "1.49.1" }
+}
