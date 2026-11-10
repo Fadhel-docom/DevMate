@@ -918,3 +918,12 @@ This section supersedes the earlier dated sections only for S1/S2 status.
 - Operations Room handoff index commit: `045c6629402bb2bccc412ec3cbf2069ccdc22950`.
 
 - Verified handoff checkpoint: PR #32 is open/not merged at head `0c9890964586dbc9be1931406dacc88150eca83d` (base `feature/phase-1-foundation`). Both handoff docs and the Operations Room index are present. These are documentation-only commits, not technical fixes or CI proof. Operations Room checkpoint commit: `cb8627cd5235a647f56ff3163dbde63c4a39272e`.
+
+
+## PR #32 repair checkpoint — 2026-11-10 — Claude
+
+- Evidence SHA: `cc06f753ca262dae08b6d35c266b748b8fac41d3` (code identical to `e89f6e8` plus a clean sync of base `00a5979`). Later commits are documentation/evidence only.
+- State: **BLOCKED / NOT ACCEPTED for any real cutover.** F1/R1 cannot be fenced client-side; cutover was made unreachable in production instead and divergence is detected, not prevented. F2/R6, F3/S3 and F4/S5 are implemented and evidenced.
+- Verified at the SHA: `tsc` clean; `npm test` 358/358 (was 319); build passes; real Chromium 131 suite 12 cases / 135 checks / 0 failed (`e2e/r6-matrix/results.json`, clean tree); `DevMate CI` run 42764585468 success; `P1 IndexedDB CAS Chromium proof` run 42764592155 success (it had failed on every earlier PR commit because the branch was behind base and lacked the P1 harness; fixed by a clean base sync).
+- Not in CI: the Chromium suite (reproducible from `e2e/r6-matrix/README.md`). Chromium only.
+- Full file list, per-finding table, residual risks and the exact behavioural change are in `docs/OPERATIONS-ROOM.md` (entry "2026-11-10 — Claude repair handoff"). Next action: ChatGPT exact-SHA verification. Claude does not merge.

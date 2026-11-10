@@ -124,3 +124,8 @@ After completing a stage, append a dated immutable record below before moving to
 - **Technical conclusion:** nothing in this repository can force an already-loaded pre-barrier bundle to stop writing; the marker detects, it does not prevent.
 - **Residual risks:** see the package (post-commit overwrite by old tabs, unbounded detection window, lock loss on holder death, no crash/BFCache coverage).
 - **Verdict:** **R1 UNRESOLVED. S1: Open** (evidence implemented and CI-verified; independent review pending; no fence).
+
+
+## 2026-11-10 repair — R1 disposition
+
+R1 (legacy-writer fence) is **not implemented as prevention**. Reason: pre-barrier bundles already loaded in a tab write the legacy `localStorage` key directly; the only cross-tab primitives (Web Locks, `storage` events) bind cooperating code only, and the base-revision writer is unchanged by any new code. The accepted narrowing is structural: the mutating controller is unreachable from production (`src/productionIsolation.test.ts`, Chromium C1), so no cutover can begin; if a marker is ever present, divergence is detected and surfaced (C3). Any future cutover requires a real fence (for example a deployment that guarantees no pre-barrier bundle can run, proven by the host) plus owner approval; until then this ledger item stays OPEN for real cutover.

@@ -1913,3 +1913,59 @@ The owner is opening a fresh ChatGPT session and a fresh Claude session. These h
 - After committing both handoffs and indexing them, PR #32 was re-fetched: **OPEN / NOT MERGED**, head `0c9890964586dbc9be1931406dacc88150eca83d`, base `feature/phase-1-foundation`.
 - The two handoff documents, this Operations Room and STATUS were fetched again and verified present on the assigned branch.
 - These commits are coordination/documentation only. They do not fix F1–F4, do not constitute a fresh technical test run, and do not authorize merge.
+
+
+---
+
+## 2026-11-10 — Claude repair handoff for PR #32 (one consolidated pass) — STATUS: **BLOCKED / NOT ACCEPTED for any real cutover; awaiting ChatGPT final verification**
+
+**Evidence SHA (code under test): `cc06f753ca262dae08b6d35c266b748b8fac41d3`.** All code, tests and the Chromium run below are at this exact SHA. HEAD may advance only by documentation/evidence-file commits made after it (this entry, STATUS, ledger, `e2e/r6-matrix/results.json`); ChatGPT should confirm with `git diff cc06f75..HEAD --stat` that no `src/` or workflow file changed. Claude did **not** merge and did not touch `main` or any workflow file.
+
+### Decision on F1 / R1 (read this first)
+A host-level fence that stops an already-loaded pre-barrier tab from writing the legacy key **cannot be built** in this architecture (client-only, same-origin `localStorage`; no browser API lets new code revoke another tab's write ability; Web Locks only bind code that asks for them; the S1 evidence already showed the old writer succeeds). Per the review, the safe disposition was applied instead of weakening the gate:
+- **Cutover is now impossible in production.** The mutating controller (`createCutoverController`, `createCutoverStages`, `confirmLegacyWritersQuiesced`) is no longer reachable from `src/main.tsx`. The app imports only the new read-only `src/cutoverState.ts`. Enforced by `src/productionIsolation.test.ts` (walks the real import graph) and by Chromium check C1 (built bundle contains none of the controller strings and no marker writer).
+- `confirmLegacyWritersQuiesced` remains a **test double only**; there is no production implementation and none may be added without a real fence.
+- If a marker is ever present (planted by an owner tool or by another build), the app does not prevent a divergent old-tab write; it **detects** it (`source-changed` → `indeterminate`), locks editing, and offers byte-exact export of both the preserved copy and the current bytes (C3).
+- Consequence: **no real-user cutover/migration may be performed from this PR.** F1 is therefore *not fixed as a fence*; it is closed as "feature disabled and structurally unreachable". Whether that narrowing satisfies R1 is ChatGPT's decision; Claude does not claim it does.
+
+### Per-finding disposition
+| Finding | Disposition | Evidence |
+|---|---|---|
+| F1 / R1 old-writer prevention | **Not achievable → cutover made unreachable in production; detection + truthful UI only.** BLOCKED for real cutover. | `productionIsolation.test.ts` (4 tests); Chromium C1, C3 |
+| F2 / R6 real browser tests | **Done** (Chromium 131, 12 cases, 135 checks, 0 failed) | `e2e/r6-matrix/run.mjs`, `results.json` |
+| F3 / S3 restore, archive, export | **Done within what the app can truthfully do**: recovery/archive panel for recovery, durable and indeterminate states; read-only task list; byte-exact raw export of preserved and current bytes; no restore/abort/release controls exist | `RecoveryArchive.test.tsx` (17 tests); Chromium C2-*, C3 |
+| F4 / S5 isolation and retry | **Done** (18 tests incl. crash injection at every storage write, before/after, error and quota; two-tab races; stale plans; partial stage failures). No store defect was found. | `cutoverMatrix.test.ts`; Chromium C4–C9 |
+
+### Files changed (relative to PR head `107b808`)
+New: `src/cutoverState.ts`, `src/RecoveryArchive.tsx`, `src/archiveExport.ts`, `src/RecoveryArchive.test.tsx`, `src/productionIsolation.test.ts`, `src/cutoverMatrix.test.ts`, `e2e/r6-matrix/{package.json,package-lock.json,entry-ctl.ts,entry-legacy.ts,harness.html,run.mjs,README.md,results.json}`.
+Modified: `src/cutoverController.ts` (read-only parts moved to `cutoverState.ts`, re-exported for compatibility; header documents NOT SHIPPED), `src/App.tsx` (imports `inspectCutoverState`, renders `RecoveryArchive`, recovery notice wording), `src/App.test.tsx` (fixtures now include the preserved copy, because `App` now verifies it), `src/raw.d.ts` (typing for `import.meta.glob`), this file, `docs/STATUS.md`, `docs/PR-D-REVIEW-LEDGER.md`.
+Merge commit `cc06f75`: synced base `feature/phase-1-foundation` (`00a5979`, P1 IndexedDB CAS spike) into the branch. Reason: the branch was 1 commit behind base, and the base-defined check *P1 IndexedDB CAS Chromium proof* failed on every earlier PR #32 commit (including pre-repair `107b808`) because `e2e/cas-store-harness/run-chromium.mjs` did not exist on the branch. The merge was clean (no conflicts) and that check is now green. No P1 file was edited.
+
+### Behavioural change worth knowing
+`App` now uses `inspectCutoverState`, which also verifies that the preserved raw copy exists and equals the legacy key. A marker without its preserved copy, or with changed legacy bytes, is shown as **indeterminate** (alert, editing locked) instead of as an ordinary recovery/durable state. This is stricter and more truthful than before.
+
+### Commands and results (at `cc06f75`, Node v20.20.2, npm 10.8.2)
+- `npx tsc --noEmit` → clean.
+- `npm test` → **14 files, 358 tests passed** (was 319; +17 archive, +4 isolation, +18 matrix).
+- `npm run build` → passed.
+- `node e2e/r6-matrix/run.mjs` (clean working tree, `workingTreeDirty: false`) → `{"cases":12,"checks":135,"failedChecks":0,"passed":true}`, Chromium 131.0.6778.33 headless, Playwright 1.49.1, Linux x64. Raw output: `e2e/r6-matrix/results.json` (also records `sourceCommit`).
+- Mutation checks run before handoff (each reverted): removing the post-stage marker revalidation → matrix test fails; making preserve also write the legacy key → 12 matrix tests fail; dropping the last byte in export → 6 archive tests fail; importing the controller into `App.tsx` → isolation test fails; removing the fingerprint comparison first survived (equivalent mutant) and was killed by a new absent-source test.
+
+### Real-Chromium evidence (summary; raw in `results.json`)
+- C1 production bundle has no controller/marker writer; legacy editing still works. C2 (4 phases) truthful panel, editing locked, keyboard-operable download whose bytes equal the stored bytes (non-ASCII included), 360 px layout without horizontal overflow, reload keeps state, **zero storage writes** by app load/export. C3 **LIMITATION proven again**: the unmodified pre-barrier writer still succeeds after intent and after commit; the app then detects it, alerts, and exports both byte sets exactly; malformed marker and unreadable marker fail closed with no writes. C4 10 two-tab trials: exactly one marker declaration, one write per phase in order, converge to durable. C5 real `QuotaExceededError` before intent and during migration: fail closed, legacy exact, completes after space is freed. C6 marker write throws / silently dropped / advance dropped / read throws / Web Locks missing: fail closed, never false success. C7 restart at each phase and 12 real tab kills: state never malformed, legacy exact, dead tab's lock never blocks recovery. C8 real lock held by another tab: `lock-timeout` after ~8 s, nothing written, completes after release. C9 failure before/after each of the 11 writes of a clean run × error/quota, restart, retry: all 44 recover.
+
+### CI
+- `DevMate CI` on `cc06f75`: **success**, run 42764585468 (#458): https://github.com/Fadhel-docom/DevMate/actions/runs/42764585468
+- `P1 IndexedDB CAS Chromium proof` on `cc06f75`: **success**, run 42764592155 (#46): https://github.com/Fadhel-docom/DevMate/actions/runs/42764592155
+- Earlier `DevMate CI` on `e89f6e8` (same code, before the base sync): success, run 42764144707 (358 tests). The same-SHA CI result for the documentation commit that follows this entry is reported by ChatGPT's verification, not asserted here.
+
+### Limits and residual risks (not hidden)
+1. **R1 is not fenced.** Any old tab that is open when a marker appears can still overwrite the legacy key. Detection only. Real cutover stays forbidden.
+2. The Chromium suite is **not in GitHub Actions** (no workflow was edited; workflow changes are owner-reserved). It is reproducible from `e2e/r6-matrix/README.md`; its evidence was produced in Claude's sandbox, not in CI. Chromium only: no Firefox, WebKit, Safari, Android or real device.
+3. C3 (read throws), C6 and C9 use fault injection on `Storage.prototype` over real storage; C5 quota and C8/C4 locks are genuine browser behaviour. C2/C3 run the built app; marker states are seeded by a harness bundle that the production build does not contain.
+4. The export is a browser download; the app can say a download was requested, not that the user saved it (the status text says so). Stored text with unpaired surrogates is exported as one JSON string literal (documented in the file note) because plain UTF-8 cannot hold it.
+5. The durable workspace has no screen yet, and the ledger stage only reads ledgers (it migrates profiles only). Nothing here migrates tasks.
+6. Heavy tool state in Claude's sandbox was reset twice during the work; every pushed commit is in git and the final run was re-executed from a fresh clone at `cc06f75`.
+
+### Boundary kept
+No merge, no deployment, no real-user migration, no deletion/pruning, no workflow/permission/`main` change, no unrelated work. Claude now **stops and waits for ChatGPT's exact-SHA verification** in this room.
