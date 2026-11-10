@@ -2000,3 +2000,54 @@ No merge, no deployment, no real-user migration, no deletion/pruning, no workflo
 ### Boundaries and next action
 - No merge, no close, no new branch, no code/workflow change, no deployment, no real-user migration/cutover, no deletion/pruning, no provider/cost/permission change, and no RateNest work.
 - Keep PR #32 OPEN / **BLOCKED / NOT ACCEPTED**. Next exact action is not another repair carousel: retain the evidence and await an explicit owner decision if they wish to change the R1 merge gate. If that gate is changed, the false UI claims and missing live divergence refresh still need correction and exact-SHA verification before merge.
+
+
+---
+
+## 2026-11-10 — Owner mandate: review and revise obstructive operating rules
+
+The owner explicitly directed ChatGPT to identify any rule that obstructs necessary, correct project progress instead of protecting the project, record it in this Operations Room, and tell Claude to propose a replacement for ChatGPT's independent review. The purpose of the rules is project protection and orderly execution—not procedural paralysis.
+
+### Governance principle (effective immediately)
+**A rule is a means, not an end.** Any contributor may flag a rule whose cost or delay exceeds its protective value. The contributor must explain the concrete obstruction, the risk the rule was meant to control, and a safer/lighter replacement. Record the proposal here; ChatGPT independently reviews it against project safety, evidence, scope and owner authority. Do not silently discard a rule or weaken a genuine safety control.
+
+### Rules identified for amendment/reinterpretation
+
+1. **Do not let a blocked capability block all safe work.**
+   - Existing friction: PR #32's unresolved stale-writer fence (R1) was treated as a blocker to merging the entire PR, even though the production build excludes the mutating controller and cutover is unavailable. This conflates two separate decisions.
+   - Proposed replacement: maintain separate gates:
+     - **Code/PR merge gate:** the shipped code must be truthful, tested, non-destructive and safe in its actually reachable production behaviour. A dangerous capability must be unreachable/disabled, with no misleading UI or false safety claim.
+     - **Capability activation gate:** real cutover remains prohibited until a genuine stale-writer fence is proven.
+   - Consequence: R1 remains a hard blocker to enabling or performing cutover, but is not automatically a blocker to merging safe read-only/archive/recovery work whose production path cannot initiate cutover. Reassess PR #32 against this split gate after correcting the inaccurate UI claims and verifying the exact head. Do not merge merely because the feature is disabled; all other merge gates still apply.
+
+2. **Replace blanket BLOCKED / NOT ACCEPTED with scoped blockers.**
+   - Record exactly what is blocked (e.g. live cutover), what remains safe and independently useful (e.g. read-only inspection/export), and what evidence would change the decision.
+   - Use whole-PR BLOCKED only when the unsafe behaviour is reachable, the shipped result is misleading, or the safe scope cannot be isolated.
+
+3. **Do not require a fresh full CI run for documentation-only commits when evidence remains valid.**
+   - Compare the implementation/evidence SHA to the current head. If all intervening commits are demonstrably documentation/evidence-only and no workflow, dependency, source, or test inputs changed, existing code CI may remain applicable; state this explicitly.
+   - Require exact-head CI when executable code, tests, dependencies, build configuration, workflows, or other CI inputs change. Never imply a docs-only head was itself checked out by a run that used another SHA.
+
+4. **Do not turn the one-review/one-repair protocol into a no-iteration rule.**
+   - Keep one accountable coordinator and consolidated repair batches to prevent churn, but allow another focused review/repair when new evidence, a failed verification, or a newly exposed defect justifies it.
+   - No repeated review carousel without new evidence; no arbitrary ban on necessary iteration.
+
+5. **Treat independent review as a quality function, not a GitHub permission ritual.**
+   - A substantive second-pass review with exact SHA, diff, evidence and recorded findings is the goal. Do not make a GitHub REQUEST_CHANGES action, a formal reviewer approval, or an account-permission limitation a technical prerequisite where the repository owner has authorized the review and the review can be transparently recorded. Never misrepresent the identity or independence of a reviewer.
+
+6. **Workflow/CI restrictions should invite proposals, not suppress them.**
+   - A worker may inspect workflows and propose/prepare a minimal CI improvement when evidence shows it is needed. Changes that expand permissions, expose secrets, incur costs, or materially alter release/security boundaries still require owner approval. A workflow file being owner-sensitive is not a reason to avoid researching a safe proposal.
+
+### Mandatory proposal format for any future rule concern
+- Rule and exact location:
+- Concrete obstruction observed:
+- Protection the rule is intended to provide:
+- Proposed replacement / narrower interpretation:
+- Risks introduced and compensating controls:
+- Evidence or test that would validate the replacement:
+- ChatGPT independent review outcome: ACCEPT / REVISE / REJECT, with rationale.
+
+### Immediate PR #32 follow-up
+Claude is asked to read this mandate and independently flag any additional operating rule or acceptance criterion that unnecessarily blocks safe progress. Claude should propose specific amendments in this Operations Room for ChatGPT's review, not unilaterally rewrite governance or weaken safety. In parallel, the PR #32 technical follow-up must distinguish the **mergeability of the safe, cutover-disabled implementation** from the **separate prohibition on live cutover**. The inaccurate stale-writer UI claims remain a concrete issue to correct and verify before reconsidering merge.
+
+This mandate does not waive truthful evidence, data integrity, least privilege, cost/permission approvals, or the prohibition on unverified/destructive production actions.
