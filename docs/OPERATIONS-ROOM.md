@@ -1969,3 +1969,34 @@ Merge commit `cc06f75`: synced base `feature/phase-1-foundation` (`00a5979`, P1 
 
 ### Boundary kept
 No merge, no deployment, no real-user migration, no deletion/pruning, no workflow/permission/`main` change, no unrelated work. Claude now **stops and waits for ChatGPT's exact-SHA verification** in this room.
+
+
+---
+
+## 2026-11-10 — ChatGPT final verification of PR #32 — **BLOCKED / NOT ACCEPTED; NOT MERGED**
+
+### Exact checkpoint inspected
+- Live PR: [#32](https://github.com/Fadhel-docom/DevMate/pull/32), branch `feature/pr-d-cutover-intent-barrier`, base `feature/phase-1-foundation`.
+- PR head at start of final review: `ea4c35d61ee3fe61bc7ac34688571bfe6e053d43` (OPEN, not merged); implementation/evidence SHA: `cc06f753ca262dae08b6d35c266b748b8fac41d3`.
+- GitHub compare `cc06f75..ea4c35d`: exactly one commit ahead; changed paths are only `docs/OPERATIONS-ROOM.md`, `docs/PR-D-REVIEW-LEDGER.md`, `docs/STATUS.md`, and added `e2e/r6-matrix/results.json`. No source or workflow files changed after the implementation SHA.
+- Re-read current Operations Room, STATUS, consolidated review, and incoming ChatGPT handoff; fetched PR metadata, discussion, review threads, changed paths, source files, and CI run/job summaries.
+
+### Final acceptance verdict
+**REQUEST CHANGES — BLOCKED / NOT ACCEPTED. Do not merge PR #32.** This follows the explicit Claude assignment in PR comment #6742842838: if a safe R1 fence is technically impossible, document that fact, keep cutover disabled, and keep this PR BLOCKED / NOT ACCEPTED. The owner’s request to perform the final review and merge is conditional on all acceptance gates passing; the blocker below means they do not.
+
+### Findings
+1. **F1 / R1 — BLOCKER, not solved as a fence.** Claude's evidence and the raw R6 C3 case both show the unmodified pre-barrier writer can still write the legacy key after `intent` and after `committed`. The production app no longer imports the mutating controller; the built app is read-only with respect to cutover, detects divergence and offers preserved/current exports. This is the correct safe narrowing for this client-only/localStorage architecture, but it does not prevent stale writers. It is explicitly recorded as “not achievable” and “BLOCKED for real cutover”; under the assignment it cannot be converted into acceptance/merge of this PR.
+2. **F3 / truthful recovery UI — BLOCKER.** Inspected `src/App.tsx` `cutoverNotice()`: recovery text claims “Legacy writes are blocked across tabs and restarts.” Inspected `src/RecoveryArchive.tsx`: indeterminate text claims “All writes are blocked and nothing was changed.” These statements are contradicted by C3, which proves an already-loaded old bundle can write after intent/commit. The current app checks the state at startup/reload; it does not subscribe to the `storage` event to refresh the divergence warning while already open. This violates the review's requirement for truthful state and recovery messaging.
+3. **F2 — substantial evidence, with limits.** `e2e/r6-matrix/results.json` reports sourceCommit `cc06f753...`, workingTreeDirty=false, Chromium 131.0.6778.33, Playwright 1.49.1, Node 20.20.2, 12 cases / 135 checks / 0 failures. It covers real storage quota, two-tab Web Locks, restart/kill, marker faults and a 44-point interrupted-write sweep; injected faults are labelled. The harness is not run by GitHub Actions and remains a separate reproducible command. C3 explicitly confirms the R1 limitation.
+4. **F3 / archive work:** the read-only task list, preserved/current raw views, and byte-exact export paths are present with dedicated tests. The durable workspace screen is still absent and the UI says so. The false blocked-writes wording remains a blocker.
+5. **F4 / isolation/retry:** `cutoverMatrix.test.ts` provides project isolation/interleaving/stale-plan/retry/crash-injection tests using instrumented in-memory Storage; the real Chromium suite adds C4-C9 browser evidence. Claude reports 18 matrix tests. No destructive release/prune controls were introduced.
+
+### CI and evidence scope
+- DevMate CI run [42764585468](https://github.com/Fadhel-docom/DevMate/actions/runs/42764585468) succeeded on implementation SHA `cc06f753...`; job `verify` reports checkout, `npm ci`, audit, `npm test`, and `npm run build` all successful. This is not the exact PR head `ea4c35d...`.
+- P1 IndexedDB CAS Chromium proof run [42765356284](https://github.com/Fadhel-docom/DevMate/actions/runs/42765356284) succeeded on `ea4c35d...`; it is a different harness and does not replace R6 evidence or DevMate CI.
+- The R6 Chromium suite is a locally reproducible, separately run harness, not a GitHub Actions job.
+- The PR description still contains stale pre-repair statements (R1 partial, R6 open, no archive UI) and needs reconciliation before any future acceptance. No independent reviewer approval exists for the new repair SHA; the review threads list is empty.
+
+### Boundaries and next action
+- No merge, no close, no new branch, no code/workflow change, no deployment, no real-user migration/cutover, no deletion/pruning, no provider/cost/permission change, and no RateNest work.
+- Keep PR #32 OPEN / **BLOCKED / NOT ACCEPTED**. Next exact action is not another repair carousel: retain the evidence and await an explicit owner decision if they wish to change the R1 merge gate. If that gate is changed, the false UI claims and missing live divergence refresh still need correction and exact-SHA verification before merge.
