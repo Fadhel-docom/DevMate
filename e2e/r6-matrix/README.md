@@ -32,3 +32,4 @@ Exit code 1 means at least one check failed. `results.json` records the Chromium
 | C7 | Restart at each phase; 12 tab kills at different moments; the dead tab's lock never blocks recovery. |
 | C8 | Real lock held by another tab: bounded `lock-timeout`, nothing written, completes after release. |
 | C9 | Failure before/after every one of the clean run's writes (error and quota), restart, retry: always recovers to durable with exact legacy bytes and monotonic phases. |
+| C10 | An already-open page reacts to another tab's write (old-writer divergence, or a marker appearing) through real `storage` events, without reload and without writing. |

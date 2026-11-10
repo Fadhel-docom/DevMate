@@ -1,0 +1,54 @@
+name: R6 Chromium matrix (PR-D recovery evidence)
+
+# Proposed by Claude under the owner's 2026-11-10 mandate (see docs/OPERATIONS-ROOM.md). Read-only, no secrets, no
+# deployment, no paid service: same shape and permissions as p1-chromium.yml. It runs the real-Chromium evidence
+# suite in e2e/r6-matrix against the exact PR head so the evidence is produced by CI instead of a contributor's sandbox.
+on:
+  pull_request:
+    branches: ["feature/**"]
+  push:
+    branches: ["fix/**"]
+
+permissions:
+  contents: read
+
+jobs:
+  chromium-r6:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      EXPECTED_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Assert the checked-out commit is the expected head
+        run: |
+          actual="$(git rev-parse HEAD)"
+          echo "TESTED_SHA=$actual"
+          echo "EXPECTED_SHA=$EXPECTED_SHA"
+          test "$actual" = "$EXPECTED_SHA"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - run: npm ci
+      - name: Install the isolated Playwright package and real Chromium with system libraries
+        working-directory: e2e/r6-matrix
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+      - name: Run the real-Chromium matrix (builds dist/ and the harness bundles)
+        run: node e2e/r6-matrix/run.mjs
+      - name: Show the evidence summary
+        if: always()
+        run: |
+          test -f e2e/r6-matrix/results.json && node -e 'const r=require("./e2e/r6-matrix/results.json"); console.log(JSON.stringify({sourceCommit:r.sourceCommit,chromium:r.environment.chromium,summary:r.summary}))'
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: r6-chromium-results
+          path: e2e/r6-matrix/results.json
+          if-no-files-found: warn

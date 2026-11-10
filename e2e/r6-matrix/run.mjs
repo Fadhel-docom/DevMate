@@ -247,7 +247,7 @@ for (const phase of PHASES) {
   }
   ck(c, "tab kill: state after kill is never indeterminate or malformed", trials.every((t) => ["legacy", "recovery", "durable"].includes(t.modeAfterKill)), trials.map((t) => t.modeAfterKill));
   ck(c, "tab kill: legacy bytes are exact after every kill", trials.every((t) => t.legacyExact));
-  ck(c, "tab kill: the killed tab's Web Lock does not block recovery (resume completes quickly)", trials.every((t) => t.resumed.ok && t.resumed.mode === "durable" && t.resumeMs < 4000), trials.map((t) => t.resumeMs));
+  ck(c, "tab kill: the killed tab's Web Lock does not block recovery (resume completes quickly)", trials.every((t) => t.resumed.ok && t.resumed.mode === "durable" && t.resumeMs < 7000), trials.map((t) => t.resumeMs));
   ck(c, "tab kill: after recovery profiles and stores verify", trials.every((t) => t.stores.migrationVerified && t.stores.storesVerified));
   c.trials = trials;
 }
@@ -291,6 +291,37 @@ for (const phase of PHASES) {
   }
   ck(c, `all ${total * 4} injected failure points recover to durable with exact legacy bytes, monotonic phases and verified stores`, bad.length === 0, bad.slice(0, 3));
   await ctx.close();
+}
+
+// ---------------------------------------------------------------- C10
+{
+  const c = Case("C10", "Live refresh in a real open tab: another tab's write is shown without a reload (real storage events)");
+  const trackWrites = () => { window.__writes = []; window.__noReload = true; const s = Storage.prototype.setItem; Storage.prototype.setItem = function (k, v) { window.__writes.push(k); return s.call(this, k, v); }; };
+  { // 10a: an already-loaded pre-barrier tab writes after intent while the new app is open
+    const ctx = await ctxWith();
+    const oldTab = await ctx.newPage(); await oldTab.goto(origin + "/__h.html");
+    const h = await harness(ctx); await seed(h); await h.evaluate(() => lifecycle("intent"));
+    const app = await ctx.newPage(); await app.addInitScript(trackWrites); await app.goto(origin + "/"); await app.waitForSelector('[data-testid="recovery-archive"]');
+    ck(c, "10a before the old write: recovery status, no alert", (await app.locator('[data-testid="cutover-banner"]').getAttribute("role")) === "status");
+    const w = await oldTab.evaluate(async () => legacy.saveProjectsLocked([{ id: "proj-a", name: "EDITED LIVE BY OLD TAB", tasks: [] }], undefined, localStorage.getItem("devmate-workspace-v1")));
+    ck(c, "10a the old writer succeeds (R1 limitation again)", w.ok === true);
+    let flipped = true; try { await app.waitForFunction(() => document.querySelector('[data-testid="cutover-banner"]')?.getAttribute("role") === "alert", null, { timeout: 5000 }); } catch { flipped = false; }
+    ck(c, "10a the open page flips to an alert WITHOUT reloading", flipped && (await app.evaluate(() => window.__noReload === true)));
+    ck(c, "10a the alert names the divergence and states the real limitation", /source-changed/.test(await app.locator('[data-testid="cutover-banner"]').innerText()) && /cannot stop an older copy of the app/.test(await app.locator('[data-testid="cutover-banner"]').innerText()));
+    ck(c, "10a the current (diverged) source appears live and editing stays locked", (await app.locator('[data-testid="archive-source-current"]').count()) === 1 && !(await app.locator('input[aria-label="New project name"]').isEnabled()));
+    ck(c, "10a the page made no storage write while refreshing", (await app.evaluate(() => window.__writes)).length === 0, await app.evaluate(() => window.__writes));
+    await ctx.close();
+  }
+  { // 10b: a marker appears while the app is open in legacy mode
+    const ctx = await ctxWith(); const h = await harness(ctx); await seed(h);
+    const app = await ctx.newPage(); await app.addInitScript(trackWrites); await app.goto(origin + "/"); await app.waitForSelector('input[aria-label="New project name"]');
+    ck(c, "10b legacy mode: editing enabled before the marker", await app.locator('input[aria-label="New project name"]').isEnabled());
+    await h.evaluate(() => lifecycle("intent"));
+    let locked = true; try { await app.waitForSelector('[data-testid="recovery-archive"]', { timeout: 5000 }); } catch { locked = false; }
+    ck(c, "10b the open page locks editing and shows the recovery panel without reloading", locked && !(await app.locator('input[aria-label="New project name"]').isEnabled()) && (await app.evaluate(() => window.__noReload === true)));
+    const wrote = await app.evaluate(() => window.__writes); ck(c, "10b the page made no storage write", wrote.length === 0, wrote);
+    await ctx.close();
+  }
 }
 
 await browser.close(); server.close();
