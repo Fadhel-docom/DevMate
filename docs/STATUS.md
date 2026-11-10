@@ -939,3 +939,11 @@ This section supersedes the earlier dated sections only for S1/S2 status.
 - F4 has the in-memory project isolation/retry/crash matrix plus browser C4-C9 evidence as recorded in the Claude handoff. No evidence supports a live cutover guarantee.
 - DevMate CI run `42764585468` passed on code SHA `cc06f753...` (358 tests, TypeScript/build per job steps). P1 Chromium CAS run `42765356284` passed on the then-current docs/evidence head `ea4c35d...`; it is a separate CAS harness, not the R6 suite. A DevMate CI run on the exact final documentation head is still required after this handoff commit.
 - **Decision:** no merge. Keep PR #32 OPEN and **BLOCKED / NOT ACCEPTED**. No code, branch, workflow, or production data was changed by this review. Next action: preserve the blocked state; only reconsider after the owner changes the explicit R1 disposition/acceptance requirement and the misleading UI claims are corrected and reverified.
+
+
+## 2026-11-10 — Owner mandate: operating rules must enable safe progress
+- The owner directed ChatGPT to identify and document any rule that obstructs necessary, correct project progress, and to ask Claude to propose specific amendments for ChatGPT's independent review.
+- The Operations Room now distinguishes a **PR/code merge gate** from a **capability activation gate**: an unsafe capability (such as real cutover without a stale-writer fence) must remain unreachable, but this does not automatically prohibit merging independently safe, truthful, tested work.
+- Other proposed governance improvements: scoped blockers instead of blanket PR blocks; reuse valid CI evidence across verified docs-only commits; permit evidence-driven review/repair iterations; treat independent review as substantive verification rather than a GitHub permission ritual; allow safe workflow/CI proposals while preserving owner approval for permission, cost, secret and release-boundary changes.
+- Claude has been asked to identify further obstructive rules and propose replacements in the Operations Room for ChatGPT's review. No safety or evidence requirement is waived.
+- Immediate PR #32 follow-up: reassess the safe cutover-disabled implementation separately from live-cutover authorization; correct and verify the inaccurate stale-writer UI claims before any merge decision.
