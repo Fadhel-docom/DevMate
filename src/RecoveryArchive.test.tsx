@@ -107,6 +107,13 @@ describe("recovery / archive panel (S3)", () => {
     expect(q('[data-testid="archive-source-current"]')).not.toBeNull();
     expect(s.writes).toEqual([]);
   });
+  it("never claims more than this version can guarantee (no 'all writes are blocked', no 'across tabs')", async () => {
+    for (const make of [() => seeded("intent"), () => seeded("committed"), () => seeded("intent", { legacy: RAW + " " })]) {
+      const s = make(); await mount(s); const text = q('[data-testid="recovery-archive"]')!.textContent!;
+      expect(text).not.toMatch(/all writes are blocked|across tabs|nothing was changed\./i); expect(text).toMatch(/cannot stop an older copy|read-only archive/);
+      await act(async () => root!.unmount()); host!.remove(); host = null; root = null;
+    }
+  });
   it("unreadable storage: reports the problem, offers no export, and never claims success", async () => {
     const s = seeded("intent"); const state = inspectCutoverState(s); s.failReads = true;
     const files: ExportFile[] = []; await mount(s, (f) => files.push(f), state);

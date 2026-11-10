@@ -368,13 +368,60 @@ describe("cutover states in the UI", () => {
     await mountWith(storage);
     expect(banner()?.getAttribute("role")).toBe("status");
     expect(banner()?.textContent).toContain(`phase: ${phase}`);
-    expect(banner()?.textContent).toContain("Legacy writes are blocked");
-    expect(banner()?.textContent).not.toMatch(/migration complete|saved|safe to edit/i);
+    expect(banner()?.textContent).toContain("will not write your legacy workspace");
+    expect(banner()?.textContent).toContain("cannot stop an older copy of the app");
+    expect(banner()?.textContent).not.toMatch(/across tabs|all writes are blocked|migration complete|saved|safe to edit/i);
     expect(projectInput().disabled).toBe(true);
     expect((host.querySelector('input[aria-label="New task"]') as HTMLInputElement).disabled).toBe(true);
     expect(host.textContent).toContain("Archived legacy project");
     expect(storage.writes).toEqual([]);
     expect(storage.values.get(STORAGE_KEY)).toBe(LEGACY_RAW);
+  });
+  describe("live refresh while the page is open (storage events from other tabs)", () => {
+    const fire = async (key: string | null) => { await act(async () => { window.dispatchEvent(new StorageEvent("storage", { key })); await new Promise((r) => setTimeout(r, 0)); }); };
+    const archiveText = () => host.querySelector('[data-testid="recovery-archive"]')?.textContent ?? "";
+    it("an older tab changing the legacy workspace after intent flips the open page to an alert without a reload", async () => {
+      const storage = withCopy(new RecordingStorage()); storage.values.set(STORAGE_KEY, LEGACY_RAW); storage.values.set(CUTOVER_MARKER_KEY, markerRaw("intent"));
+      await mountWith(storage);
+      expect(banner()?.getAttribute("role")).toBe("status");
+      expect(archiveText()).not.toContain("Current legacy workspace");
+      storage.values.set(STORAGE_KEY, LEGACY_RAW.replace("Archived legacy project", "Edited by an older tab"));   // another document's write
+      await fire(STORAGE_KEY);
+      expect(banner()?.getAttribute("role")).toBe("alert"); expect(banner()?.textContent).toContain("source-changed");
+      expect(banner()?.textContent).toContain("cannot stop an older copy of the app");
+      expect(archiveText()).toContain("Current legacy workspace"); expect(archiveText()).toContain("differs from the preserved copy");
+      expect(projectInput().disabled).toBe(true); expect(storage.writes).toEqual([]);
+    });
+    it("a second divergent write refreshes the shown bytes even though the state label does not change", async () => {
+      const storage = withCopy(new RecordingStorage()); storage.values.set(STORAGE_KEY, LEGACY_RAW); storage.values.set(CUTOVER_MARKER_KEY, markerRaw("intent"));
+      await mountWith(storage);
+      storage.values.set(STORAGE_KEY, LEGACY_RAW.replace("Legacy task", "First edit")); await fire(STORAGE_KEY);
+      await act(async () => { (Array.from(host.querySelectorAll("button")).find((b) => b.textContent?.startsWith("Show raw text (current")) as HTMLButtonElement).click(); });
+      expect((host.querySelector("textarea") as HTMLTextAreaElement).value).toContain("First edit");
+      storage.values.set(STORAGE_KEY, LEGACY_RAW.replace("Legacy task", "Second edit")); await fire(STORAGE_KEY);
+      expect((host.querySelector("textarea") as HTMLTextAreaElement).value).toContain("Second edit");
+    });
+    it("a marker appearing while the page is open in legacy mode locks editing live", async () => {
+      const storage = new RecordingStorage(); storage.values.set(STORAGE_KEY, LEGACY_RAW);
+      await mountWith(storage); expect(projectInput().disabled).toBe(false); expect(banner()).toBeNull();
+      withCopy(storage).values.set(CUTOVER_MARKER_KEY, markerRaw("intent")); await fire(CUTOVER_MARKER_KEY);
+      expect(projectInput().disabled).toBe(true); expect(banner()?.textContent).toContain("phase: intent");
+      expect(host.querySelector('[data-testid="recovery-archive"]')).not.toBeNull(); expect(storage.writes).toEqual([]);
+    });
+    it("unrelated keys and a missing storageArea mismatch do not re-inspect; a cleared storage (key null) does", async () => {
+      const storage = withCopy(new RecordingStorage()); storage.values.set(STORAGE_KEY, LEGACY_RAW); storage.values.set(CUTOVER_MARKER_KEY, markerRaw("intent"));
+      await mountWith(storage);
+      storage.values.set(STORAGE_KEY, "changed"); await fire("some-other-key"); expect(banner()?.getAttribute("role")).toBe("status");
+      await fire(null); expect(banner()?.getAttribute("role")).toBe("alert");
+    });
+    it("stops listening after unmount (no state update on an unmounted tree)", async () => {
+      const storage = withCopy(new RecordingStorage()); storage.values.set(STORAGE_KEY, LEGACY_RAW); storage.values.set(CUTOVER_MARKER_KEY, markerRaw("intent"));
+      await mountWith(storage);
+      const removed: string[] = []; const orig = window.removeEventListener.bind(window);
+      window.removeEventListener = ((type: string, ...rest: unknown[]) => { removed.push(type); return (orig as (...a: unknown[]) => void)(type, ...rest); }) as typeof window.removeEventListener;
+      await act(async () => root.unmount()); window.removeEventListener = orig; root = createRoot(host);
+      expect(removed).toEqual(expect.arrayContaining(["storage", "focus"]));
+    });
   });
   it("a committed marker never falls back to the legacy writer and labels the archive as read-only", async () => {
     const storage = withCopy(new RecordingStorage()); storage.values.set(STORAGE_KEY, LEGACY_RAW); storage.values.set(CUTOVER_MARKER_KEY, markerRaw("committed"));

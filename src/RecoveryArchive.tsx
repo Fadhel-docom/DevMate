@@ -31,20 +31,20 @@ export function archiveHeading(state: CutoverState): { title: string; body: stri
   switch (state.mode) {
     case "legacy": return null;
     case "recovery": return { tone: "status", title: "Recovery: cutover not finished",
-      body: `A storage cutover was declared and stopped at phase "${state.phase}". Editing is disabled on purpose. Your legacy workspace was preserved byte for byte and nothing has been deleted or migrated away.`,
+      body: `A storage cutover was declared and stopped at phase "${state.phase}". This version disabled editing on purpose and does not write your legacy workspace; it has deleted nothing. Your legacy workspace was preserved byte for byte. This version cannot stop an older copy of the app that is open in another tab; if the data below changes, that is the likely cause and this panel will show it.`,
       next: "You can safely look at your legacy tasks below and download the raw data. This version cannot finish, undo or delete the cutover; keep the downloaded file until the owner has confirmed recovery." };
     case "durable": return { tone: "status", title: "Durable mode recorded; legacy data is an archive",
       body: "A completed cutover is recorded in this browser. This version has no durable workspace screen, so durable data cannot be shown here. The legacy workspace is kept as a read-only archive.",
       next: "You can look at the legacy archive and download the raw data. Legacy tasks are not governed or executable and nothing here can edit, restore or delete them." };
     case "indeterminate": return { tone: "alert", title: "Storage state cannot be verified",
-      body: `The cutover state could not be verified (${state.reason}). ${state.message} All writes are blocked and nothing was changed.`,
+      body: `The cutover state could not be verified (${state.reason}). ${state.message} This version has disabled editing and made no changes. It cannot stop an older copy of the app open in another tab from changing the legacy data.`,
       next: "Download the raw data below before doing anything else. Do not edit or clear browser data until the owner has inspected the stored state." };
   }
 }
 
-export default function RecoveryArchive({ state, storage, download = browserDownload }: { state: CutoverState; storage?: ReadStorage | null; download?: (file: ExportFile) => void }) {
+export default function RecoveryArchive({ state, storage, download = browserDownload, version = 0 }: { state: CutoverState; storage?: ReadStorage | null; download?: (file: ExportFile) => void; /** Changes whenever the stored data may have changed, so the sources are read again. */ version?: number }) {
   const heading = archiveHeading(state);
-  const loaded = useMemo<Loaded>(() => (heading ? loadArchiveSources(storage === undefined ? getBrowserStorage() : storage) : { sources: [], problems: [] }), [state, storage, heading !== null]); // eslint-disable-line react-hooks/exhaustive-deps
+  const loaded = useMemo<Loaded>(() => (heading ? loadArchiveSources(storage === undefined ? getBrowserStorage() : storage) : { sources: [], problems: [] }), [state, storage, version, heading !== null]); // eslint-disable-line react-hooks/exhaustive-deps
   const [status, setStatus] = useState("");
   const [failure, setFailure] = useState("");
   const [shown, setShown] = useState<string | null>(null);
