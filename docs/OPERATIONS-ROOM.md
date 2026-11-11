@@ -2241,3 +2241,54 @@ The owner has directed ChatGPT to continue initiative; the repository's revised 
 - Post-merge source check on `feature/phase-1-foundation`: `src/cutoverState.ts` retains the explicit read-only-only production boundary. The mutating controller is not exposed by the shipped app. The PR body and merge commit message both preserve the explicit prohibition.
 - **R1 remains unresolved and live cutover remains prohibited.** The merge accepted safe, cutover-disabled recovery/archive functionality only. No live migration, restore, deletion, deployment, provider integration, permission expansion, cost change, or RateNest work was performed.
 - PR #32 merge gate is closed successfully; capability-activation gate remains closed pending a genuine stale-writer fence. The next task must be selected from the remaining Phase 1/PR-D roadmap after reading the latest status and open requirements, not by reviving the merged PR.
+
+
+## 69. PR #38 merged; P2 CAS harness hardening — 2026-11-08 — ChatGPT coordinator
+
+### Verified PR #38 closure
+- [PR #38](https://github.com/Fadhel-docom/DevMate/pull/38) was squash-merged; GitHub reports merge commit `00a59793f0452cd7ee0d8a27ffb0ef3bbac78bc4`.
+- Its independent review returned APPROVE WITH FOLLOW-UP. The merged artifact is an isolated IndexedDB CAS spike; no app import, localStorage access, migration, or cutover was added.
+- The merge does not resolve R1 or S2-16.
+
+### Current blocker interpretation
+- R1 is an old-client compatibility problem: a tab running a pre-barrier bundle can continue invoking legacy localStorage writers. A marker implemented by the new bundle cannot stop an old bundle that does not read it. The observed old `deleteBackup` path can also delete backup slots without changing the primary workspace bytes. Do not claim in-app code alone closes R1.
+- A credible R1 closure needs an externally enforced boundary that prevents old clients from writing the old origin/storage namespace, plus a verified export/import or owner-attested quiescence procedure. Changing the production origin or publishing/cutover is owner-sensitive and remains unperformed.
+- S2-16 remains a confirmed failure in the current application localStorage read-modify-write path. PR #38 proves an isolated IndexedDB CAS prototype under its tested scenarios; it is not yet an application adapter and has no migration/restore/adoption proof.
+
+### P2 follow-up work
+- Created `feature/p2-cas-harness-hardening` from `feature/phase-1-foundation`.
+- Commit `deb0446de694a31384f85743d63d4e11fb1c3636` changes the standalone harness:
+  - worker GO receipt timestamp is now included and checked against shared `startAt`;
+  - release offsets alternate parent-first and second-tab-first (0 ms / 12 ms);
+  - the 100-trial run fails unless both winner identities occur;
+  - output explicitly treats overlap as informational, not proof of simultaneous execution.
+- Updated the P1 remediation document to supersede the earlier barrier wording.
+- This is test-harness hardening only; no application storage behavior changed. Exact-head CI and independent review remain pending.
+
+### Next action
+Open and validate a Draft PR for the harness hardening. After exact-head CI and independent review, continue with a separate architecture/implementation plan for S2-16 application adoption. Keep R1 unresolved until the external legacy-client boundary is actually proven. No S3, migration, cutover, deployment, or provider integration.
+
+### PR #39 timing failure and correction — 2026-11-08
+- Chromium run `42493035962` on `4c09632eb800a6270fe3bd3ed335c79787b8480c` failed only `RACE-REAL` and `RACE-MUTANT`; atomicity, split-mutant, backup limit, request-error classification, and versionchange checks passed.
+- Root cause was evidenced in logs: the worker received GO after the shared start time because the 30 ms lead was too short. The strengthened assertion correctly failed closed.
+- Increased the lead to 250 ms in commit `bbca8bf959d4d09acb12557dea8fed0c5eee4216`. This allows message delivery before the controlled release barrier; it does not claim simultaneous transaction overlap.
+- Documentation records the failure and correction. Re-run exact-head CI and Chromium; do not request independent review or mark ready until Chromium passes.
+
+## PR #39 — thread-blocking root cause and Dedicated Worker racers (2026-11-08)
+
+- Actor: Claude, via the Composio GitHub connection, on `feature/p2-cas-harness-hardening` only; no `src/`, no other repository, no merge, no status change.
+- Diagnostic commit `1352ba05e663ee06652b77420f0af4e1412432b2` (assertions unchanged, Chromium failed as before) produced the evidence: parent spin delayed the other tab in 8/8 probes; second-tab spin stalled the parent in 6/6; old-protocol `goReceivedAt - startAt` equalled the parent's release delay; parent won 12/12. `noopener` removed the delay in one direction but was not adopted (process allocation is not guaranteed).
+- Fix commit `d082c88d40803b010aa54a35b1072085ff509e43`: racers moved to Dedicated Workers (`racer.js`), `THREADS-INDEPENDENT` added and made required, barrier proven per trial. Chromium run `42503581222` and DevMate CI run `42503576163` passed on that exact SHA; logs inspected, not only the status.
+- Result: `THREADS-INDEPENDENT` 20/20; `RACE-REAL` 100/100 (parent 45, second tab 55; simultaneous plan 20/30); `RACE-MUTANT` 5/5 with barrier proven; atomicity, backup-limit, error-classification and versionchange checks passed.
+- Not proven: transaction-level overlap, cross-process behaviour, 3+ tabs, other browsers, repeatability beyond one run. R1 and S2-16 remain open.
+- Next: independent review of the final SHA; PR #39 stays Draft.
+
+## PR #39 — closure follow-ups F1 / F2 / F5 (2026-11-08)
+
+- Actor: Claude, via the Composio GitHub connection, on `feature/p2-cas-harness-hardening` only; starting head `01513729ac9c314c5779d935f17eb741e01ed888` (DevMate CI `42503832702` and Chromium `42503836839` were both success on it). No `src/`, no PR #38, no other repository, no merge, no Ready-for-review.
+- Note: `CLAUDE.md` named in the handoff does not exist at the repository root of this branch (404); `docs/STATUS.md`, `docs/OPERATIONS-ROOM.md` and `docs/reviews/P1-CHROMIUM-REMEDIATION.md` were read.
+- F5: added `selftest=racer-exception` (`racer.js`, `index.html`, `p1-chromium.yml` self-test step). The run must fail with `racer parent: uncaught: … SELFTEST racer uncaught exception`, not by timeout, in under 20 s. Existing required checks and assertions untouched.
+- F2: superseded wording in `docs/reviews/P1-CHROMIUM-REMEDIATION.md` labelled, history kept; the 10 s result-wait text corrected to the live 15 s (READY 5 s).
+- F1: PR description rewritten to the final design; exact-head run IDs live in the PR description.
+- Not proven / unchanged: transaction-level overlap; second-tab racer error path not separately exercised; R1 and S2-16 open; PR #39 stays Draft. Next: independent verification of the final SHA.
+

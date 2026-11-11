@@ -15,6 +15,7 @@ const log = (line) => { output.textContent += `\n${line}`; };
 const params = new URLSearchParams(location.search);
 const workerMode = params.get("worker") === "1";
 const selftest = params.get("selftest") ?? "";
+const wid = params.get("wid") ?? "opener";
 const channel = new BroadcastChannel("devmate-cas-p1-harness");
 // Wall clock: identical across tabs (performance.timeOrigin + now() differs per tab and skewed the barrier proof).
 const nowMs = () => Date.now();
@@ -76,14 +77,6 @@ const getWorkspace = (db) => new Promise((resolve, reject) => {
   request.onerror = () => reject(request.error);
 });
 
-// Both tabs spin until the same epoch-millisecond start time. No timers: background tabs may throttle them.
-async function startAtEpoch(startAt, fn) {
-  while (Date.now() < startAt) { /* spin */ }
-  const startedAt = nowMs();
-  const result = await fn();
-  return { result, startedAt, finishedAt: nowMs() };
-}
-
 let store;
 try { store = await openCasStore(); } catch (error) {
   output.textContent = `OPEN FAILED: ${describe(error)}`;
@@ -92,50 +85,23 @@ try { store = await openCasStore(); } catch (error) {
 }
 const rawDb = await openRawDb();
 
-// NEGATIVE CONTROL (race): read-then-write in separate steps, no CAS inside the write transaction.
-// A barrier forces both tabs to hold the same stale baseline before either writes.
-async function mutantReadThenWrite({ trial, who, expectedVersion, raw, barrier }) {
-  const current = await getWorkspace(rawDb);
-  const actual = current?.version ?? 0;
-  if (actual !== expectedVersion) return { ok: false, conflict: true, actualVersion: actual };
-  channel.postMessage({ type: "mutant-read", trial, who, version: actual });
-  await barrier;
-  const tx = rawDb.transaction(["records", "backups"], "readwrite");
-  if (current) tx.objectStore("backups").add({ raw: current.raw, reason: "pre-write", sourceVersion: current.version, createdAt: Date.now(), writer: who });
-  tx.objectStore("records").put({ name: "workspace", version: actual + 1, raw, updatedAt: Date.now(), writer: who });
-  await txDone(tx);
-  return { ok: true, version: actual + 1 };
-}
-
 if (workerMode) {
-  output.textContent = "Worker tab ready; leave this tab open.";
-  let armed = null;
-  channel.addEventListener("message", async ({ data }) => {
-    if (!data) return;
-    if (data.type === "prepare") {
-      armed = { trial: data.trial, mode: data.mode, expectedVersion: data.expectedVersion, raw: data.raw, parentReady: false, barrier: null };
-      if (data.mode === "mutant") armed.barrier = waitFor((m) => m?.type === "mutant-read" && m.trial === data.trial && m.who === "parent", 15000, `mutant barrier (${data.trial})`);
-      channel.postMessage({ type: "worker-ready", trial: data.trial, at: nowMs() });
-    } else if (data.type === "parent-ready") {
-      if (armed?.trial === data.trial) armed.parentReady = true;
-    } else if (data.type === "go") {
-      const goReceivedAt = nowMs();
-      if (!armed || armed.trial !== data.trial || !armed.parentReady) {
-        channel.postMessage({ type: "worker-result", trial: data.trial, protocolViolation: true, startedAt: goReceivedAt, finishedAt: goReceivedAt, result: { ok: false, error: "protocol" } });
-        return;
-      }
-      const run = armed; armed = null;
-      try {
-        const timed = await startAtEpoch(data.startAt, () => run.mode === "mutant"
-          ? mutantReadThenWrite({ trial: run.trial, who: "worker", expectedVersion: run.expectedVersion, raw: run.raw, barrier: run.barrier })
-          : store.write({ expectedVersion: run.expectedVersion, raw: run.raw, writer: "worker" }));
-        channel.postMessage({ type: "worker-result", trial: run.trial, goReceivedAt, ...timed });
-      } catch (error) {
-        channel.postMessage({ type: "worker-result", trial: run.trial, goReceivedAt, startedAt: goReceivedAt, finishedAt: nowMs(), result: { ok: false, error: String(error) } });
-      }
+  output.textContent = "Second tab ready; its racer runs in a Dedicated Worker (racer.js). Leave this tab open.";
+  channel.addEventListener("message", ({ data }) => {
+    if (!data || (data.to && data.to !== wid)) return;
+    // Tab-level diagnostics only (DIAG-TAB-THREAD-SHARING in the parent). Never part of a race trial.
+    if (data.type === "probe") channel.postMessage({ type: "probe-ack", id: data.id, wid, receivedAt: Date.now() });
+    else if (data.type === "spin-request") {
+      channel.postMessage({ type: "spin-started", id: data.id, wid, at: Date.now() });
+      const until = Date.now() + data.ms; while (Date.now() < until) { /* spin */ }
+      channel.postMessage({ type: "spin-done", id: data.id, wid, at: Date.now() });
     }
   });
-  channel.postMessage({ type: "ready" });
+  const racerUp = waitFor((m) => m?.type === "racer-up" && m.role === "worker", 10000, "second-tab racer worker up");
+  const racer = new Worker(new URL("racer.js", location.href), { type: "module", name: "worker" });
+  racer.addEventListener("error", (event) => onPageException("racer-worker-error", event.error ?? event.message));
+  await racerUp;
+  channel.postMessage({ type: "ready", wid });
   if (selftest === "worker-exception") setTimeout(() => { throw new Error("SELFTEST worker uncaught exception"); }, 2000);
 } else {
   main().catch((error) => { log(`HARNESS ERROR ${describe(error)}`); setStatus("fail", describe(error)); });
@@ -149,9 +115,21 @@ async function main() {
   }
   channel.addEventListener("message", ({ data }) => {
     if (data?.type === "worker-exception") { log(`WORKER EXCEPTION ${data.message}`); setStatus("fail", `worker ${data.message}`); }
+    if (data?.type === "racer-exception") { log(`RACER EXCEPTION (${data.role}) ${data.message}`); setStatus("fail", `racer ${data.role}: ${data.message}`); }
   });
+  if (selftest === "racer-exception") {
+    // Negative control for the Dedicated Worker error path. Start one real racer worker, make it throw an uncaught error, and
+    // let ONLY racer.js's own error monitor (-> "racer-exception" broadcast -> the handler above) fail the run. The host-side
+    // Worker "error" event is cancelled and ignored here, so neither it nor a CDP console entry can be what fails the run.
+    const racerUp = waitFor((m) => m?.type === "racer-up" && m.role === "parent", 10000, "selftest racer worker up");
+    const racer = new Worker(new URL("racer.js", location.href), { type: "module", name: "parent" });
+    racer.addEventListener("error", (event) => { event.preventDefault(); log(`RACER WORKER ERROR (host observed, deliberately ignored in this self-test) ${event.message}`); });
+    await racerUp;
+    channel.postMessage({ type: "racer-selftest-throw", role: "parent" });
+    await new Promise(() => {}); // no pass path: only the racer's own exception report may end this run
+  }
   const ready = waitFor((m) => m?.type === "ready", 10000, "worker tab ready");
-  const child = window.open(`${location.pathname}?worker=1${selftest ? `&selftest=${selftest}` : ""}`, "devmate-cas-p1-worker");
+  const child = window.open(`${location.pathname}?worker=1&wid=opener${selftest ? `&selftest=${selftest}` : ""}`, "devmate-cas-p1-worker");
   if (!child) throw new Error("POPUP BLOCKED: Chromium must be launched with --disable-popup-blocking.");
   await ready;
   if (selftest === "worker-exception") await new Promise(() => {});
@@ -261,30 +239,102 @@ async function main() {
     return `oracle rejected the split mutant for the expected reason: its backup stayed committed (backups=${r.backups}) while the aborted workspace write left version ${r.after.version}; checks=${JSON.stringify(r.checks)}`;
   });
 
-  // ---- Races with a per-trial READY/GO rendezvous.
+  // ---- Races. Each racer runs inside a Dedicated Worker (racer.js), one hosted by each tab, so that a spin in one
+  // racer cannot block message delivery to the other. Evidence: a spin in one tab's MAIN thread blocked the other tab
+  // (see DIAG-TAB-THREAD-SHARING and docs/reviews/P1-CHROMIUM-REMEDIATION.md); THREADS-INDEPENDENT proves the racers do not.
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+  async function probeTab(n, spinMs) {
+    const rows = [];
+    for (let k = 0; k < n; k++) {
+      const id = `opener-${k}`;
+      const ack = waitFor((m) => m?.type === "probe-ack" && m.id === id, 5000, `probe ack ${id}`);
+      const sentAt = Date.now();
+      channel.postMessage({ type: "probe", id, to: "opener" });
+      while (Date.now() < sentAt + spinMs) { /* parent main-thread spin */ }
+      const spinEndAt = Date.now();
+      const msg = await ack;
+      rows.push({ sentToReceived: msg.receivedAt - sentAt, receivedMinusSpinEnd: msg.receivedAt - spinEndAt });
+      await sleep(30);
+    }
+    const blocked = rows.filter((r) => r.receivedMinusSpinEnd >= -2).length;
+    log(`DIAG-TAB-THREAD-SHARING: parent main-thread spin ${spinMs}ms; the second tab (window.open) received the probe only after the spin ended in ${blocked}/${n} probes; sentToReceivedMs=[${rows.map((r) => r.sentToReceived).join(",")}]`);
+  }
+  async function probeSpinHeartbeat(n, spinMs) {
+    const idle = []; const spun = [];
+    for (let k = 0; k < n; k++) {
+      for (const active of [false, true]) {
+        const id = `opener-hb${active ? "s" : "i"}${k}`;
+        const done = active ? waitFor((m) => m?.type === "spin-done" && m.id === id, 5000, `spin done ${id}`) : null;
+        let last = Date.now(); let maxGap = 0;
+        const timer = setInterval(() => { const now = Date.now(); maxGap = Math.max(maxGap, now - last); last = now; }, 4);
+        if (active) { channel.postMessage({ type: "spin-request", id, to: "opener", ms: spinMs }); await done; } else await sleep(spinMs);
+        await sleep(20);
+        clearInterval(timer); (active ? spun : idle).push(maxGap);
+      }
+    }
+    const stalled = spun.filter((g) => g >= spinMs * 0.8).length;
+    log(`DIAG-TAB-THREAD-SHARING: second-tab main-thread spin ${spinMs}ms; parent main-thread max timer gap=[${spun.join(",")}]ms (idle control=[${idle.join(",")}]ms); parent stalled in ${stalled}/${n}`);
+  }
+  try {
+    await probeTab(8, 150);
+    await probeSpinHeartbeat(6, 150);
+  } catch (error) { log(`DIAG-TAB-THREAD-SHARING probe failed: ${describe(error)}`); }
+
+  const parentRacerUp = waitFor((m) => m?.type === "racer-up" && m.role === "parent", 10000, "parent racer worker up");
+  const parentRacer = new Worker(new URL("racer.js", location.href), { type: "module", name: "parent" });
+  parentRacer.addEventListener("error", (event) => { log(`RACER WORKER ERROR ${event.message}`); setStatus("fail", `racer worker error: ${event.message}`); });
+  await parentRacerUp;
+  const stopRacers = async () => {
+    const stopped = Promise.all(["parent", "worker"].map((role) => waitFor((m) => m?.type === "racer-stopped" && m.role === role, 5000, `${role} racer stopped`)));
+    channel.postMessage({ type: "racer-stop" });
+    try { await stopped; } catch (error) { log(`racer stop: ${describe(error)}`); }
+    parentRacer.terminate();
+  };
+
+  // PRECONDITION for every race below: the two racers' event loops are independent. While one racer spins for 150 ms, the
+  // other must receive a probe DURING that spin. If the racers shared a thread the probe could only be received after the spin.
+  await check("THREADS-INDEPENDENT", async () => {
+    const spinMs = 150; const rows = [];
+    for (let k = 0; k < 10; k++) for (const [spinner, listener] of [["parent", "worker"], ["worker", "parent"]]) {
+      const id = `ti-${k}-${spinner}`;
+      const started = waitFor((m) => m?.type === "racer-spin-started" && m.id === id, 5000, `spin started ${id}`);
+      const done = waitFor((m) => m?.type === "racer-spin-done" && m.id === id, 5000, `spin done ${id}`);
+      const ack = waitFor((m) => m?.type === "racer-probe-ack" && m.id === id, 5000, `probe ack ${id}`);
+      channel.postMessage({ type: "racer-spin", id, role: spinner, ms: spinMs });
+      await started;
+      channel.postMessage({ type: "racer-probe", id, role: listener });
+      const [a, d] = await Promise.all([ack, done]);
+      rows.push({ spinner, marginMs: d.endedAt - a.receivedAt });
+    }
+    const bad = rows.filter((r) => r.marginMs < 20);
+    if (bad.length) throw new Error(`racers are NOT independent: ${bad.length}/${rows.length} probes were received less than 20 ms before the other racer's spin ended; margins=[${rows.map((r) => r.marginMs).join(",")}]`);
+    return `${rows.length}/${rows.length} probes were received by the idle racer while the other racer was spinning ${spinMs} ms (margin before spin end, ms): min=${Math.min(...rows.map((r) => r.marginMs))} max=${Math.max(...rows.map((r) => r.marginMs))}; both directions covered`;
+  });
+
+  // ---- Per-trial READY/GO rendezvous between the two racers (orchestrated by the parent page, which never spins).
+  const delayPlan = (i) => (i % 4 === 0 ? { parent: 0, worker: 12, label: "parent-first" } : i % 4 === 1 ? { parent: 12, worker: 0, label: "worker-first" } : { parent: 0, worker: 0, label: "simultaneous" });
   async function raceTrial(tag, i, mode) {
     const trialId = `${tag}-${i}`;
     await resetBackups();
     const base = await ensureBaseline();
     const expectedVersion = base.version;
     const raws = { parent: `parent-${trialId}`, worker: `worker-${trialId}` };
-    const workerReady = waitFor((m) => m?.type === "worker-ready" && m.trial === trialId, 5000, `worker READY (${trialId})`);
-    const barrier = mode === "mutant" ? waitFor((m) => m?.type === "mutant-read" && m.trial === trialId && m.who === "worker", 15000, `mutant barrier (${trialId})`) : null;
-    channel.postMessage({ type: "prepare", trial: trialId, mode, expectedVersion, raw: raws.worker });
-    const workerReadyMsg = await workerReady;
-    const parentReadyAt = nowMs();
-    const workerResultPromise = waitFor((m) => m?.type === "worker-result" && m.trial === trialId, 10000, `worker result (${trialId})`);
-    channel.postMessage({ type: "parent-ready", trial: trialId, at: parentReadyAt });
-    const startAt = Date.now() + 30;
+    const plan = delayPlan(i);
+    const delays = { parent: plan.parent, worker: plan.worker };
+    const readyP = waitFor((m) => m?.type === "racer-ready" && m.trial === trialId && m.role === "parent", 5000, `parent racer READY (${trialId})`);
+    const readyW = waitFor((m) => m?.type === "racer-ready" && m.trial === trialId && m.role === "worker", 5000, `second-tab racer READY (${trialId})`);
+    const resultP = waitFor((m) => m?.type === "racer-result" && m.trial === trialId && m.role === "parent", 15000, `parent racer result (${trialId})`);
+    const resultW = waitFor((m) => m?.type === "racer-result" && m.trial === trialId && m.role === "worker", 15000, `second-tab racer result (${trialId})`);
+    channel.postMessage({ type: "racer-prepare", trial: trialId, mode, expectedVersion, raws, delays });
+    const [rp, rw] = await Promise.all([readyP, readyW]);
+    const startAt = Date.now() + 250; // GO lead; the barrier is PROVEN per trial by goReceivedAt <= startAt in BOTH racers, not assumed
     const goSentAt = nowMs();
-    channel.postMessage({ type: "go", trial: trialId, startAt });
-    const parent = await startAtEpoch(startAt, () => mode === "mutant"
-      ? mutantReadThenWrite({ trial: trialId, who: "parent", expectedVersion, raw: raws.parent, barrier })
-      : store.write({ expectedVersion, raw: raws.parent, writer: "parent" }));
-    const worker = await workerResultPromise;
+    channel.postMessage({ type: "racer-go", trial: trialId, startAt });
+    const [parent, worker] = await Promise.all([resultP, resultW]);
     const actual = await store.read();
     const backups = await readBackups();
-    return { trialId, expectedVersion, previousRaw: base.raw, raws, workerReadyAt: workerReadyMsg.at, parentReadyAt, goSentAt, startAt, parent, worker, actual, backups };
+    return { trialId, plan: plan.label, expectedVersion, previousRaw: base.raw, raws, parentReadyAt: rp.at, workerReadyAt: rw.at, goSentAt, startAt, parentDelayMs: delays.parent, workerDelayMs: delays.worker, parent, worker, actual, backups };
   }
 
   function evaluateRaceTrial(t) {
@@ -293,10 +343,12 @@ async function main() {
     const oks = sides.filter(([, r]) => r?.ok === true);
     const conflicts = sides.filter(([, r]) => r?.ok === false && r.conflict === true);
     const next = t.expectedVersion + 1;
-    if (t.worker.protocolViolation) v.push("protocol-violation");
-    // Both READY messages precede GO, and neither write started before the agreed start time.
-    const barrierProven = t.workerReadyAt <= t.goSentAt && t.parentReadyAt <= t.goSentAt && t.goSentAt <= t.startAt
-      && t.parent.startedAt >= t.startAt && t.worker.startedAt >= t.startAt;
+    if (t.parent.protocolViolation || t.worker.protocolViolation) v.push("protocol-violation");
+    // Barrier: both racers READY before GO was sent; BOTH racers RECEIVED GO no later than the shared start time; neither wrote before its release time.
+    const goReceivedInTime = (s) => Number.isFinite(s.goReceivedAt) && s.goReceivedAt <= t.startAt;
+    const barrierProven = t.parentReadyAt <= t.goSentAt && t.workerReadyAt <= t.goSentAt && t.goSentAt <= t.startAt
+      && goReceivedInTime(t.parent) && goReceivedInTime(t.worker)
+      && t.parent.startedAt >= t.startAt + t.parentDelayMs && t.worker.startedAt >= t.startAt + t.workerDelayMs;
     if (!barrierProven) v.push("barrier-not-proven");
     if (oks.length > 1) v.push("double-success");
     if (oks.length === 0) v.push("no-success");
@@ -316,25 +368,33 @@ async function main() {
   }
 
   const fmt = (r) => r?.ok === true ? `ok(v${r.version})` : r?.conflict ? `conflict(actual=${r.actualVersion})` : `error(${r?.error})`;
+  const runWins = { parent: 0, worker: 0 };
   const traceTrial = (t, violations) => {
-    const winner = ["parent", "worker"].filter((n, idx) => (idx === 0 ? t.parent.result : t.worker.result)?.ok === true);
-    const skew = Math.abs(t.parent.startedAt - t.worker.startedAt);
+    const winner = ["parent", "worker"].filter((n) => (n === "parent" ? t.parent.result : t.worker.result)?.ok === true);
+    const startDelta = t.parent.startedAt - t.worker.startedAt;
     const overlap = t.parent.startedAt <= t.worker.finishedAt && t.worker.startedAt <= t.parent.finishedAt;
-    log(`  trial ${t.trialId}: winner=${winner.join("+") || "none"} parent=${fmt(t.parent.result)} worker=${fmt(t.worker.result)} base=v${t.expectedVersion} final=v${t.actual.ok ? t.actual.version : "?"} backups=${t.backups.length} startSkewMs=${skew} overlap=${overlap} violations=[${violations.join(",")}]`);
+    const real = t.trialId.startsWith("real");
+    if (real) for (const w of winner) runWins[w]++;
+    log(`  trial ${t.trialId} [${t.plan}]: winner=${winner.join("+") || "none"} realWins(parent/worker)=${real ? `${runWins.parent}/${runWins.worker}` : "n/a (negative control)"} parent=${fmt(t.parent.result)} worker=${fmt(t.worker.result)} base=v${t.expectedVersion} final=v${t.actual.ok ? t.actual.version : "?"} backups=${t.backups.length}`
+      + ` startAt=${t.startAt} goSentAt=${t.goSentAt} goReceivedAt(parent/worker)=${t.parent.goReceivedAt}/${t.worker.goReceivedAt} goReceivedMinusStartAt(parent/worker)=${t.parent.goReceivedAt - t.startAt}/${t.worker.goReceivedAt - t.startAt}`
+      + ` writeStartMinusStartAt(parent/worker)=${t.parent.startedAt - t.startAt}/${t.worker.startedAt - t.startAt} releaseDelaysMs(parent/worker)=${t.parentDelayMs}/${t.workerDelayMs} writeStartDeltaMs(parent-worker)=${startDelta} overlap=${overlap} violations=[${violations.join(",")}]`);
     return { winner, overlap };
   };
 
   await check("RACE-REAL", async () => {
     const trials = 100; const wins = { parent: 0, worker: 0 }; let overlapped = 0;
-    log(`Running ${trials} same-baseline races in two real tabs (READY/GO rendezvous per trial); Web Locks are not used.`);
+    const byPlan = {};
+    log(`Running ${trials} same-baseline races between two Dedicated-Worker racers, one per tab (READY/GO rendezvous per trial); Web Locks are not used.`);
     for (let i = 0; i < trials; i++) {
       const t = await raceTrial("real", i, "real");
       const violations = evaluateRaceTrial(t);
       const { winner, overlap } = traceTrial(t, violations);
       if (violations.length) throw new Error(`trial ${t.trialId} violated: ${violations.join(",")}`);
       wins[winner[0]]++; if (overlap) overlapped++;
+      byPlan[t.plan] ??= { parent: 0, worker: 0 }; byPlan[t.plan][winner[0]]++;
     }
-    return `${trials}/${trials} trials valid; barrier proven (both READY before GO) in ${trials}/${trials}; winners parent=${wins.parent} worker=${wins.worker}; transactions overlapped in ${overlapped}/${trials} (informational, not asserted)`;
+    if (wins.parent === 0 || wins.worker === 0) throw new Error(`both winner identities were not exercised: ${JSON.stringify(wins)}`);
+    return `${trials}/${trials} trials valid; per trial both racers were READY before GO and BOTH received GO before the shared start time; wins parent=${wins.parent} worker=${wins.worker}; wins by release plan=${JSON.stringify(byPlan)} (parent-first/worker-first are controlled release offsets, simultaneous has none); transaction overlap observed in ${overlapped}/${trials} (informational, not asserted)`;
   });
   await check("RACE-MUTANT", async () => {
     const trials = 5; let detected = 0;
@@ -348,6 +408,7 @@ async function main() {
     if (detected !== trials) throw new Error(`negative control NOT detected in ${trials - detected}/${trials} mutant trials`);
     return `oracle rejected ${detected}/${trials} mutant trials (double-success and lost-update observed with the barrier proven)`;
   });
+  await stopRacers();
 
   // ---- F3: backup limit behaviour (documented: no pruning).
   await check("BACKUP-LIMIT", async () => {
@@ -431,7 +492,7 @@ async function main() {
     return `after a version bump the closed store returned read=${JSON.stringify(readAfter)} write=${JSON.stringify(writeAfter)} (documented: unmapped InvalidStateError => unknown); workspace unchanged; isolated test database deleted`;
   });
 
-  log("LIMITS: not tested here: SIGKILL durability, real quota exhaustion, restore, migration, 3+ tabs, other browsers, onblocked on upgrade (unreachable with CAS_DB_VERSION=1), read/write operation timeouts.");
+  log("LIMITS: not tested here: simultaneous transaction overlap as proof (informational only), SIGKILL durability, real quota exhaustion, restore, migration, 3+ tabs, other browsers, onblocked on upgrade (unreachable with CAS_DB_VERSION=1), read/write operation timeouts.");
   log("The isolated test database devmate-cas-spike-v1 is deleted at the end of a passing run.");
   const ok = failedChecks.length === 0;
   log(`ALL-CHECKS ${ok ? "PASS" : "FAIL"}: passed=${passedChecks.length} failed=${failedChecks.join(",") || "none"}`);
