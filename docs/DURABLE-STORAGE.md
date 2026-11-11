@@ -129,3 +129,9 @@ PR-C adds `src/taskLedgerStore.ts` as a project-scoped adapter over the generic 
 ## PR-D recovery design reference
 
 The controlled application cutover and forward-only recovery requirements are specified in [PR-D-RECOVERY-DESIGN.md](./PR-D-RECOVERY-DESIGN.md). This design is not migration authorization; the legacy writer must remain unchanged until the Sensitive-level cutover gates are met.
+
+### Note on `readLedger` (PR-C review follow-up)
+`readLedger` validates the ledger under the shared lock, then reads the project-profile envelope after the lock is released. If the profile envelope changes between the two reads, the call can return `invalid-data` even though no invalid state was written. Writes are unaffected: every write re-validates against the current profile bytes inside the lock. Callers (and the future PR-D UI) must treat a read-time `invalid-data` as retryable / re-inspect, not as proof of corruption, and must not repair or overwrite data based on that single result.
+
+### Cutover controller (PR #32)
+`src/cutoverController.ts` coordinates the forward-only cutover lifecycle (`intent`, `profiles-verified`, `stores-verified`, `committed`) over the existing adapters. It runs the adapters under the single shared lock with a pass-through lock runner (never a nested lock request), preserves the raw legacy bytes keyed by fingerprint (`devmate-cutover-v1:source:<fingerprint>`, never overwritten, never deleted), and revalidates the legacy source byte for byte before every phase advance. Every legacy mutator, including `deleteBackup`, refuses to run while any `devmate-cutover-v1:workspace` marker bytes exist. See [PR-D-RECOVERY-DESIGN.md](./PR-D-RECOVERY-DESIGN.md) section 10. The controller is not connected to any UI trigger and no migration or cutover has been run against real user storage.
