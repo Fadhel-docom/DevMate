@@ -2292,3 +2292,15 @@ Open and validate a Draft PR for the harness hardening. After exact-head CI and 
 - F1: PR description rewritten to the final design; exact-head run IDs live in the PR description.
 - Not proven / unchanged: transaction-level overlap; second-tab racer error path not separately exercised; R1 and S2-16 open; PR #39 stays Draft. Next: independent verification of the final SHA.
 
+
+
+---
+
+## 2026-11-11 — PR #39 merged; CAS harness proof hardened
+
+- PR #39 is CLOSED / MERGED at squash commit `ccd89f1750091cc47b469445780b88fd52bd12f6`; GitHub confirms the base branch ref `feature/phase-1-foundation` points to this commit.
+- Merged scope is isolated P1 CAS test harness, Chromium workflow and documentation only; no production `src/` code or application storage path changed.
+- Exact implementation/test head `fd2000dc92c46a85071c6055caf1a0c559a4d2d2), based on prior base `09afb9f`; after rebase, exact-head CI passed: DevMate CI 15 files / 381 tests; P1 Chromium 8/8 required checks (THREADS-INDEPENDENT 20/20, RACE-REAL 100/100, RACE-MUTANT 5/5, racer-exception negative control passed); R6 13 cases / 144 checks / 0 failures. See PR #39 for run links.
+- Evidence remains bounded: no transaction-level overlap claim; one run; no 3+ tabs, cross-process, other-browser, SIGKILL or real-quota proof. The IndexedDB CAS store remains an isolated spike, not wired into the app.
+- **R1 remains unresolved and live cutover prohibited. S2-16 remains a failure in the current localStorage app path.** No application adoption, migration, cutover, deployment, provider integration, permission expansion, cost change or RateNest work.
+- Next dependency chain to reconcile and review: PR #35 real-Chromium S2 persistence evidence (13 pass / 2 findings) → PR #36 S2-16 root-cause diagnosis → PR #37 IndexedDB/CAS design. These are stacked on the pre-rebase PR #33 branch and must be transplanted/rebased one at a time onto the current base before review; do not merge as a batch. PR #34 accessibility and PR #40 roadmap request remain separate candidates.
