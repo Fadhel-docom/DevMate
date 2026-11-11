@@ -207,3 +207,19 @@ A marker check in the current bundle cannot retroactively constrain JavaScript a
 Accordingly, `createCutoverController().begin()` now fails closed unless the host supplies `confirmLegacyWritersQuiesced()` and it returns `true`. The callback is a trust boundary: it must prove that every pre-barrier app instance is closed or forcibly reloaded and cannot resume writing. It must not acquire the storage lock. There is currently **no production implementation** of this verifier (no service-worker/client-version fence or equivalent), so the default application cannot begin a cutover. Tests that inject `true` exercise controller mechanics only; they do not prove browser-wide stale-tab quiescence. Do not wire a permissive callback or treat a user checkbox as proof. A future host-level mechanism and real-browser two-tab regression are required before this gate may be enabled.
 
 This is an intentional fail-closed limitation, not a claim that arbitrary already-loaded old JavaScript can be blocked by localStorage markers.
+
+
+### 11.1 Why no in-application proof of quiescence exists, and what would close R1 (2026-11-08)
+
+Mechanisms considered inside the application, and why none can prove that an already-loaded pre-barrier bundle has stopped:
+
+- **Marker in localStorage:** the old bundle never reads it. Verified by running the real old mutators (`src/legacyWriterMatrix.test.ts`): `saveProjects`, `saveProjectsLocked`, `restoreBackup` and `deleteBackup` all return `ok` after a valid `intent` and after `committed`.
+- **Compare-and-set on the legacy key:** the old writers' `expectedRaw` check compares strings at call time. Real Chromium showed cross-tab reads lagging after a write (8 of 10 trials stale immediately, settled within 2 ms), so a compare cannot be atomic across tabs. Rewriting the legacy key to trip that compare would also break R2 (legacy source untouched) and is bypassed by an old bundle that simply reloads.
+- **Web Locks:** serialize only code that takes the lock, and only while the holder is alive. A holder that closes or crashes releases it (shown in the S1 browser experiment). From the specification, `navigator.locks.query()` lists only held and pending requests, so an idle old tab is invisible to it (reasoned from the specification; not tested here).
+- **Events (`storage`, `BroadcastChannel`):** reach only code that listens; the old bundle does not.
+- **Service worker / version gate:** can control only pages it already controls; no worker existed when the old bundles were loaded, so it cannot force-reload them.
+- **User checkbox or test callback:** attestation, not proof.
+
+Detection, not prevention, is what the controller provides. Measured coverage of the old mutators: three of four change the legacy bytes and are detected (`source-changed`, divergent bytes preserved, marker never advanced or downgraded). **Old `deleteBackup` removes legacy backup slots without changing the legacy workspace bytes and is not detected at all.** Detection is by bytes only, so restoring the exact original bytes hides an earlier old write.
+
+What would close R1 requires control outside the application and the browser's page-level APIs, for example: (a) serving the durable application from a different origin, so old bundles cannot reach its storage, with an explicit verified export/import of the legacy bytes and an owner decision on edits made in old tabs after the export; or (b) an owner-run procedure on every device that holds the data (close every tab, restart the browser, confirm), recorded as an attestation. (b) reduces risk but is not proof and must not be presented as a guarantee. Until one of these exists and is reviewed, `confirmLegacyWritersQuiesced` stays unwired and cutover stays closed.
