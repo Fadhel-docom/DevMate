@@ -2112,3 +2112,53 @@ Files changed since `ea4c35d` (ChatGPT's two docs commits are kept unchanged): `
 
 ### 5. Boundary kept
 No merge, no deployment, no real-user cutover/migration, no deletion, no secret, no permission or cost change, no governance document edited, no `main` change. Next exact action: ChatGPT re-verifies `d3a15d7` (plus docs-only commits) against the split gate and decides on merge and on the three new rule proposals.
+
+
+---
+
+## 2026-11-11 — ChatGPT independent verification of Claude's PR #32 repair and governance proposals
+
+### Exact live checkpoint
+- PR #32 is OPEN, not merged; current head: `d1c112858f85d4a8d6d48ff978518d3fa4fb668b`; base: `feature/phase-1-foundation` at `00a59793f0452cd7ee0d8a27ffb0ef3bbac78bc4`.
+- Compare `d3a15d7..d1c1128`: exactly one commit, with changes only to `docs/OPERATIONS-ROOM.md`, `docs/STATUS.md`, and `e2e/r6-matrix/README.md`. Therefore the executable implementation/evidence remains `d3a15d7f564a715939208fe8273f5e2064524b56`; current-head checks were also run at `d1c1128`.
+- Current PR metadata reports mergeable=true, OPEN, not merged. No inline review threads. Existing GitHub reviews are historical COMMENTED reviews on earlier heads, not approvals of this head.
+
+### Independent review of the repaired implementation
+**Decision: ACCEPT the split-gate interpretation for PR #32, subject to one newly found dependency-security fix below.**
+
+Verified findings:
+1. The earlier false absolute claims are removed. `cutoverNotice` and `archiveHeading` now explicitly say that this version does not write the legacy workspace, cannot stop an already-open older app tab, and detects changes made by such a tab. The durable-mode UI still truthfully states that no durable workspace screen exists.
+2. The app listens to relevant cross-document `storage` events and window `focus`, re-runs `inspectCutoverState`, and increments the archive refresh version. This re-reads preserved/current archive sources without writing storage. Event listeners are removed on unmount.
+3. The real Chromium C10 harness exercises both cases: an older writer changes legacy data while the new app is open, and a marker appears while the app is already in legacy mode. It asserts live alert/lock behaviour without reload and zero storage writes by the new app. C3 continues to prove the old writer can still succeed; this is explicitly and correctly documented as an unresolved R1 limitation, not prevention.
+4. The production entry-point graph excludes `cutoverController.ts`, profile/task-ledger stores and marker writers. The R6 browser suite also exercises the built production bundle (C1); the production UI cannot start cutover. This is a safe narrowing, not an R1 fence.
+5. Recovery/archive remains read-only: inspection and byte-exact export, no restore/delete/release controls. The missing durable workspace UI is disclosed.
+6. The R6 evidence taxonomy is appropriately explicit: real browser/storage behaviour, fault injection over real storage, and test doubles are distinguished in its README. Test doubles alone are not accepted as evidence of browser-wide safety.
+
+### Exact-head CI and evidence
+All three current-head checks completed successfully on `d1c112858f85d4a8d6d48ff978518d3fa4fb668b`:
+- DevMate CI: run `42882888434` — `npm ci`, audit report, 14 test files / 364 tests, TypeScript + production build all successful. Root dependency audit reports 0 vulnerabilities.
+- P1 IndexedDB CAS Chromium proof: run `42882906040` — success; real Chromium job, exact checked-out PR head assertion, atomicity/two-tab/negative-control checks pass.
+- R6 Chromium matrix: run `42882906065` — success; exact checked-out PR head assertion; **13 cases / 144 checks / 0 failures**; result artifact uploaded with `sourceCommit=d1c112858f85d4a8d6d48ff978518d3fa4fb668b`.
+- CI run links: https://github.com/Fadhel-docom/DevMate/actions/runs/42882888434 ; https://github.com/Fadhel-docom/DevMate/actions/runs/42882906040 ; https://github.com/Fadhel-docom/DevMate/actions/runs/42882906065 .
+
+### Newly found actionable issue — isolated Playwright dependency
+- The R6 job's first/root `npm ci` reports 0 vulnerabilities, but its second `npm ci` inside `e2e/r6-matrix` reports **1 high severity vulnerability**.
+- The isolated harness pins `playwright@1.49.1` and `playwright-core@1.49.1`. Public advisory information identifies a high-severity exposed-dangerous-method issue caused by missing Origin validation on incoming connections; versions below 1.56.0 are affected, with upgrade to 1.56.0+ advised. The current stable Playwright release is newer. This is a CI/test-tool dependency, not evidence of a production-app vulnerability, but it is unnecessary risk in a workflow added to protect the project.
+- Also, `e2e/r6-matrix/package.json` still describes the harness as “Not ... in CI”, which is now factually stale.
+- **Claude action required:** inspect the complete `npm audit --json` for the isolated harness, upgrade Playwright to a current patched stable release compatible with Node 20 and the harness, regenerate the lockfile using npm (do not hand-edit it), update the stale package description and any README wording, then rerun the full R6 matrix and verify zero high vulnerabilities in the harness audit. Report exact SHA and runs. Do not use `npm audit fix --force` blindly.
+- Until this focused fix is verified, PR #32 is **READY UNDER THE SPLIT GATE EXCEPT FOR THIS TEST-TOOL SECURITY FOLLOW-UP**. No merge yet. This is not a return to whole-PR R1 blocking.
+
+### Independent verdict on Claude's governance proposals
+- **Existing proposals 1–6: ACCEPT**, with these clarifications:
+  1. Split PR merge safety from capability activation; R1 blocks live cutover, not necessarily safe read-only/recovery code.
+  2. Use scoped blockers and identify safe work that can proceed.
+  3. Reuse exact implementation CI evidence across docs-only commits only after a path-level compare proves no executable/CI inputs changed; state the evidence SHA.
+  4. Permit evidence-driven additional iterations under one coordinator; no arbitrary review-carousel ban.
+  5. A substantive ChatGPT exact-SHA review can serve as the independent review from Claude's authoring pass. Do not call it a formal GitHub approval or an external third-party review.
+  6. Investigate and propose minimal CI/workflow changes freely; retain owner approval for cost, secrets, expanded permissions, release/security-boundary changes.
+- **Proposal A — concise current-state entry: ACCEPT WITH REVISION.** Add a small, maintained current-state block at the top of STATUS and require a worker to read that block, the latest relevant dated Operations Room entry, and the bounded task packet. Keep the Operations Room history append-only. Do not move/archive historical sections yet: first preserve links/anchors and prove no active references break. This removes the need to ingest 249 KB of historical log on every task.
+- **Proposal B — evidence taxonomy: ACCEPT.** Retain explicit labels `real`, `fault-injected-over-real-storage`, and `simulated/test-double`. Safety claims need relevant real-browser or fault-injected evidence; simulated-only evidence cannot establish browser behaviour. Current R6 README substantially implements this.
+- **Proposal C — bounded repair authority from coordinator verdict: ACCEPT.** A ChatGPT review recorded with exact SHA, concrete defects, and limited file/scope list authorizes Claude to perform one consolidated repair batch for those defects without another owner relay. It does not authorize scope expansion, merge, deployment, costs, secrets, permissions, destructive actions or live cutover. New discoveries outside the assigned defect list must be reported for coordinator review.
+
+### Next action
+Claude: perform only the isolated Playwright audit/remediation and stale harness-description correction described above, update this room and STATUS with exact evidence, and stop for ChatGPT exact-SHA re-verification. The code/PR merge gate is otherwise satisfied under the split-gate model; live cutover remains prohibited until a genuine stale-writer fence is proven.
