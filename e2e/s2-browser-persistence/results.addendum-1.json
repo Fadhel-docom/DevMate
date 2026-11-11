@@ -1,0 +1,339 @@
+{
+  "meta": {
+    "codeUnderTest": {
+      "pr33Head": "752445ced37d8dcf2bb35402de543812f0e0e3b9",
+      "pr32Head": "a853f2af71383fb863171533e05588f54a86c86b",
+      "legacyFixtureBase": "3c60a8529ae99d869c3c98970c2df9ff37895d42"
+    },
+    "srcDiffVsPr33Head": "(empty: src/ is byte-identical to PR #33 head)",
+    "harnessHead": "dc2983e51dddc468e672637f1167a0dccdf7a26d",
+    "harnessDirty": "(clean)",
+    "node": "v22.23.4",
+    "playwright": "1.63.0",
+    "esbuild": "0.28.2",
+    "os": "Linux 6.18.44-fc-v310 x64",
+    "cpus": 2,
+    "startedAt": "2026-11-08T12:35:16.483Z",
+    "origin": "http://localhost:18765",
+    "chromium": "153.0.8010.12",
+    "browserBuild": "chromium",
+    "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.0.0 Safari/537.36",
+    "finishedAt": "2026-11-08T12:35:47.524Z"
+  },
+  "scenarios": [
+    {
+      "id": "S2-16",
+      "title": "Real saveProjectsLocked from two real tabs with expectedRaw: are app updates ever silently overwritten?",
+      "expected": "with expectedRaw, two tabs never both succeed from the same baseline, and every update a tab was told succeeded is present in the final workspace",
+      "steps": [
+        "(A) 40 trials: fresh context, seed, two tabs each load the baseline with the real readProjectsLocked, then both call the real saveProjectsLocked(projects, undefined, baseline) at the same instant with different edits",
+        "(B) 2 tabs x 25 edits each: each edit = real readProjectsLocked, append one uniquely titled task, real saveProjectsLocked(..., loadedRaw); on conflict reload and retry. After both finish compare every acknowledged edit against the final stored workspace",
+        "(C) one tab saves, then the second tab (same baseline) saves after the first save returned and a settle wait"
+      ],
+      "checks": [
+        {
+          "desc": "(A) never both tabs acknowledged from the same baseline (no silent overwrite)",
+          "pass": false,
+          "observed": {
+            "trials": 40,
+            "exactlyOneSucceeded": 25,
+            "bothSucceeded": 15,
+            "noneSucceeded": 0,
+            "conflictReasons": [
+              "conflict"
+            ],
+            "acknowledgedButMissingInFinal": 15,
+            "staleBaselineTrials": 0,
+            "sampleBothSucceeded": [
+              {
+                "t": 3,
+                "baseOk": [
+                  true,
+                  true
+                ],
+                "ra": {
+                  "ok": true,
+                  "reason": null
+                },
+                "rb": {
+                  "ok": true,
+                  "reason": null
+                },
+                "finalTitles": [
+                  "A-3-b"
+                ]
+              },
+              {
+                "t": 4,
+                "baseOk": [
+                  true,
+                  true
+                ],
+                "ra": {
+                  "ok": true,
+                  "reason": null
+                },
+                "rb": {
+                  "ok": true,
+                  "reason": null
+                },
+                "finalTitles": [
+                  "A-4-a"
+                ]
+              },
+              {
+                "t": 6,
+                "baseOk": [
+                  true,
+                  true
+                ],
+                "ra": {
+                  "ok": true,
+                  "reason": null
+                },
+                "rb": {
+                  "ok": true,
+                  "reason": null
+                },
+                "finalTitles": [
+                  "A-6-b"
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "desc": "(A) every acknowledged update is present in the final workspace",
+          "pass": false,
+          "observed": [
+            {
+              "t": 3,
+              "baseOk": [
+                true,
+                true
+              ],
+              "ra": {
+                "ok": true,
+                "reason": null
+              },
+              "rb": {
+                "ok": true,
+                "reason": null
+              },
+              "finalTitles": [
+                "A-3-b"
+              ]
+            },
+            {
+              "t": 4,
+              "baseOk": [
+                true,
+                true
+              ],
+              "ra": {
+                "ok": true,
+                "reason": null
+              },
+              "rb": {
+                "ok": true,
+                "reason": null
+              },
+              "finalTitles": [
+                "A-4-a"
+              ]
+            },
+            {
+              "t": 6,
+              "baseOk": [
+                true,
+                true
+              ],
+              "ra": {
+                "ok": true,
+                "reason": null
+              },
+              "rb": {
+                "ok": true,
+                "reason": null
+              },
+              "finalTitles": [
+                "A-6-b"
+              ]
+            }
+          ]
+        },
+        {
+          "desc": "(B) every update acknowledged as saved is present in the final workspace (none silently overwritten)",
+          "pass": false,
+          "observed": {
+            "editsAttemptedPerTab": 25,
+            "acknowledged": 50,
+            "conflictsReported": 6,
+            "otherFailures": 0,
+            "presentInFinal": 48,
+            "acknowledgedButMissing": 2,
+            "missingTitles": [
+              "B-a-6",
+              "B-b-6"
+            ]
+          }
+        },
+        {
+          "desc": "(C) the second tab, using the now-outdated baseline 1.5 s after the first save, gets conflict and does not overwrite",
+          "pass": true,
+          "observed": {
+            "sameBaseline": true,
+            "first": {
+              "ok": true,
+              "reason": null
+            },
+            "second": {
+              "ok": false,
+              "reason": "conflict"
+            },
+            "finalTitles": [
+              "C-first"
+            ]
+          }
+        }
+      ],
+      "evidence": {
+        "A_simultaneousSameBaseline": {
+          "trials": 40,
+          "exactlyOneSucceeded": 25,
+          "bothSucceeded": 15,
+          "noneSucceeded": 0,
+          "conflictReasons": [
+            "conflict"
+          ],
+          "acknowledgedButMissingInFinal": 15,
+          "staleBaselineTrials": 0,
+          "sampleBothSucceeded": [
+            {
+              "t": 3,
+              "baseOk": [
+                true,
+                true
+              ],
+              "ra": {
+                "ok": true,
+                "reason": null
+              },
+              "rb": {
+                "ok": true,
+                "reason": null
+              },
+              "finalTitles": [
+                "A-3-b"
+              ]
+            },
+            {
+              "t": 4,
+              "baseOk": [
+                true,
+                true
+              ],
+              "ra": {
+                "ok": true,
+                "reason": null
+              },
+              "rb": {
+                "ok": true,
+                "reason": null
+              },
+              "finalTitles": [
+                "A-4-a"
+              ]
+            },
+            {
+              "t": 6,
+              "baseOk": [
+                true,
+                true
+              ],
+              "ra": {
+                "ok": true,
+                "reason": null
+              },
+              "rb": {
+                "ok": true,
+                "reason": null
+              },
+              "finalTitles": [
+                "A-6-b"
+              ]
+            }
+          ]
+        },
+        "B_sustainedTwoTabs": {
+          "editsAttemptedPerTab": 25,
+          "acknowledged": 50,
+          "conflictsReported": 6,
+          "otherFailures": 0,
+          "presentInFinal": 48,
+          "acknowledgedButMissing": 2,
+          "missingTitles": [
+            "B-a-6",
+            "B-b-6"
+          ]
+        },
+        "C_sequentialSameBaseline": {
+          "sameBaseline": true,
+          "first": {
+            "ok": true,
+            "reason": null
+          },
+          "second": {
+            "ok": false,
+            "reason": "conflict"
+          },
+          "finalTitles": [
+            "C-first"
+          ]
+        }
+      },
+      "notTested": [
+        "Edits are produced by a minimal helper that appends one task (the real App/React UI was not run); the production functions readProjectsLocked and saveProjectsLocked are the real ones from src/storage.ts at PR #33 head.",
+        "Only two tabs of one browser profile; no more than 25 edits per tab; timing is host-specific."
+      ],
+      "durationMs": 29960,
+      "status": "FAIL"
+    },
+    {
+      "id": "S2-15",
+      "title": "Back/forward cache (BFCache) probe for a stale old tab",
+      "expected": "if the old tab is restored from BFCache, record that it can still write; otherwise record that BFCache was not exercised",
+      "steps": [
+        "old tab loads and baselines, navigates to another same-origin page, goBack()",
+        "read pageshow.persisted",
+        "if persisted: drive the real controller to intent in another tab, then run the restored tab's autosave"
+      ],
+      "checks": [],
+      "evidence": {
+        "probe": {
+          "marker": null,
+          "pageshow": [
+            false
+          ],
+          "baselineKept": false
+        },
+        "reason": "goBack() did not restore the page from the back/forward cache in this build"
+      },
+      "notTested": [
+        "BFCache was NOT exercised: after goBack() the page was reloaded (in-memory marker lost, pageshow persisted=false), so a BFCache-restored stale tab could not be tested in this headless Chromium. This scenario proves nothing about BFCache and must not be counted as a pass."
+      ],
+      "forceStatus": "NOT TESTED",
+      "durationMs": 758,
+      "status": "NOT TESTED"
+    }
+  ],
+  "summary": {
+    "scenarios": 2,
+    "pass": 0,
+    "fail": 1,
+    "error": 0,
+    "notTested": 1,
+    "checks": 4,
+    "checksPassed": 1
+  }
+}

@@ -1,0 +1,2751 @@
+{
+  "meta": {
+    "codeUnderTest": {
+      "pr33Head": "752445ced37d8dcf2bb35402de543812f0e0e3b9",
+      "pr32Head": "a853f2af71383fb863171533e05588f54a86c86b",
+      "legacyFixtureBase": "3c60a8529ae99d869c3c98970c2df9ff37895d42"
+    },
+    "srcDiffVsPr33Head": "(empty: src/ is byte-identical to PR #33 head)",
+    "harnessHead": "752445ced37d8dcf2bb35402de543812f0e0e3b9",
+    "harnessDirty": "(clean)",
+    "node": "v22.23.4",
+    "playwright": "1.63.0",
+    "esbuild": "0.28.2",
+    "os": "Linux 6.18.44-fc-v310 x64",
+    "cpus": 2,
+    "startedAt": "2026-11-08T11:47:49.457Z",
+    "origin": "http://localhost:18765",
+    "chromium": "153.0.8010.12",
+    "browserBuild": "chromium",
+    "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.0.0 Safari/537.36",
+    "finishedAt": "2026-11-08T11:51:00.686Z"
+  },
+  "scenarios": [
+    {
+      "id": "S2-01",
+      "title": "Lifecycle baseline with the real production stages in real Chromium",
+      "expected": "legacy -> intent -> profiles-verified -> stores-verified -> committed; legacy bytes untouched; current writers refused",
+      "steps": [
+        "seed legacy workspace",
+        "preflight + begin + 3x advance with createCutoverStages() (real profile/ledger stores)",
+        "after each step read the marker",
+        "call the three CURRENT mutators"
+      ],
+      "checks": [
+        {
+          "desc": "marker phases are exactly intent, profiles-verified, stores-verified, committed",
+          "pass": true,
+          "observed": [
+            {
+              "step": "preflight",
+              "ok": true
+            },
+            {
+              "step": "begin",
+              "ok": true,
+              "phase": "intent"
+            },
+            {
+              "step": "advance",
+              "ok": true,
+              "phase": "profiles-verified"
+            },
+            {
+              "step": "advance",
+              "ok": true,
+              "phase": "stores-verified"
+            },
+            {
+              "step": "advance",
+              "ok": true,
+              "phase": "committed"
+            }
+          ]
+        },
+        {
+          "desc": "inspect() reports durable",
+          "pass": true,
+          "observed": "durable"
+        },
+        {
+          "desc": "legacy bytes unchanged and preserved copy equals the original",
+          "pass": true,
+          "observed": {
+            "unchanged": true,
+            "exported": true
+          }
+        },
+        {
+          "desc": "all three CURRENT mutators refuse with cutover-active",
+          "pass": true,
+          "observed": [
+            "cutover-active",
+            "cutover-active",
+            "cutover-active"
+          ]
+        }
+      ],
+      "evidence": {
+        "log": [
+          {
+            "step": "preflight",
+            "ok": true
+          },
+          {
+            "step": "begin",
+            "ok": true,
+            "phase": "intent"
+          },
+          {
+            "step": "advance",
+            "ok": true,
+            "phase": "profiles-verified"
+          },
+          {
+            "step": "advance",
+            "ok": true,
+            "phase": "stores-verified"
+          },
+          {
+            "step": "advance",
+            "ok": true,
+            "phase": "committed"
+          }
+        ],
+        "inspect": "durable",
+        "legacyUnchanged": true,
+        "exported": true,
+        "save": "cutover-active",
+        "restore": "cutover-active",
+        "del": "cutover-active"
+      },
+      "notTested": [],
+      "durationMs": 178,
+      "status": "PASS"
+    },
+    {
+      "id": "S2-02",
+      "title": "Two tabs race to declare intent (real Web Locks)",
+      "expected": "exactly one tab writes the intent marker; the other is idempotent; one preserved copy",
+      "steps": [
+        "60 trials: fresh context, two tabs",
+        "both preflight the same source, then both begin() at the same wall-clock instant",
+        "every marker/preserved-copy getItem/setItem is traced with a microsecond wall-clock stamp (read-only logging wrapper around the real Storage methods; values are logged as null / length)"
+      ],
+      "checks": [
+        {
+          "desc": "every trial: both begin() calls ok",
+          "pass": true,
+          "observed": []
+        },
+        {
+          "desc": "every trial: exactly one tab reports changed:true",
+          "pass": false,
+          "observed": {
+            "1": 53,
+            "2": 7
+          }
+        },
+        {
+          "desc": "every trial: marker is intent and exactly one preserved copy exists",
+          "pass": true,
+          "observed": []
+        }
+      ],
+      "evidence": {
+        "trials": 60,
+        "changedTrueCountDistribution": {
+          "1": 53,
+          "2": 7
+        },
+        "doubleWriteTrials": 7,
+        "doubleWriteDiagnosis": [
+          {
+            "trial": 27,
+            "ra": {
+              "ok": true,
+              "changed": true
+            },
+            "rb": {
+              "ok": true,
+              "changed": true
+            },
+            "staleNullMarkerReadsAfterTheOtherTabsWrite": [
+              {
+                "readAfterFirstWriteByMs": 0.9
+              }
+            ],
+            "markerSetsPerTab": {
+              "a": 1,
+              "b": 1
+            },
+            "copyWrites": 2
+          },
+          {
+            "trial": 28,
+            "ra": {
+              "ok": true,
+              "changed": true
+            },
+            "rb": {
+              "ok": true,
+              "changed": true
+            },
+            "staleNullMarkerReadsAfterTheOtherTabsWrite": [
+              {
+                "readAfterFirstWriteByMs": 1.5
+              }
+            ],
+            "markerSetsPerTab": {
+              "a": 1,
+              "b": 1
+            },
+            "copyWrites": 1
+          },
+          {
+            "trial": 33,
+            "ra": {
+              "ok": true,
+              "changed": true
+            },
+            "rb": {
+              "ok": true,
+              "changed": true
+            },
+            "staleNullMarkerReadsAfterTheOtherTabsWrite": [
+              {
+                "readAfterFirstWriteByMs": 1.8
+              }
+            ],
+            "markerSetsPerTab": {
+              "a": 1,
+              "b": 1
+            },
+            "copyWrites": 1
+          },
+          {
+            "trial": 36,
+            "ra": {
+              "ok": true,
+              "changed": true
+            },
+            "rb": {
+              "ok": true,
+              "changed": true
+            },
+            "staleNullMarkerReadsAfterTheOtherTabsWrite": [
+              {
+                "readAfterFirstWriteByMs": 1.1
+              }
+            ],
+            "markerSetsPerTab": {
+              "a": 1,
+              "b": 1
+            },
+            "copyWrites": 2
+          }
+        ],
+        "sample": [
+          {
+            "ra": {
+              "ok": true,
+              "changed": true
+            },
+            "rb": {
+              "ok": true,
+              "changed": false
+            },
+            "phase": "intent",
+            "copies": 1,
+            "startedAt": 1794138470415
+          }
+        ]
+      },
+      "notTested": [],
+      "durationMs": 27701,
+      "status": "FAIL"
+    },
+    {
+      "id": "S2-03",
+      "title": "Three tabs resume() concurrently with real stages; an observer tab logs storage events",
+      "expected": "marker moves strictly forward, each phase value written once, all tabs converge on durable",
+      "steps": [
+        "15 trials: observer + 3 worker tabs",
+        "worker A reaches intent",
+        "all three workers call resume() at the same instant",
+        "observer records every marker value from storage events"
+      ],
+      "checks": [
+        {
+          "desc": "every resume() returned ok",
+          "pass": true,
+          "observed": []
+        },
+        {
+          "desc": "observed marker values (from the other tab) are strictly increasing phases, no repeat, no regression",
+          "pass": true,
+          "observed": []
+        },
+        {
+          "desc": "the last observed marker value is committed in every trial",
+          "pass": true,
+          "observed": [
+            "committed",
+            "committed",
+            "committed",
+            "committed",
+            "committed",
+            "committed",
+            "committed",
+            "committed",
+            "committed",
+            "committed",
+            "committed",
+            "committed",
+            "committed",
+            "committed",
+            "committed"
+          ]
+        },
+        {
+          "desc": "all three tabs report durable afterwards",
+          "pass": true,
+          "observed": []
+        }
+      ],
+      "evidence": {
+        "trials": 15,
+        "sample": [
+          {
+            "rs": [
+              {
+                "ok": true,
+                "changed": true,
+                "mode": "durable"
+              },
+              {
+                "ok": true,
+                "changed": true,
+                "mode": "durable"
+              },
+              {
+                "ok": true,
+                "changed": true,
+                "mode": "durable"
+              }
+            ],
+            "log": [
+              "intent",
+              "profiles-verified",
+              "stores-verified",
+              "committed"
+            ],
+            "modes": [
+              "durable",
+              "durable",
+              "durable"
+            ]
+          },
+          {
+            "rs": [
+              {
+                "ok": true,
+                "changed": true,
+                "mode": "durable"
+              },
+              {
+                "ok": true,
+                "changed": true,
+                "mode": "durable"
+              },
+              {
+                "ok": true,
+                "changed": true,
+                "mode": "durable"
+              }
+            ],
+            "log": [
+              "intent",
+              "profiles-verified",
+              "stores-verified",
+              "committed"
+            ],
+            "modes": [
+              "durable",
+              "durable",
+              "durable"
+            ]
+          }
+        ]
+      },
+      "notTested": [],
+      "durationMs": 11249,
+      "status": "PASS"
+    },
+    {
+      "id": "S2-04",
+      "title": "Web Locks mutual exclusion and visibility (real), with an unlocked control",
+      "expected": "with the lock no update is lost; query() shows 1 held + N pending",
+      "steps": [
+        "3 tabs x 30 read-yield-write increments of one counter key WITH withStorageLock",
+        "same WITHOUT a lock (control)",
+        "one tab holds the lock, two request it, a fourth tab calls navigator.locks.query()"
+      ],
+      "checks": [
+        {
+          "desc": "with the real lock the counter is exactly 90 (no lost update) and no request failed",
+          "pass": false,
+          "observed": {
+            "expected": 90,
+            "withLock": 56,
+            "withoutLockControl": 36,
+            "lostUpdatesWithoutLock": 54,
+            "lockFailures": [
+              0,
+              0,
+              0
+            ],
+            "query": {
+              "held": [
+                [
+                  "devmate-workspace-v1",
+                  "exclusive"
+                ]
+              ],
+              "pending": [
+                [
+                  "devmate-workspace-v1",
+                  "exclusive"
+                ],
+                [
+                  "devmate-workspace-v1",
+                  "exclusive"
+                ]
+              ]
+            }
+          }
+        },
+        {
+          "desc": "navigator.locks.query() shows one held and two pending exclusive requests for the storage lock",
+          "pass": true,
+          "observed": {
+            "held": [
+              [
+                "devmate-workspace-v1",
+                "exclusive"
+              ]
+            ],
+            "pending": [
+              [
+                "devmate-workspace-v1",
+                "exclusive"
+              ],
+              [
+                "devmate-workspace-v1",
+                "exclusive"
+              ]
+            ]
+          }
+        }
+      ],
+      "evidence": {
+        "expected": 90,
+        "withLock": 56,
+        "withoutLockControl": 36,
+        "lostUpdatesWithoutLock": 54,
+        "lockFailures": [
+          0,
+          0,
+          0
+        ],
+        "query": {
+          "held": [
+            [
+              "devmate-workspace-v1",
+              "exclusive"
+            ]
+          ],
+          "pending": [
+            [
+              "devmate-workspace-v1",
+              "exclusive"
+            ],
+            [
+              "devmate-workspace-v1",
+              "exclusive"
+            ]
+          ]
+        }
+      },
+      "notTested": [
+        "The unlocked control is informational: its lost-update count varies by run and is not an assertion."
+      ],
+      "durationMs": 1150,
+      "status": "FAIL"
+    },
+    {
+      "id": "S2-05",
+      "title": "Lock timeout, then holder death releases the lock (real tabs)",
+      "expected": "begin() gives lock-timeout after ~8 s and writes nothing; closing the holder lets the next attempt succeed",
+      "steps": [
+        "tab H holds the storage lock",
+        "tab C preflights and calls begin() (default 8000 ms lock timeout)",
+        "close H",
+        "C calls begin() again"
+      ],
+      "checks": [
+        {
+          "desc": "while held: lock-timeout after roughly 8 s (7.5-9.5 s)",
+          "pass": true,
+          "observed": {
+            "r": {
+              "ok": false,
+              "reason": "lock-timeout"
+            },
+            "waitedMs": 8002
+          }
+        },
+        {
+          "desc": "the timed-out begin() wrote neither marker nor preserved copy",
+          "pass": true,
+          "observed": {
+            "whileHeld": {
+              "r": {
+                "ok": false,
+                "reason": "lock-timeout"
+              },
+              "waitedMs": 8002
+            },
+            "afterHolderClosed": {
+              "r": {
+                "ok": true,
+                "changed": true
+              },
+              "waitedMs": 1,
+              "q": 0
+            },
+            "markerAfterTimeout": null,
+            "copiesAfterTimeout": 0
+          }
+        },
+        {
+          "desc": "after the holder tab closed, begin() succeeds immediately (< 1 s) and nothing is left held",
+          "pass": true,
+          "observed": {
+            "r": {
+              "ok": true,
+              "changed": true
+            },
+            "waitedMs": 1,
+            "q": 0
+          }
+        }
+      ],
+      "evidence": {
+        "whileHeld": {
+          "r": {
+            "ok": false,
+            "reason": "lock-timeout"
+          },
+          "waitedMs": 8002
+        },
+        "afterHolderClosed": {
+          "r": {
+            "ok": true,
+            "changed": true
+          },
+          "waitedMs": 1,
+          "q": 0
+        },
+        "markerAfterTimeout": null,
+        "copiesAfterTimeout": 0
+      },
+      "notTested": [],
+      "durationMs": 8493,
+      "status": "PASS"
+    },
+    {
+      "id": "S2-06",
+      "title": "Real Chromium localStorage quota exhaustion at each controller write point",
+      "expected": "every quota failure is reported, nothing is silently half-advanced, and recovery works once space returns",
+      "steps": [
+        "(a) storage full at begin()",
+        "(b) room for the preserved copy but not the marker",
+        "(c) marker written, then storage full during the real stage writes",
+        "(d) room for stages (trivial) but not for the longer next-phase marker; then exactly enough",
+        "(e) the OLD writer on a full storage"
+      ],
+      "checks": [
+        {
+          "desc": "(a) begin() on a full storage fails with preserve-quota and writes no marker/copy",
+          "pass": true,
+          "observed": {
+            "capacityWhenFull": 6,
+            "begin": {
+              "ok": false,
+              "reason": "preserve-quota"
+            },
+            "cutoverKeysAfterFailure": [],
+            "stillLegacy": true,
+            "retry": {
+              "ok": true,
+              "changed": true
+            },
+            "phaseAfterRetry": "intent"
+          }
+        },
+        {
+          "desc": "(a) after space is freed the same plan succeeds (intent)",
+          "pass": true,
+          "observed": {
+            "capacityWhenFull": 6,
+            "begin": {
+              "ok": false,
+              "reason": "preserve-quota"
+            },
+            "cutoverKeysAfterFailure": [],
+            "stillLegacy": true,
+            "retry": {
+              "ok": true,
+              "changed": true
+            },
+            "phaseAfterRetry": "intent"
+          }
+        },
+        {
+          "desc": "(e) the old writer, filling storage itself so its new payload cannot fit, reports a failure and leaves the workspace byte-identical",
+          "pass": true,
+          "observed": {
+            "ok": false,
+            "reason": "quota",
+            "unchanged": true
+          }
+        },
+        {
+          "desc": "(b) begin() fails with marker-write-failed; the preserved copy exists, no marker; state is still legacy",
+          "pass": true,
+          "observed": {
+            "copyNeed": 173,
+            "capacityWhenTried": 178,
+            "begin": {
+              "ok": false,
+              "reason": "marker-write-failed",
+              "message": "The cutover marker could not be written: Failed to execute 'setItem' on 'Storage': Setting the value of 'devmate-cutover-v1:workspace' exceeded the quota."
+            },
+            "cutoverKeysAfterFailure": [
+              "devmate-cutover-v1:source:fnv1a32-23c9c369-130"
+            ],
+            "stateAfterFailure": "legacy",
+            "retry": {
+              "ok": true,
+              "changed": true
+            },
+            "phaseAfterRetry": "intent"
+          }
+        },
+        {
+          "desc": "(b) retry after freeing space is idempotent for the existing copy and reaches intent",
+          "pass": true,
+          "observed": {
+            "copyNeed": 173,
+            "capacityWhenTried": 178,
+            "begin": {
+              "ok": false,
+              "reason": "marker-write-failed",
+              "message": "The cutover marker could not be written: Failed to execute 'setItem' on 'Storage': Setting the value of 'devmate-cutover-v1:workspace' exceeded the quota."
+            },
+            "cutoverKeysAfterFailure": [
+              "devmate-cutover-v1:source:fnv1a32-23c9c369-130"
+            ],
+            "stateAfterFailure": "legacy",
+            "retry": {
+              "ok": true,
+              "changed": true
+            },
+            "phaseAfterRetry": "intent"
+          }
+        },
+        {
+          "desc": "(c) advance() reports stage-failed and the marker does not move",
+          "pass": true,
+          "observed": {
+            "capacityWhenTried": 5,
+            "advance": {
+              "ok": false,
+              "reason": "stage-failed",
+              "stageReason": "write-failed"
+            },
+            "markerAfterFailure": "intent",
+            "newKeysLeftByFailedStage": [],
+            "resume": {
+              "ok": true,
+              "mode": "durable"
+            },
+            "finalPhase": "committed",
+            "inspect": "durable"
+          }
+        },
+        {
+          "desc": "(c) after space returns, resume() reaches committed and inspect() is durable",
+          "pass": true,
+          "observed": {
+            "capacityWhenTried": 5,
+            "advance": {
+              "ok": false,
+              "reason": "stage-failed",
+              "stageReason": "write-failed"
+            },
+            "markerAfterFailure": "intent",
+            "newKeysLeftByFailedStage": [],
+            "resume": {
+              "ok": true,
+              "mode": "durable"
+            },
+            "finalPhase": "committed",
+            "inspect": "durable"
+          }
+        },
+        {
+          "desc": "(d) with less space than the growth (11 chars, tried 5) advance fails with marker-write-failed and the marker bytes are unchanged",
+          "pass": true,
+          "observed": {
+            "markerGrowthChars": 11,
+            "capacityWhenTried": 5,
+            "advance": {
+              "ok": false,
+              "reason": "marker-write-failed"
+            },
+            "markerUnchanged": true,
+            "phase": "intent",
+            "inspect": "recovery"
+          }
+        },
+        {
+          "desc": "(d) with exactly the growth available (11 chars, tried 11) the advance succeeds",
+          "pass": true,
+          "observed": {
+            "markerGrowthChars": 11,
+            "capacityWhenTried": 11,
+            "advance": {
+              "ok": true
+            },
+            "markerUnchanged": false,
+            "phase": "profiles-verified",
+            "inspect": "recovery"
+          }
+        }
+      ],
+      "evidence": {
+        "a_fullAtBegin": {
+          "capacityWhenFull": 6,
+          "begin": {
+            "ok": false,
+            "reason": "preserve-quota"
+          },
+          "cutoverKeysAfterFailure": [],
+          "stillLegacy": true,
+          "retry": {
+            "ok": true,
+            "changed": true
+          },
+          "phaseAfterRetry": "intent"
+        },
+        "e_crossTab": {
+          "oldTabCanStore20KBAfterOtherTabFilledStorage": false
+        },
+        "e_oldWriterOnFullStorage": {
+          "ok": false,
+          "reason": "quota",
+          "unchanged": true
+        },
+        "b_copyFitsMarkerDoesNot": {
+          "copyNeed": 173,
+          "capacityWhenTried": 178,
+          "begin": {
+            "ok": false,
+            "reason": "marker-write-failed",
+            "message": "The cutover marker could not be written: Failed to execute 'setItem' on 'Storage': Setting the value of 'devmate-cutover-v1:workspace' exceeded the quota."
+          },
+          "cutoverKeysAfterFailure": [
+            "devmate-cutover-v1:source:fnv1a32-23c9c369-130"
+          ],
+          "stateAfterFailure": "legacy",
+          "retry": {
+            "ok": true,
+            "changed": true
+          },
+          "phaseAfterRetry": "intent"
+        },
+        "c_quotaDuringRealStages": {
+          "capacityWhenTried": 5,
+          "advance": {
+            "ok": false,
+            "reason": "stage-failed",
+            "stageReason": "write-failed"
+          },
+          "markerAfterFailure": "intent",
+          "newKeysLeftByFailedStage": [],
+          "resume": {
+            "ok": true,
+            "mode": "durable"
+          },
+          "finalPhase": "committed",
+          "inspect": "durable"
+        },
+        "d_nextPhaseMarker_fails": {
+          "markerGrowthChars": 11,
+          "capacityWhenTried": 5,
+          "advance": {
+            "ok": false,
+            "reason": "marker-write-failed"
+          },
+          "markerUnchanged": true,
+          "phase": "intent",
+          "inspect": "recovery"
+        },
+        "d_nextPhaseMarker_succeeds": {
+          "markerGrowthChars": 11,
+          "capacityWhenTried": 11,
+          "advance": {
+            "ok": true
+          },
+          "markerUnchanged": false,
+          "phase": "profiles-verified",
+          "inspect": "recovery"
+        }
+      },
+      "notTested": [
+        "Quota behaviour of other browsers; the quota size is Chromium's, measured here by probing, not assumed."
+      ],
+      "durationMs": 2202,
+      "status": "PASS"
+    },
+    {
+      "id": "S2-07",
+      "title": "Storage genuinely blocked (sandboxed opaque-origin iframe: real SecurityError)",
+      "expected": "controller and writers report unavailability and never throw; nothing is written",
+      "steps": [
+        "load the real bundles inside <iframe sandbox=\"allow-scripts\">",
+        "touch localStorage and navigator.locks",
+        "run controller, current writer and old writers with default storage"
+      ],
+      "checks": [
+        {
+          "desc": "localStorage access really throws SecurityError in this frame",
+          "pass": true,
+          "observed": {
+            "localStorageError": "SecurityError",
+            "locks": "object",
+            "inspect": {
+              "mode": "indeterminate",
+              "reason": "unreadable",
+              "message": "Browser storage cannot be inspected, so the cutover state is unknown."
+            },
+            "preflight": "storage-unavailable",
+            "begin": "storage-unavailable",
+            "currentSave": "unavailable",
+            "oldSave": "unavailable",
+            "oldSaveLocked": "lock-error"
+          }
+        },
+        {
+          "desc": "controller: inspect() indeterminate/unreadable, begin() storage-unavailable, nothing thrown",
+          "pass": true,
+          "observed": {
+            "localStorageError": "SecurityError",
+            "locks": "object",
+            "inspect": {
+              "mode": "indeterminate",
+              "reason": "unreadable",
+              "message": "Browser storage cannot be inspected, so the cutover state is unknown."
+            },
+            "preflight": "storage-unavailable",
+            "begin": "storage-unavailable",
+            "currentSave": "unavailable",
+            "oldSave": "unavailable",
+            "oldSaveLocked": "lock-error"
+          }
+        },
+        {
+          "desc": "current and old writers return failures instead of throwing",
+          "pass": true,
+          "observed": {
+            "localStorageError": "SecurityError",
+            "locks": "object",
+            "inspect": {
+              "mode": "indeterminate",
+              "reason": "unreadable",
+              "message": "Browser storage cannot be inspected, so the cutover state is unknown."
+            },
+            "preflight": "storage-unavailable",
+            "begin": "storage-unavailable",
+            "currentSave": "unavailable",
+            "oldSave": "unavailable",
+            "oldSaveLocked": "lock-error"
+          }
+        }
+      ],
+      "evidence": {
+        "localStorageError": "SecurityError",
+        "locks": "object",
+        "inspect": {
+          "mode": "indeterminate",
+          "reason": "unreadable",
+          "message": "Browser storage cannot be inspected, so the cutover state is unknown."
+        },
+        "preflight": "storage-unavailable",
+        "begin": "storage-unavailable",
+        "currentSave": "unavailable",
+        "oldSave": "unavailable",
+        "oldSaveLocked": "lock-error"
+      },
+      "notTested": [],
+      "durationMs": 482,
+      "status": "PASS"
+    },
+    {
+      "id": "S2-08",
+      "title": "Marker read failure, write failure and write-then-unreadable (FAULT INJECTION at the Storage API boundary)",
+      "expected": "fail closed, never write a wrong marker, never report success that did not happen; recovery on retry",
+      "steps": [
+        "page-level patch of Storage.prototype getItem/setItem that throws ONLY for the marker key; the real controller and real current writers run unmodified",
+        "5 sub-cases"
+      ],
+      "checks": [
+        {
+          "desc": "1: marker unreadable -> inspect indeterminate/unreadable; begin() refuses (marker-invalid); no marker, no copy, legacy untouched",
+          "pass": true,
+          "observed": {
+            "secInspect": {
+              "mode": "indeterminate",
+              "reason": "unreadable",
+              "message": "The cutover marker could not be read: injected marker read failure"
+            },
+            "secPreflight": "marker-present",
+            "secBegin": "marker-invalid",
+            "secSave": "unavailable",
+            "otherSave": "cutover-indeterminate",
+            "otherRestore": "cutover-indeterminate",
+            "otherDelete": "cutover-indeterminate",
+            "markerWritten": null,
+            "legacyUnchanged": true,
+            "copies": 0
+          }
+        },
+        {
+          "desc": "1: the CURRENT write barrier fails closed (SecurityError -> unavailable, other -> cutover-indeterminate; restore/delete too)",
+          "pass": true,
+          "observed": {
+            "secInspect": {
+              "mode": "indeterminate",
+              "reason": "unreadable",
+              "message": "The cutover marker could not be read: injected marker read failure"
+            },
+            "secPreflight": "marker-present",
+            "secBegin": "marker-invalid",
+            "secSave": "unavailable",
+            "otherSave": "cutover-indeterminate",
+            "otherRestore": "cutover-indeterminate",
+            "otherDelete": "cutover-indeterminate",
+            "markerWritten": null,
+            "legacyUnchanged": true,
+            "copies": 0
+          }
+        },
+        {
+          "desc": "2: begin() reports marker-write-failed, no marker exists, one preserved copy remains, state legacy",
+          "pass": true,
+          "observed": {
+            "begin": {
+              "ok": false,
+              "reason": "marker-write-failed"
+            },
+            "marker": null,
+            "copies": 1,
+            "mode": "legacy",
+            "retry": {
+              "ok": true,
+              "changed": true
+            },
+            "phase": "intent"
+          }
+        },
+        {
+          "desc": "2: retry after the fault clears reaches intent without duplicating the copy",
+          "pass": true,
+          "observed": {
+            "begin": {
+              "ok": false,
+              "reason": "marker-write-failed"
+            },
+            "marker": null,
+            "copies": 1,
+            "mode": "legacy",
+            "retry": {
+              "ok": true,
+              "changed": true
+            },
+            "phase": "intent"
+          }
+        },
+        {
+          "desc": "3: begin() reports marker-verify-failed although the marker IS stored (the report is conservative, not wrong in the dangerous direction)",
+          "pass": true,
+          "observed": {
+            "begin": {
+              "ok": false,
+              "reason": "marker-verify-failed"
+            },
+            "markerReallyStored": true,
+            "inspect": "recovery",
+            "again": {
+              "ok": true,
+              "changed": false
+            }
+          }
+        },
+        {
+          "desc": "3: once readable, inspect() = recovery and a repeated begin() is idempotent (changed:false)",
+          "pass": true,
+          "observed": {
+            "begin": {
+              "ok": false,
+              "reason": "marker-verify-failed"
+            },
+            "markerReallyStored": true,
+            "inspect": "recovery",
+            "again": {
+              "ok": true,
+              "changed": false
+            }
+          }
+        },
+        {
+          "desc": "4: second marker read (after the stage) fails -> marker-invalid, marker did not advance, stage side effects remain",
+          "pass": true,
+          "observed": {
+            "advance": {
+              "ok": false,
+              "reason": "marker-invalid"
+            },
+            "phase": "intent",
+            "newKeysFromStage": 5,
+            "retry": {
+              "ok": true,
+              "changed": true
+            },
+            "phaseAfterRetry": "profiles-verified"
+          }
+        },
+        {
+          "desc": "4: the retry completes the phase (stage is idempotent)",
+          "pass": true,
+          "observed": {
+            "advance": {
+              "ok": false,
+              "reason": "marker-invalid"
+            },
+            "phase": "intent",
+            "newKeysFromStage": 5,
+            "retry": {
+              "ok": true,
+              "changed": true
+            },
+            "phaseAfterRetry": "profiles-verified"
+          }
+        },
+        {
+          "desc": "5: advance() reports marker-write-failed; marker bytes unchanged; inspect() = recovery",
+          "pass": true,
+          "observed": {
+            "advance": {
+              "ok": false,
+              "reason": "marker-write-failed"
+            },
+            "markerUnchanged": true,
+            "inspect": "recovery",
+            "retry": {
+              "ok": true
+            },
+            "phaseAfterRetry": "profiles-verified"
+          }
+        },
+        {
+          "desc": "5: retry after the fault clears advances",
+          "pass": true,
+          "observed": {
+            "advance": {
+              "ok": false,
+              "reason": "marker-write-failed"
+            },
+            "markerUnchanged": true,
+            "inspect": "recovery",
+            "retry": {
+              "ok": true
+            },
+            "phaseAfterRetry": "profiles-verified"
+          }
+        }
+      ],
+      "evidence": {
+        "case1_markerReadFails": {
+          "secInspect": {
+            "mode": "indeterminate",
+            "reason": "unreadable",
+            "message": "The cutover marker could not be read: injected marker read failure"
+          },
+          "secPreflight": "marker-present",
+          "secBegin": "marker-invalid",
+          "secSave": "unavailable",
+          "otherSave": "cutover-indeterminate",
+          "otherRestore": "cutover-indeterminate",
+          "otherDelete": "cutover-indeterminate",
+          "markerWritten": null,
+          "legacyUnchanged": true,
+          "copies": 0
+        },
+        "case2_markerWriteFails": {
+          "begin": {
+            "ok": false,
+            "reason": "marker-write-failed"
+          },
+          "marker": null,
+          "copies": 1,
+          "mode": "legacy",
+          "retry": {
+            "ok": true,
+            "changed": true
+          },
+          "phase": "intent"
+        },
+        "case3_writeSucceedsReadBackFails": {
+          "begin": {
+            "ok": false,
+            "reason": "marker-verify-failed"
+          },
+          "markerReallyStored": true,
+          "inspect": "recovery",
+          "again": {
+            "ok": true,
+            "changed": false
+          }
+        },
+        "case4_markerReadFailsAfterStage": {
+          "advance": {
+            "ok": false,
+            "reason": "marker-invalid"
+          },
+          "phase": "intent",
+          "newKeysFromStage": 5,
+          "retry": {
+            "ok": true,
+            "changed": true
+          },
+          "phaseAfterRetry": "profiles-verified"
+        },
+        "case5_markerWriteFailsAtAdvance": {
+          "advance": {
+            "ok": false,
+            "reason": "marker-write-failed"
+          },
+          "markerUnchanged": true,
+          "inspect": "recovery",
+          "retry": {
+            "ok": true
+          },
+          "phaseAfterRetry": "profiles-verified"
+        }
+      },
+      "notTested": [
+        "These faults are injected at Storage.prototype for ONE key; the genuine whole-storage failures are S2-06 (quota) and S2-07 (SecurityError)."
+      ],
+      "durationMs": 642,
+      "status": "PASS"
+    },
+    {
+      "id": "S2-09",
+      "title": "Real browser restart at every lifecycle phase (persistent profile, clean exit, relaunch)",
+      "expected": "all storage bytes survive the restart; inspect() reports the phase's state; resume() completes to committed",
+      "steps": [
+        "for each of: no marker, intent, profiles-verified, stores-verified, committed",
+        "launch persistent context, seed, drive the real controller to the phase",
+        "dump all localStorage, close the browser, relaunch with the same profile directory",
+        "dump again and compare; inspect(); resume()"
+      ],
+      "checks": [
+        {
+          "desc": "every phase: the complete localStorage dump is byte-identical after the restart",
+          "pass": true,
+          "observed": []
+        },
+        {
+          "desc": "every phase: inspect() after the restart equals the expected mode (legacy/recovery/recovery/recovery/durable)",
+          "pass": true,
+          "observed": [
+            [
+              "legacy",
+              "legacy"
+            ],
+            [
+              "intent",
+              "recovery"
+            ],
+            [
+              "profiles-verified",
+              "recovery"
+            ],
+            [
+              "stores-verified",
+              "recovery"
+            ],
+            [
+              "committed",
+              "durable"
+            ]
+          ]
+        },
+        {
+          "desc": "every phase: resume() reaches committed; legacy bytes unchanged; preserved copy equals the original",
+          "pass": true,
+          "observed": [
+            {
+              "phase": "legacy",
+              "storageKeys": 1,
+              "identicalAfterRestart": true,
+              "modeAfterRestart": "legacy",
+              "preflight": true,
+              "resume": {
+                "ok": true,
+                "mode": "durable"
+              },
+              "finalPhase": "committed",
+              "legacyUnchanged": true,
+              "exportedEqualsOriginal": true,
+              "currentWriterAfterCommit": "cutover-active"
+            },
+            {
+              "phase": "intent",
+              "storageKeys": 3,
+              "identicalAfterRestart": true,
+              "modeAfterRestart": "recovery",
+              "preflight": null,
+              "resume": {
+                "ok": true,
+                "mode": "durable"
+              },
+              "finalPhase": "committed",
+              "legacyUnchanged": true,
+              "exportedEqualsOriginal": true,
+              "currentWriterAfterCommit": "cutover-active"
+            },
+            {
+              "phase": "profiles-verified",
+              "storageKeys": 8,
+              "identicalAfterRestart": true,
+              "modeAfterRestart": "recovery",
+              "preflight": null,
+              "resume": {
+                "ok": true,
+                "mode": "durable"
+              },
+              "finalPhase": "committed",
+              "legacyUnchanged": true,
+              "exportedEqualsOriginal": true,
+              "currentWriterAfterCommit": "cutover-active"
+            },
+            {
+              "phase": "stores-verified",
+              "storageKeys": 8,
+              "identicalAfterRestart": true,
+              "modeAfterRestart": "recovery",
+              "preflight": null,
+              "resume": {
+                "ok": true,
+                "mode": "durable"
+              },
+              "finalPhase": "committed",
+              "legacyUnchanged": true,
+              "exportedEqualsOriginal": true,
+              "currentWriterAfterCommit": "cutover-active"
+            },
+            {
+              "phase": "committed",
+              "storageKeys": 8,
+              "identicalAfterRestart": true,
+              "modeAfterRestart": "durable",
+              "preflight": null,
+              "resume": {
+                "ok": true,
+                "mode": "durable"
+              },
+              "finalPhase": "committed",
+              "legacyUnchanged": true,
+              "exportedEqualsOriginal": true,
+              "currentWriterAfterCommit": "cutover-active"
+            }
+          ]
+        },
+        {
+          "desc": "after restart the current writers stay blocked once a marker exists",
+          "pass": true,
+          "observed": [
+            [
+              "legacy",
+              "cutover-active"
+            ],
+            [
+              "intent",
+              "cutover-active"
+            ],
+            [
+              "profiles-verified",
+              "cutover-active"
+            ],
+            [
+              "stores-verified",
+              "cutover-active"
+            ],
+            [
+              "committed",
+              "cutover-active"
+            ]
+          ]
+        }
+      ],
+      "evidence": {
+        "rows": [
+          {
+            "phase": "legacy",
+            "storageKeys": 1,
+            "identicalAfterRestart": true,
+            "modeAfterRestart": "legacy",
+            "preflight": true,
+            "resume": {
+              "ok": true,
+              "mode": "durable"
+            },
+            "finalPhase": "committed",
+            "legacyUnchanged": true,
+            "exportedEqualsOriginal": true,
+            "currentWriterAfterCommit": "cutover-active"
+          },
+          {
+            "phase": "intent",
+            "storageKeys": 3,
+            "identicalAfterRestart": true,
+            "modeAfterRestart": "recovery",
+            "preflight": null,
+            "resume": {
+              "ok": true,
+              "mode": "durable"
+            },
+            "finalPhase": "committed",
+            "legacyUnchanged": true,
+            "exportedEqualsOriginal": true,
+            "currentWriterAfterCommit": "cutover-active"
+          },
+          {
+            "phase": "profiles-verified",
+            "storageKeys": 8,
+            "identicalAfterRestart": true,
+            "modeAfterRestart": "recovery",
+            "preflight": null,
+            "resume": {
+              "ok": true,
+              "mode": "durable"
+            },
+            "finalPhase": "committed",
+            "legacyUnchanged": true,
+            "exportedEqualsOriginal": true,
+            "currentWriterAfterCommit": "cutover-active"
+          },
+          {
+            "phase": "stores-verified",
+            "storageKeys": 8,
+            "identicalAfterRestart": true,
+            "modeAfterRestart": "recovery",
+            "preflight": null,
+            "resume": {
+              "ok": true,
+              "mode": "durable"
+            },
+            "finalPhase": "committed",
+            "legacyUnchanged": true,
+            "exportedEqualsOriginal": true,
+            "currentWriterAfterCommit": "cutover-active"
+          },
+          {
+            "phase": "committed",
+            "storageKeys": 8,
+            "identicalAfterRestart": true,
+            "modeAfterRestart": "durable",
+            "preflight": null,
+            "resume": {
+              "ok": true,
+              "mode": "durable"
+            },
+            "finalPhase": "committed",
+            "legacyUnchanged": true,
+            "exportedEqualsOriginal": true,
+            "currentWriterAfterCommit": "cutover-active"
+          }
+        ]
+      },
+      "notTested": [
+        "Clean browser exit only; abrupt kill is S2-10. The real App UI after restart is not run here (see report: React 19 on this host, the repository pins 18)."
+      ],
+      "durationMs": 4706,
+      "status": "PASS"
+    },
+    {
+      "id": "S2-10",
+      "title": "Process crash (SIGKILL) after cutover writes, then relaunch: what survives, and is it ever inconsistent?",
+      "expected": "the pre-crash (flushed) state always survives; recent writes may be lost but never half-lost; after relaunch resume() always reaches committed",
+      "steps": [
+        "profile 1: seed the legacy workspace (and, for 'resume' trials, drive to intent) and exit the browser CLEANLY so that state is flushed",
+        "profile 2 relaunch: run the real controller call (begin, or resume), wait D ms after it RETURNED, SIGKILL every process of the profile",
+        "profile 3 relaunch: dump, inspect(), then resume()",
+        "separate case: kill while advance() holds the lock inside a stage that never returns"
+      ],
+      "checks": [
+        {
+          "desc": "every trial really killed the browser (>=1 process matched)",
+          "pass": true,
+          "observed": [
+            9,
+            9,
+            9,
+            9,
+            9,
+            9,
+            9,
+            9,
+            9,
+            9,
+            9,
+            9,
+            9,
+            9,
+            9,
+            9,
+            9,
+            9,
+            9,
+            9,
+            9,
+            9
+          ]
+        },
+        {
+          "desc": "the flushed baseline (legacy workspace) survives every crash byte-identical",
+          "pass": true,
+          "observed": []
+        },
+        {
+          "desc": "never half-written: a surviving marker always has its preserved copy (no marker-without-copy)",
+          "pass": true,
+          "observed": []
+        },
+        {
+          "desc": "never ahead of its data: a surviving phase beyond intent always has the migrated profile data",
+          "pass": true,
+          "observed": []
+        },
+        {
+          "desc": "after every crash the state is defined (legacy or recovery, never indeterminate), no lock is left held, and resume()/begin completes to committed",
+          "pass": true,
+          "observed": []
+        },
+        {
+          "desc": "mid-stage crash: the lock was held when killed; after relaunch it is free, state is recovery, resume() reaches committed/durable",
+          "pass": true,
+          "observed": {
+            "heldBeforeKill": [
+              "devmate-workspace-v1"
+            ],
+            "killed": 9,
+            "mode": "recovery",
+            "locksHeldAfterRelaunch": 0,
+            "resumeOk": true,
+            "final": "committed",
+            "stateAfter": "durable"
+          }
+        }
+      ],
+      "evidence": {
+        "beginThenKill": {
+          "rows": [
+            {
+              "act": "begin",
+              "delayMs": 0,
+              "killedProcesses": 9,
+              "legacySurvived": true,
+              "markerSurvived": false,
+              "preservedCopySurvived": false,
+              "mode": "legacy",
+              "reason": null,
+              "phaseBefore": null,
+              "profileDataPresent": false,
+              "locksHeldAfterRelaunch": 0,
+              "resumeOk": false,
+              "final": null
+            },
+            {
+              "act": "begin",
+              "delayMs": 0,
+              "killedProcesses": 9,
+              "legacySurvived": true,
+              "markerSurvived": false,
+              "preservedCopySurvived": false,
+              "mode": "legacy",
+              "reason": null,
+              "phaseBefore": null,
+              "profileDataPresent": false,
+              "locksHeldAfterRelaunch": 0,
+              "resumeOk": false,
+              "final": null
+            },
+            {
+              "act": "begin",
+              "delayMs": 1000,
+              "killedProcesses": 9,
+              "legacySurvived": true,
+              "markerSurvived": false,
+              "preservedCopySurvived": false,
+              "mode": "legacy",
+              "reason": null,
+              "phaseBefore": null,
+              "profileDataPresent": false,
+              "locksHeldAfterRelaunch": 0,
+              "resumeOk": false,
+              "final": null
+            },
+            {
+              "act": "begin",
+              "delayMs": 1000,
+              "killedProcesses": 9,
+              "legacySurvived": true,
+              "markerSurvived": false,
+              "preservedCopySurvived": false,
+              "mode": "legacy",
+              "reason": null,
+              "phaseBefore": null,
+              "profileDataPresent": false,
+              "locksHeldAfterRelaunch": 0,
+              "resumeOk": false,
+              "final": null
+            },
+            {
+              "act": "begin",
+              "delayMs": 2000,
+              "killedProcesses": 9,
+              "legacySurvived": true,
+              "markerSurvived": false,
+              "preservedCopySurvived": false,
+              "mode": "legacy",
+              "reason": null,
+              "phaseBefore": null,
+              "profileDataPresent": false,
+              "locksHeldAfterRelaunch": 0,
+              "resumeOk": false,
+              "final": null
+            },
+            {
+              "act": "begin",
+              "delayMs": 2000,
+              "killedProcesses": 9,
+              "legacySurvived": true,
+              "markerSurvived": false,
+              "preservedCopySurvived": false,
+              "mode": "legacy",
+              "reason": null,
+              "phaseBefore": null,
+              "profileDataPresent": false,
+              "locksHeldAfterRelaunch": 0,
+              "resumeOk": false,
+              "final": null
+            },
+            {
+              "act": "begin",
+              "delayMs": 3000,
+              "killedProcesses": 9,
+              "legacySurvived": true,
+              "markerSurvived": false,
+              "preservedCopySurvived": false,
+              "mode": "legacy",
+              "reason": null,
+              "phaseBefore": null,
+              "profileDataPresent": false,
+              "locksHeldAfterRelaunch": 0,
+              "resumeOk": false,
+              "final": null
+            },
+            {
+              "act": "begin",
+              "delayMs": 3000,
+              "killedProcesses": 9,
+              "legacySurvived": true,
+              "markerSurvived": false,
+              "preservedCopySurvived": false,
+              "mode": "legacy",
+              "reason": null,
+              "phaseBefore": null,
+              "profileDataPresent": false,
+              "locksHeldAfterRelaunch": 0,
+              "resumeOk": false,
+              "final": null
+            },
+            {
+              "act": "begin",
+              "delayMs": 4000,
+              "killedProcesses": 9,
+              "legacySurvived": true,
+              "markerSurvived": false,
+              "preservedCopySurvived": false,
+              "mode": "legacy",
+              "reason": null,
+              "phaseBefore": null,
+              "profileDataPresent": false,
+              "locksHeldAfterRelaunch": 0,
+              "resumeOk": false,
+              "final": null
+            },
+            {
+              "act": "begin",
+              "delayMs": 4000,
+              "killedProcesses": 9,
+              "legacySurvived": true,
+              "markerSurvived": false,
+              "preservedCopySurvived": false,
+              "mode": "legacy",
+              "reason": null,
+              "phaseBefore": null,
+              "profileDataPresent": false,
+              "locksHeldAfterRelaunch": 0,
+              "resumeOk": false,
+              "final": null
+            },
+            {
+              "act": "begin",
+              "delayMs": 5000,
+              "killedProcesses": 9,
+              "legacySurvived": true,
+              "markerSurvived": true,
+              "preservedCopySurvived": true,
+              "mode": "recovery",
+              "reason": null,
+              "phaseBefore": "intent",
+              "profileDataPresent": false,
+              "locksHeldAfterRelaunch": 0,
+              "resumeOk": true,
+              "final": "committed"
+            },
+            {
+              "act": "begin",
+              "delayMs": 5000,
+              "killedProcesses": 9,
+              "legacySurvived": true,
+              "markerSurvived": true,
+              "preservedCopySurvived": true,
+              "mode": "recovery",
+              "reason": null,
+              "phaseBefore": "intent",
+              "profileDataPresent": false,
+              "locksHeldAfterRelaunch": 0,
+              "resumeOk": true,
+              "final": "committed"
+            },
+            {
+              "act": "begin",
+              "delayMs": 6000,
+              "killedProcesses": 9,
+              "legacySurvived": true,
+              "markerSurvived": true,
+              "preservedCopySurvived": true,
+              "mode": "recovery",
+              "reason": null,
+              "phaseBefore": "intent",
+              "profileDataPresent": false,
+              "locksHeldAfterRelaunch": 0,
+              "resumeOk": true,
+              "final": "committed"
+            },
+            {
+              "act": "begin",
+              "delayMs": 6000,
+              "killedProcesses": 9,
+              "legacySurvived": true,
+              "markerSurvived": true,
+              "preservedCopySurvived": true,
+              "mode": "recovery",
+              "reason": null,
+              "phaseBefore": "intent",
+              "profileDataPresent": false,
+              "locksHeldAfterRelaunch": 0,
+              "resumeOk": true,
+              "final": "committed"
+            }
+          ],
+          "markerSurvivalByDelayMs": {
+            "0": "lost/lost",
+            "1000": "lost/lost",
+            "2000": "lost/lost",
+            "3000": "lost/lost",
+            "4000": "lost/lost",
+            "5000": "kept/kept",
+            "6000": "kept/kept"
+          }
+        },
+        "resumeThenKill": {
+          "rows": [
+            {
+              "act": "resume",
+              "delayMs": 0,
+              "killedProcesses": 9,
+              "legacySurvived": true,
+              "markerSurvived": true,
+              "preservedCopySurvived": true,
+              "mode": "recovery",
+              "reason": null,
+              "phaseBefore": "intent",
+              "profileDataPresent": false,
+              "locksHeldAfterRelaunch": 0,
+              "resumeOk": true,
+              "final": "committed"
+            },
+            {
+              "act": "resume",
+              "delayMs": 0,
+              "killedProcesses": 9,
+              "legacySurvived": true,
+              "markerSurvived": true,
+              "preservedCopySurvived": true,
+              "mode": "recovery",
+              "reason": null,
+              "phaseBefore": "intent",
+              "profileDataPresent": false,
+              "locksHeldAfterRelaunch": 0,
+              "resumeOk": true,
+              "final": "committed"
+            },
+            {
+              "act": "resume",
+              "delayMs": 2000,
+              "killedProcesses": 9,
+              "legacySurvived": true,
+              "markerSurvived": true,
+              "preservedCopySurvived": true,
+              "mode": "recovery",
+              "reason": null,
+              "phaseBefore": "intent",
+              "profileDataPresent": false,
+              "locksHeldAfterRelaunch": 0,
+              "resumeOk": true,
+              "final": "committed"
+            },
+            {
+              "act": "resume",
+              "delayMs": 2000,
+              "killedProcesses": 9,
+              "legacySurvived": true,
+              "markerSurvived": true,
+              "preservedCopySurvived": true,
+              "mode": "recovery",
+              "reason": null,
+              "phaseBefore": "intent",
+              "profileDataPresent": false,
+              "locksHeldAfterRelaunch": 0,
+              "resumeOk": true,
+              "final": "committed"
+            },
+            {
+              "act": "resume",
+              "delayMs": 4000,
+              "killedProcesses": 9,
+              "legacySurvived": true,
+              "markerSurvived": true,
+              "preservedCopySurvived": true,
+              "mode": "recovery",
+              "reason": null,
+              "phaseBefore": "intent",
+              "profileDataPresent": false,
+              "locksHeldAfterRelaunch": 0,
+              "resumeOk": true,
+              "final": "committed"
+            },
+            {
+              "act": "resume",
+              "delayMs": 4000,
+              "killedProcesses": 9,
+              "legacySurvived": true,
+              "markerSurvived": true,
+              "preservedCopySurvived": true,
+              "mode": "recovery",
+              "reason": null,
+              "phaseBefore": "intent",
+              "profileDataPresent": false,
+              "locksHeldAfterRelaunch": 0,
+              "resumeOk": true,
+              "final": "committed"
+            },
+            {
+              "act": "resume",
+              "delayMs": 6000,
+              "killedProcesses": 9,
+              "legacySurvived": true,
+              "markerSurvived": true,
+              "preservedCopySurvived": true,
+              "mode": "durable",
+              "reason": null,
+              "phaseBefore": "committed",
+              "profileDataPresent": true,
+              "locksHeldAfterRelaunch": 0,
+              "resumeOk": true,
+              "final": "committed"
+            },
+            {
+              "act": "resume",
+              "delayMs": 6000,
+              "killedProcesses": 9,
+              "legacySurvived": true,
+              "markerSurvived": true,
+              "preservedCopySurvived": true,
+              "mode": "durable",
+              "reason": null,
+              "phaseBefore": "committed",
+              "profileDataPresent": true,
+              "locksHeldAfterRelaunch": 0,
+              "resumeOk": true,
+              "final": "committed"
+            }
+          ],
+          "finalPhaseBeforeRecoveryByDelayMs": {
+            "0": "intent | intent",
+            "2000": "intent | intent",
+            "4000": "intent | intent",
+            "6000": "committed | committed"
+          }
+        },
+        "crashMidStage": {
+          "heldBeforeKill": [
+            "devmate-workspace-v1"
+          ],
+          "killed": 9,
+          "mode": "recovery",
+          "locksHeldAfterRelaunch": 0,
+          "resumeOk": true,
+          "final": "committed",
+          "stateAfter": "durable"
+        }
+      },
+      "notTested": [
+        "SIGKILL of the browser in a container is not an OS crash or power loss: the OS page cache survives it, so this says nothing about fsync-level durability after a kernel panic.",
+        "A renderer-only crash (page crash, browser alive) was not separately exercised.",
+        "The loss window is measured on this build/host only; it is Chromium's deferred localStorage flush, not a property of the controller, and is not a portable guarantee."
+      ],
+      "durationMs": 102980,
+      "status": "PASS"
+    },
+    {
+      "id": "S2-11",
+      "title": "Cross-tab consistency of the marker (reader tabs vs writer tab)",
+      "expected": "all tabs converge; any stale read is measured, not assumed",
+      "steps": [
+        "30 trials: writer tab declares intent; a second tab reads the marker immediately after begin() resolved",
+        "poll until the reader sees the new value (settle time)",
+        "after a full resume() every tab's inspect() is compared"
+      ],
+      "checks": [
+        {
+          "desc": "every reader eventually sees the writer's marker (within 3 s)",
+          "pass": true,
+          "observed": {
+            "trials": 30,
+            "immediateStaleReads": 0,
+            "maxSettleMs": 11,
+            "unsettled": 0
+          }
+        },
+        {
+          "desc": "after resume() all three tabs report durable in every trial",
+          "pass": true,
+          "observed": []
+        }
+      ],
+      "evidence": {
+        "trials": 30,
+        "immediateStaleReads": 0,
+        "maxSettleMs": 11,
+        "unsettled": 0
+      },
+      "notTested": [
+        "Informational (not asserted): 0/30 immediate cross-tab reads were stale in this run."
+      ],
+      "durationMs": 11014,
+      "status": "PASS"
+    },
+    {
+      "id": "S2-12",
+      "title": "Pre-loaded OLD tab autosaves after each lifecycle phase (real old code, real Chromium)",
+      "expected": "documents the gap: the old writer is NOT blocked at any phase; the controller detects the changed bytes",
+      "steps": [
+        "old tab loads (readProjectsLocked) BEFORE intent",
+        "new tab drives the real controller to the phase",
+        "old tab runs its real autosave: saveProjectsLocked(snapshot, undefined, baselineRaw)",
+        "new tab inspect() and advance(); exportPreservedSource()"
+      ],
+      "checks": [
+        {
+          "desc": "GAP CONFIRMED: the old autosave succeeds in 20/20 trials, at every phase",
+          "pass": true,
+          "observed": []
+        },
+        {
+          "desc": "the new side detects it: inspect() indeterminate/source-changed and advance() refuses with source-changed",
+          "pass": true,
+          "observed": []
+        },
+        {
+          "desc": "the old write does not touch the marker bytes at all",
+          "pass": true,
+          "observed": []
+        },
+        {
+          "desc": "the original bytes stay preserved and the divergent bytes are preserved too (2 copies); the marker never advances past its phase",
+          "pass": true,
+          "observed": []
+        },
+        {
+          "desc": "contrast: the current writer is refused (cutover-active) in the same state",
+          "pass": true,
+          "observed": [
+            "cutover-active"
+          ]
+        }
+      ],
+      "evidence": {
+        "trials": 20,
+        "perPhase": {
+          "intent": {
+            "oldWriteOk": "5/5",
+            "inspect": [
+              "indeterminate:source-changed"
+            ],
+            "advance": [
+              "source-changed"
+            ]
+          },
+          "profiles-verified": {
+            "oldWriteOk": "5/5",
+            "inspect": [
+              "indeterminate:source-changed"
+            ],
+            "advance": [
+              "source-changed"
+            ]
+          },
+          "stores-verified": {
+            "oldWriteOk": "5/5",
+            "inspect": [
+              "indeterminate:source-changed"
+            ],
+            "advance": [
+              "source-changed"
+            ]
+          },
+          "committed": {
+            "oldWriteOk": "5/5",
+            "inspect": [
+              "indeterminate:source-changed"
+            ],
+            "advance": [
+              "source-changed"
+            ]
+          }
+        },
+        "sample": {
+          "phase": "intent",
+          "loadedStatus": "ok",
+          "oldWrite": {
+            "ok": true
+          },
+          "markerBytesUnchangedByOldWrite": true,
+          "legacyChanged": true,
+          "inspect": {
+            "mode": "indeterminate",
+            "reason": "source-changed"
+          },
+          "advance": {
+            "ok": false,
+            "reason": "source-changed",
+            "divergentPreserved": true
+          },
+          "markerPhaseAfter": "intent",
+          "originalCopyIntact": true,
+          "divergentCopyStored": 2,
+          "currentWriter": "cutover-active"
+        }
+      },
+      "notTested": [],
+      "durationMs": 5008,
+      "status": "PASS"
+    },
+    {
+      "id": "S2-13",
+      "title": "OLD deleteBackup / restoreBackup / load-with-backup after each phase (UI-shaped calls, real Chromium)",
+      "expected": "documents which old mutators the controller can and cannot see",
+      "steps": [
+        "seed workspace + three legacy backup slots (+ .meta) as fixtures; old tab loaded before intent",
+        "drive to the phase",
+        "(i) old deleteBackup(key, undefined, fingerprint) for every listed backup",
+        "(ii) old restoreBackup(key, undefined, fingerprint)",
+        "(iii) an old bundle LOADING after intent on a workspace in 'recovered' shape (readProjectsLocked writes a backup)"
+      ],
+      "checks": [
+        {
+          "desc": "(i) GAP CONFIRMED: old deleteBackup (UI-shaped, with fingerprint) deleted all 3 backups at every phase",
+          "pass": true,
+          "observed": [
+            {
+              "kind": "delete",
+              "phase": "intent",
+              "deletedOk": 3,
+              "listed": 3,
+              "currentDeleteWhileBackupsExist": {
+                "reason": "cutover-active",
+                "backupStillThere": true
+              },
+              "before": {
+                "mode": "recovery",
+                "abort": true
+              },
+              "backupKeysLeftInWriterTab": 0,
+              "otherTabSawDeletionImmediately": true,
+              "otherTabSettledMs": 2,
+              "after": {
+                "mode": "recovery",
+                "reason": null,
+                "abort": true,
+                "legacyUnchanged": true
+              }
+            },
+            {
+              "kind": "delete",
+              "phase": "profiles-verified",
+              "deletedOk": 3,
+              "listed": 3,
+              "currentDeleteWhileBackupsExist": {
+                "reason": "cutover-active",
+                "backupStillThere": true
+              },
+              "before": {
+                "mode": "recovery",
+                "abort": false
+              },
+              "backupKeysLeftInWriterTab": 0,
+              "otherTabSawDeletionImmediately": true,
+              "otherTabSettledMs": 3,
+              "after": {
+                "mode": "recovery",
+                "reason": null,
+                "abort": false,
+                "legacyUnchanged": true
+              }
+            },
+            {
+              "kind": "delete",
+              "phase": "stores-verified",
+              "deletedOk": 3,
+              "listed": 3,
+              "currentDeleteWhileBackupsExist": {
+                "reason": "cutover-active",
+                "backupStillThere": true
+              },
+              "before": {
+                "mode": "recovery",
+                "abort": false
+              },
+              "backupKeysLeftInWriterTab": 0,
+              "otherTabSawDeletionImmediately": true,
+              "otherTabSettledMs": 1,
+              "after": {
+                "mode": "recovery",
+                "reason": null,
+                "abort": false,
+                "legacyUnchanged": true
+              }
+            },
+            {
+              "kind": "delete",
+              "phase": "committed",
+              "deletedOk": 3,
+              "listed": 3,
+              "currentDeleteWhileBackupsExist": {
+                "reason": "cutover-active",
+                "backupStillThere": true
+              },
+              "before": {
+                "mode": "durable",
+                "abort": false
+              },
+              "backupKeysLeftInWriterTab": 0,
+              "otherTabSawDeletionImmediately": true,
+              "otherTabSettledMs": 1,
+              "after": {
+                "mode": "durable",
+                "reason": null,
+                "abort": false,
+                "legacyUnchanged": true
+              }
+            }
+          ]
+        },
+        {
+          "desc": "(i) the controller does NOT detect it: inspect() unchanged, legacy bytes unchanged, abort-eligibility verdict unchanged",
+          "pass": true,
+          "observed": [
+            [
+              "intent",
+              {
+                "mode": "recovery",
+                "abort": true
+              },
+              "recovery",
+              true
+            ],
+            [
+              "profiles-verified",
+              {
+                "mode": "recovery",
+                "abort": false
+              },
+              "recovery",
+              false
+            ],
+            [
+              "stores-verified",
+              {
+                "mode": "recovery",
+                "abort": false
+              },
+              "recovery",
+              false
+            ],
+            [
+              "committed",
+              {
+                "mode": "durable",
+                "abort": false
+              },
+              "durable",
+              false
+            ]
+          ]
+        },
+        {
+          "desc": "(i) contrast, measured BEFORE the old delete: the CURRENT deleteBackup refuses (cutover-active) and the backup is still there",
+          "pass": true,
+          "observed": [
+            [
+              "intent",
+              {
+                "reason": "cutover-active",
+                "backupStillThere": true
+              }
+            ],
+            [
+              "profiles-verified",
+              {
+                "reason": "cutover-active",
+                "backupStillThere": true
+              }
+            ],
+            [
+              "stores-verified",
+              {
+                "reason": "cutover-active",
+                "backupStillThere": true
+              }
+            ],
+            [
+              "committed",
+              {
+                "reason": "cutover-active",
+                "backupStillThere": true
+              }
+            ]
+          ]
+        },
+        {
+          "desc": "(ii) old restoreBackup succeeds at every phase, changes the legacy bytes, creates a pre-restore snapshot slot, and is detected (source-changed)",
+          "pass": true,
+          "observed": [
+            {
+              "kind": "restore",
+              "phase": "intent",
+              "ok": true,
+              "newBackupKeysCreatedByOldRestore": 2,
+              "otherTabSawNewBytesImmediately": true,
+              "otherTabSettledMs": 1,
+              "after": {
+                "mode": "indeterminate",
+                "reason": "source-changed",
+                "legacyChanged": true,
+                "copies": 1
+              }
+            },
+            {
+              "kind": "restore",
+              "phase": "profiles-verified",
+              "ok": true,
+              "newBackupKeysCreatedByOldRestore": 2,
+              "otherTabSawNewBytesImmediately": true,
+              "otherTabSettledMs": 2,
+              "after": {
+                "mode": "indeterminate",
+                "reason": "source-changed",
+                "legacyChanged": true,
+                "copies": 1
+              }
+            },
+            {
+              "kind": "restore",
+              "phase": "stores-verified",
+              "ok": true,
+              "newBackupKeysCreatedByOldRestore": 2,
+              "otherTabSawNewBytesImmediately": true,
+              "otherTabSettledMs": 1,
+              "after": {
+                "mode": "indeterminate",
+                "reason": "source-changed",
+                "legacyChanged": true,
+                "copies": 1
+              }
+            },
+            {
+              "kind": "restore",
+              "phase": "committed",
+              "ok": true,
+              "newBackupKeysCreatedByOldRestore": 2,
+              "otherTabSawNewBytesImmediately": true,
+              "otherTabSettledMs": 2,
+              "after": {
+                "mode": "indeterminate",
+                "reason": "source-changed",
+                "legacyChanged": true,
+                "copies": 1
+              }
+            }
+          ]
+        },
+        {
+          "desc": "(iii) an old bundle loading after intent WRITES a new backup slot (workspace untouched, marker untouched) and the controller does not see it",
+          "pass": true,
+          "observed": [
+            {
+              "kind": "load-backup",
+              "phase": "intent",
+              "status": "recovered",
+              "backedUp": true,
+              "newKeys": [
+                "devmate-workspace-v1.unreadable-backup",
+                "devmate-workspace-v1.unreadable-backup.meta"
+              ],
+              "markerBytesUnchanged": true,
+              "otherTabSettledMs": 1,
+              "after": {
+                "mode": "recovery",
+                "legacyUnchanged": true,
+                "markerUnchanged": true
+              }
+            },
+            {
+              "kind": "load-backup",
+              "phase": "profiles-verified",
+              "status": "recovered",
+              "backedUp": true,
+              "newKeys": [
+                "devmate-workspace-v1.unreadable-backup",
+                "devmate-workspace-v1.unreadable-backup.meta"
+              ],
+              "markerBytesUnchanged": true,
+              "otherTabSettledMs": 2,
+              "after": {
+                "mode": "recovery",
+                "legacyUnchanged": true,
+                "markerUnchanged": true
+              }
+            },
+            {
+              "kind": "load-backup",
+              "phase": "stores-verified",
+              "status": "recovered",
+              "backedUp": true,
+              "newKeys": [
+                "devmate-workspace-v1.unreadable-backup",
+                "devmate-workspace-v1.unreadable-backup.meta"
+              ],
+              "markerBytesUnchanged": true,
+              "otherTabSettledMs": 1,
+              "after": {
+                "mode": "recovery",
+                "legacyUnchanged": true,
+                "markerUnchanged": true
+              }
+            },
+            {
+              "kind": "load-backup",
+              "phase": "committed",
+              "status": "recovered",
+              "backedUp": true,
+              "newKeys": [
+                "devmate-workspace-v1.unreadable-backup",
+                "devmate-workspace-v1.unreadable-backup.meta"
+              ],
+              "markerBytesUnchanged": true,
+              "otherTabSettledMs": 1,
+              "after": {
+                "mode": "durable",
+                "legacyUnchanged": true,
+                "markerUnchanged": true
+              }
+            }
+          ]
+        }
+      ],
+      "evidence": {
+        "rows": [
+          {
+            "kind": "delete",
+            "phase": "intent",
+            "deletedOk": 3,
+            "listed": 3,
+            "currentDeleteWhileBackupsExist": {
+              "reason": "cutover-active",
+              "backupStillThere": true
+            },
+            "before": {
+              "mode": "recovery",
+              "abort": true
+            },
+            "backupKeysLeftInWriterTab": 0,
+            "otherTabSawDeletionImmediately": true,
+            "otherTabSettledMs": 2,
+            "after": {
+              "mode": "recovery",
+              "reason": null,
+              "abort": true,
+              "legacyUnchanged": true
+            }
+          },
+          {
+            "kind": "restore",
+            "phase": "intent",
+            "ok": true,
+            "newBackupKeysCreatedByOldRestore": 2,
+            "otherTabSawNewBytesImmediately": true,
+            "otherTabSettledMs": 1,
+            "after": {
+              "mode": "indeterminate",
+              "reason": "source-changed",
+              "legacyChanged": true,
+              "copies": 1
+            }
+          },
+          {
+            "kind": "load-backup",
+            "phase": "intent",
+            "status": "recovered",
+            "backedUp": true,
+            "newKeys": [
+              "devmate-workspace-v1.unreadable-backup",
+              "devmate-workspace-v1.unreadable-backup.meta"
+            ],
+            "markerBytesUnchanged": true,
+            "otherTabSettledMs": 1,
+            "after": {
+              "mode": "recovery",
+              "legacyUnchanged": true,
+              "markerUnchanged": true
+            }
+          },
+          {
+            "kind": "delete",
+            "phase": "profiles-verified",
+            "deletedOk": 3,
+            "listed": 3,
+            "currentDeleteWhileBackupsExist": {
+              "reason": "cutover-active",
+              "backupStillThere": true
+            },
+            "before": {
+              "mode": "recovery",
+              "abort": false
+            },
+            "backupKeysLeftInWriterTab": 0,
+            "otherTabSawDeletionImmediately": true,
+            "otherTabSettledMs": 3,
+            "after": {
+              "mode": "recovery",
+              "reason": null,
+              "abort": false,
+              "legacyUnchanged": true
+            }
+          },
+          {
+            "kind": "restore",
+            "phase": "profiles-verified",
+            "ok": true,
+            "newBackupKeysCreatedByOldRestore": 2,
+            "otherTabSawNewBytesImmediately": true,
+            "otherTabSettledMs": 2,
+            "after": {
+              "mode": "indeterminate",
+              "reason": "source-changed",
+              "legacyChanged": true,
+              "copies": 1
+            }
+          },
+          {
+            "kind": "load-backup",
+            "phase": "profiles-verified",
+            "status": "recovered",
+            "backedUp": true,
+            "newKeys": [
+              "devmate-workspace-v1.unreadable-backup",
+              "devmate-workspace-v1.unreadable-backup.meta"
+            ],
+            "markerBytesUnchanged": true,
+            "otherTabSettledMs": 2,
+            "after": {
+              "mode": "recovery",
+              "legacyUnchanged": true,
+              "markerUnchanged": true
+            }
+          },
+          {
+            "kind": "delete",
+            "phase": "stores-verified",
+            "deletedOk": 3,
+            "listed": 3,
+            "currentDeleteWhileBackupsExist": {
+              "reason": "cutover-active",
+              "backupStillThere": true
+            },
+            "before": {
+              "mode": "recovery",
+              "abort": false
+            },
+            "backupKeysLeftInWriterTab": 0,
+            "otherTabSawDeletionImmediately": true,
+            "otherTabSettledMs": 1,
+            "after": {
+              "mode": "recovery",
+              "reason": null,
+              "abort": false,
+              "legacyUnchanged": true
+            }
+          },
+          {
+            "kind": "restore",
+            "phase": "stores-verified",
+            "ok": true,
+            "newBackupKeysCreatedByOldRestore": 2,
+            "otherTabSawNewBytesImmediately": true,
+            "otherTabSettledMs": 1,
+            "after": {
+              "mode": "indeterminate",
+              "reason": "source-changed",
+              "legacyChanged": true,
+              "copies": 1
+            }
+          },
+          {
+            "kind": "load-backup",
+            "phase": "stores-verified",
+            "status": "recovered",
+            "backedUp": true,
+            "newKeys": [
+              "devmate-workspace-v1.unreadable-backup",
+              "devmate-workspace-v1.unreadable-backup.meta"
+            ],
+            "markerBytesUnchanged": true,
+            "otherTabSettledMs": 1,
+            "after": {
+              "mode": "recovery",
+              "legacyUnchanged": true,
+              "markerUnchanged": true
+            }
+          },
+          {
+            "kind": "delete",
+            "phase": "committed",
+            "deletedOk": 3,
+            "listed": 3,
+            "currentDeleteWhileBackupsExist": {
+              "reason": "cutover-active",
+              "backupStillThere": true
+            },
+            "before": {
+              "mode": "durable",
+              "abort": false
+            },
+            "backupKeysLeftInWriterTab": 0,
+            "otherTabSawDeletionImmediately": true,
+            "otherTabSettledMs": 1,
+            "after": {
+              "mode": "durable",
+              "reason": null,
+              "abort": false,
+              "legacyUnchanged": true
+            }
+          },
+          {
+            "kind": "restore",
+            "phase": "committed",
+            "ok": true,
+            "newBackupKeysCreatedByOldRestore": 2,
+            "otherTabSawNewBytesImmediately": true,
+            "otherTabSettledMs": 2,
+            "after": {
+              "mode": "indeterminate",
+              "reason": "source-changed",
+              "legacyChanged": true,
+              "copies": 1
+            }
+          },
+          {
+            "kind": "load-backup",
+            "phase": "committed",
+            "status": "recovered",
+            "backedUp": true,
+            "newKeys": [
+              "devmate-workspace-v1.unreadable-backup",
+              "devmate-workspace-v1.unreadable-backup.meta"
+            ],
+            "markerBytesUnchanged": true,
+            "otherTabSettledMs": 1,
+            "after": {
+              "mode": "durable",
+              "legacyUnchanged": true,
+              "markerUnchanged": true
+            }
+          }
+        ]
+      },
+      "notTested": [],
+      "durationMs": 3105,
+      "status": "PASS"
+    },
+    {
+      "id": "S2-14",
+      "title": "OLD tab waits behind the controller's real lock, then writes after release / times out / is closed",
+      "expected": "serialization only: the old write lands after release; it is refused only by the 8 s timeout; closing the waiter drops the write",
+      "steps": [
+        "new tab runs advance() with a stage gated open (holds the real lock)",
+        "old tab starts its real autosave -> pending request",
+        "variant A: release the gate before 8 s",
+        "variant B: keep holding for > 8 s",
+        "variant C: close the waiting old tab, then release"
+      ],
+      "checks": [
+        {
+          "desc": "A: while the controller holds the lock the old write is pending (1 held, >=1 pending) and the workspace is unchanged",
+          "pass": true,
+          "observed": {
+            "during": {
+              "held": 1,
+              "pending": 1
+            },
+            "unresolved": "pending",
+            "legacyUnchangedWhileWaiting": true,
+            "advance": {
+              "ok": true,
+              "changed": true
+            },
+            "oldWrite": {
+              "ok": true,
+              "waitedMs": 718
+            },
+            "after": {
+              "mode": "indeterminate",
+              "reason": "source-changed",
+              "advance": "source-changed",
+              "divergentPreserved": true,
+              "phase": "profiles-verified"
+            }
+          }
+        },
+        {
+          "desc": "A: the controller's advance finishes first (profiles-verified), THEN the old write succeeds",
+          "pass": true,
+          "observed": {
+            "during": {
+              "held": 1,
+              "pending": 1
+            },
+            "unresolved": "pending",
+            "legacyUnchangedWhileWaiting": true,
+            "advance": {
+              "ok": true,
+              "changed": true
+            },
+            "oldWrite": {
+              "ok": true,
+              "waitedMs": 718
+            },
+            "after": {
+              "mode": "indeterminate",
+              "reason": "source-changed",
+              "advance": "source-changed",
+              "divergentPreserved": true,
+              "phase": "profiles-verified"
+            }
+          }
+        },
+        {
+          "desc": "A: afterwards the controller detects it (indeterminate/source-changed, next advance refused, divergent bytes preserved)",
+          "pass": true,
+          "observed": {
+            "mode": "indeterminate",
+            "reason": "source-changed",
+            "advance": "source-changed",
+            "divergentPreserved": true,
+            "phase": "profiles-verified"
+          }
+        },
+        {
+          "desc": "B: held > 8 s -> the old write fails with lock-timeout after ~8 s, workspace unchanged, controller still recovery (nothing divergent)",
+          "pass": true,
+          "observed": {
+            "oldWrite": {
+              "ok": false,
+              "reason": "lock-timeout",
+              "waitedMs": 8002
+            },
+            "legacyUnchanged": true,
+            "advance": {
+              "ok": true
+            },
+            "modeAfter": "recovery"
+          }
+        },
+        {
+          "desc": "C: closing the waiting old tab removes its pending lock request and the queued write never happens",
+          "pass": true,
+          "observed": {
+            "pendingBefore": {
+              "held": 1,
+              "pending": 1
+            },
+            "pendingAfterClose": {
+              "held": 1,
+              "pending": 0
+            },
+            "legacyUnchanged": true,
+            "modeAfter": "recovery",
+            "phase": "profiles-verified"
+          }
+        }
+      ],
+      "evidence": {
+        "A_releasedBeforeTimeout": {
+          "during": {
+            "held": 1,
+            "pending": 1
+          },
+          "unresolved": "pending",
+          "legacyUnchangedWhileWaiting": true,
+          "advance": {
+            "ok": true,
+            "changed": true
+          },
+          "oldWrite": {
+            "ok": true,
+            "waitedMs": 718
+          },
+          "after": {
+            "mode": "indeterminate",
+            "reason": "source-changed",
+            "advance": "source-changed",
+            "divergentPreserved": true,
+            "phase": "profiles-verified"
+          }
+        },
+        "B_heldBeyondTimeout": {
+          "oldWrite": {
+            "ok": false,
+            "reason": "lock-timeout",
+            "waitedMs": 8002
+          },
+          "legacyUnchanged": true,
+          "advance": {
+            "ok": true
+          },
+          "modeAfter": "recovery"
+        },
+        "C_waiterClosed": {
+          "pendingBefore": {
+            "held": 1,
+            "pending": 1
+          },
+          "pendingAfterClose": {
+            "held": 1,
+            "pending": 0
+          },
+          "legacyUnchanged": true,
+          "modeAfter": "recovery",
+          "phase": "profiles-verified"
+        }
+      },
+      "notTested": [],
+      "durationMs": 11039,
+      "status": "PASS"
+    },
+    {
+      "id": "S2-15",
+      "title": "Back/forward cache (BFCache) probe for a stale old tab",
+      "expected": "if the old tab is restored from BFCache, record that it can still write; otherwise record that BFCache was not exercised",
+      "steps": [
+        "old tab loads and baselines, navigates to another same-origin page, goBack()",
+        "read pageshow.persisted",
+        "if persisted: drive the real controller to intent in another tab, then run the restored tab's autosave"
+      ],
+      "checks": [
+        {
+          "desc": "recorded honestly: goBack() did not restore from BFCache in this build (probe result stored in evidence)",
+          "pass": true,
+          "observed": {
+            "marker": null,
+            "pageshow": [
+              false
+            ],
+            "baselineKept": false
+          }
+        }
+      ],
+      "evidence": {
+        "probe": {
+          "marker": null,
+          "pageshow": [
+            false
+          ],
+          "baselineKept": false
+        }
+      },
+      "notTested": [
+        "BFCache was NOT exercised: after goBack() the page was reloaded (in-memory marker lost), so a BFCache-restored stale tab could not be tested in this headless Chromium."
+      ],
+      "durationMs": 792,
+      "status": "PASS"
+    }
+  ],
+  "summary": {
+    "scenarios": 15,
+    "pass": 13,
+    "fail": 2,
+    "error": 0,
+    "checks": 66,
+    "checksPassed": 64
+  }
+}

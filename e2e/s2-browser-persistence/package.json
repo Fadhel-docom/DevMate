@@ -1,0 +1,14 @@
+{
+  "name": "devmate-s2-browser-persistence",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "Isolated real-Chromium persistence diagnostic harness; not part of the application dependency tree.",
+  "scripts": {
+    "test": "node run.mjs"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.2",
+    "playwright": "1.65.0"
+  }
+}

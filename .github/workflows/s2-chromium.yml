@@ -1,0 +1,95 @@
+name: S2 Chromium persistence diagnostics
+
+on:
+  pull_request:
+    branches: [feature/phase-1-foundation]
+    paths:
+      - "src/storage.ts"
+      - "src/cutoverController.ts"
+      - "src/cutoverState.ts"
+      - "src/profileStore.ts"
+      - "src/taskLedgerStore.ts"
+      - "src/__fixtures__/legacyStorage.base.ts"
+      - "e2e/s2-browser-persistence/**"
+      - ".github/workflows/s2-chromium.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  s2-chromium:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Assert exact checked-out head
+        run: test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install isolated harness dependencies
+        run: npm install --prefix e2e/s2-browser-persistence
+      - name: Audit isolated harness dependencies
+        run: npm audit --prefix e2e/s2-browser-persistence --audit-level=high
+      - name: Install Chromium
+        run: e2e/s2-browser-persistence/node_modules/.bin/playwright install --with-deps chromium
+      - name: Run full S2 diagnostic suite
+        shell: bash
+        run: |
+          set +e
+          node e2e/s2-browser-persistence/run.mjs --out=out/results-ci.json
+          run_status=$?
+          set -e
+          if [ "$run_status" -gt 1 ]; then
+            echo "Harness execution failed (exit $run_status), not a recorded product finding."
+            exit "$run_status"
+          fi
+          S2_RUN_EXIT="$run_status" node --input-type=module <<'NODE'
+          import { readFileSync } from "node:fs";
+          const r = JSON.parse(readFileSync("e2e/s2-browser-persistence/out/results-ci.json", "utf8"));
+          const known = new Set(["S2-02", "S2-04"]);
+          const unexpected = r.scenarios.filter(s => s.status === "ERROR" || (s.status === "FAIL" && !known.has(s.id)));
+          const missing = ["S2-02", "S2-04"].filter(id => !r.scenarios.some(s => s.id === id));
+          const expectedExit = r.summary.fail || r.summary.error ? 1 : 0;
+          if (Number(process.env.S2_RUN_EXIT) !== expectedExit || unexpected.length || missing.length || r.scenarios.length !== 15) {
+            console.error(JSON.stringify({ summary: r.summary, unexpected, missing, exit: process.env.S2_RUN_EXIT, expectedExit }, null, 2));
+            process.exit(1);
+          }
+          console.log("S2 full diagnostic completed. Only the two explicitly tracked findings S2-02/S2-04 may report FAIL; any new FAIL/ERROR fails this workflow.");
+          console.log(JSON.stringify({ summary: r.summary, findings: r.scenarios.filter(s => s.status === "FAIL").map(s => s.id), notTested: r.scenarios.filter(s => s.status === "NOT TESTED").map(s => s.id) }));
+          NODE
+      - name: Run S2-15/S2-16 focused addendum
+        shell: bash
+        run: |
+          set +e
+          node e2e/s2-browser-persistence/run.mjs S2-15 S2-16 --out=out/results-addendum-ci.json
+          run_status=$?
+          set -e
+          if [ "$run_status" -gt 1 ]; then
+            echo "Addendum execution failed (exit $run_status), not a recorded product finding."
+            exit "$run_status"
+          fi
+          S2_RUN_EXIT="$run_status" node --input-type=module <<'NODE'
+          import { readFileSync } from "node:fs";
+          const r = JSON.parse(readFileSync("e2e/s2-browser-persistence/out/results-addendum-ci.json", "utf8"));
+          const s15 = r.scenarios.find(s => s.id === "S2-15");
+          const s16 = r.scenarios.find(s => s.id === "S2-16");
+          const unexpected = r.scenarios.filter(s => s.status === "ERROR" || (s.status === "FAIL" && s.id !== "S2-16"));
+          const expectedExit = r.summary.fail || r.summary.error ? 1 : 0;
+          if (Number(process.env.S2_RUN_EXIT) !== expectedExit || !s15 || !s16 || unexpected.length || r.scenarios.length !== 2) {
+            console.error(JSON.stringify({ summary: r.summary, unexpected, s15, s16, exit: process.env.S2_RUN_EXIT, expectedExit }, null, 2));
+            process.exit(1);
+          }
+          console.log("S2 addendum completed. S2-16 may report its known data-loss finding; S2-15 must honestly report PASS or NOT TESTED, never a false pass.");
+          console.log(JSON.stringify({ summary: r.summary, s15: s15.status, s16: s16.status }));
+          NODE
+      - name: Upload raw S2 diagnostic evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: s2-chromium-${{ github.sha }}
+          path: e2e/s2-browser-persistence/out/results-*.json
+          if-no-files-found: warn
