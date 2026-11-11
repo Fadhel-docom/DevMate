@@ -1,6 +1,10 @@
 # DevMate Status
 
-> Current state: see the latest dated PR-C / PR-D checkpoint at the end of this file. Earlier dated checkpoints are historical.
+> **Current state (2026-11-11; maintained summary):** PR #32 is OPEN / not merged at head `d1c112858f85d4a8d6d48ff978518d3fa4fb668b` (base `feature/phase-1-foundation`). Code/PR merge gate is accepted under the split-gate model except for one high-severity vulnerability in the isolated R6 Playwright test dependency (`playwright@1.49.1`); Claude is assigned to inspect the audit, upgrade safely, regenerate the lockfile, and rerun R6. DevMate CI, P1 Chromium and R6 Chromium all passed on this exact head; R6: 13 cases / 144 checks / 0 failures. **Live cutover remains prohibited**: R1 stale-writer prevention is not solved; the shipped app cannot initiate cutover and detects old-tab divergence. No merge, deployment, real-user migration, deletion, or RateNest work has occurred. Read this summary, the latest relevant entry in `docs/OPERATIONS-ROOM.md`, and the bounded task/handoff packet; historical entries below are append-only records, not mandatory full-session reading.
+
+## Current milestone
+Phase 1 — foundation and local demo.
+
 
 ## Current milestone
 Phase 1 — foundation and local demo.
