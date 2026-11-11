@@ -228,6 +228,7 @@ This proposal does not connect providers, create accounts/keys/secrets, grant pe
 - [Cloudflare Workers AI pricing](https://developers.cloudflare.com/workers-ai/platform/pricing/) and [GLM-4.7-Flash model card](https://developers.cloudflare.com/workers-ai/models/glm-4.7-flash/).
 - [Gemini API pricing](https://ai.google.dev/gemini-api/docs/pricing) and [Gemini API terms](https://ai.google.dev/gemini-api/terms).
 - [Anthropic Consumer Terms](https://www.anthropic.com/legal/consumer-terms).
+- [OpenAI Terms of Use](https://openai.com/en-GB/policies/row-terms-of-use/) and [OpenAI Services Agreement](https://openai.com/policies/services-agreement/) — consumer service restrictions versus the separate developer API agreement.
 
 **Execution and persistence**
 - [Workers limits](https://developers.cloudflare.com/workers/platform/limits/), [Workflows limits](https://developers.cloudflare.com/workflows/reference/limits/), and [Workflows pricing](https://developers.cloudflare.com/workflows/reference/pricing/).
