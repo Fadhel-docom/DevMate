@@ -147,3 +147,5 @@ vite.config.ts.timestamp-*
 
 # Turbo Repo
 .turbo
+
+e2e/s2-browser-persistence/package-lock.json

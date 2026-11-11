@@ -2304,3 +2304,42 @@ Open and validate a Draft PR for the harness hardening. After exact-head CI and 
 - Evidence remains bounded: no transaction-level overlap claim; one run; no 3+ tabs, cross-process, other-browser, SIGKILL or real-quota proof. The IndexedDB CAS store remains an isolated spike, not wired into the app.
 - **R1 remains unresolved and live cutover prohibited. S2-16 remains a failure in the current localStorage app path.** No application adoption, migration, cutover, deployment, provider integration, permission expansion, cost change or RateNest work.
 - Next dependency chain to reconcile and review: PR #35 real-Chromium S2 persistence evidence (13 pass / 2 findings) → PR #36 S2-16 root-cause diagnosis → PR #37 IndexedDB/CAS design. These are stacked on the pre-rebase PR #33 branch and must be transplanted/rebased one at a time onto the current base before review; do not merge as a batch. PR #34 accessibility and PR #40 roadmap request remain separate candidates.
+
+## 2026-11-08 — S1 review addendum and S2 real-Chromium run (Claude #2)
+
+- Done: verified PR #32 head `a853f2a` and PR #33 head `752445c` (open, unmerged); reviewed `legacyWriterMatrix.test.ts` and the fixture (identical to base); built `e2e/s2-browser-persistence/` (15 scenarios, real Chromium 153, real Web Locks/quota/restart/SIGKILL) and ran it on `src/` identical to PR #33 head: 13 PASS, 2 FAIL, 64/66 checks.
+- Evidence: `docs/reviews/S2-CHROMIUM-REPORT.md`, `e2e/s2-browser-persistence/results.json`, ledger record "S1 review addendum / S2 record 1".
+- Discoveries: two-tab `begin()` race can double-report `changed:true` (7/60) though the state stays consistent; Web Lock does not prevent lost updates for cross-tab localStorage read-modify-write; old `deleteBackup` undetected at every phase; Chromium loses writes made within ≈4 s of a SIGKILL.
+- Not done / why: real App UI (React 19 vs pinned 18, no vite/vitest); BFCache probe inconclusive; OS crash/power loss and other browsers not testable here.
+- Help request to partner: independent review of S2 record 1 and of the two FAILs (decide whether the S2-02 expectation should be relaxed to "idempotent" or the controller revalidation tightened — not decided here).
+- Boundaries kept: no production code change, no S3, no cutover/migration, nothing merged.
+
+## 2026-11-08 (later) — PR #35 preliminary-review follow-up (Claude #2)
+
+- Done: S2-15 reclassified NOT TESTED; added and ran S2-16 (real `readProjectsLocked`/`saveProjectsLocked` + `expectedRaw`, two real tabs); recorded SHAs/versions/commands. Only these two scenarios were run (rerun command in the report addendum); the 15-scenario results are untouched.
+- Evidence: `docs/reviews/S2-CHROMIUM-REPORT.md` (Addendum 1), `results.addendum-1.json`, ledger record "S2 record 2". Harness commit `dc2983e`; production code = PR #33 head `752445c`.
+- Discovered: S2-16 FAIL — both tabs acknowledged the same-baseline save in 15/40 trials (acknowledged edit then missing), and a sustained 2×25-edit run lost 1–2 acknowledged edits. The existing legacy-compatible save path can silently overwrite across tabs even with the Web Lock and `expectedRaw`.
+- Not done / why: no fix (production code is out of scope); BFCache not testable in this headless build; real UI not run.
+- Help request to partner/owner: decide whether this save-path defect is in scope for PR-D or a separate issue; independent review of record 2.
+- Boundaries kept: no production change, PR #32/#33 untouched, no S3, no cutover, nothing merged.
+
+
+---
+
+## 2026-11-11 — PR #35 CI gate correction after first exact-head run
+
+- PR #35 head before correction: `2431ed0629bc0d0f39748cc897c6332e34bc4def`, directly based on current base `b7672daa9138d8a8f6bbc43e6fb5d70e508983e1`.
+- Exact-head P1 run `42960213571`: Chromium CAS job passed; R6 passed (13 cases / 144 checks / 0 failures); S2 harness ran, but its workflow gate failed because it still expected 15 scenarios and only allow-listed S2-02/S2-04. The newly added S2-16 was a known, documented product finding (8/40 simultaneous pairs both acknowledged; one acknowledged edit missing in the sustained 50-edit run), but was omitted from the full-suite allow-list. This is a **workflow expectation bug**, not a harness execution error.
+- Corrective change: add S2-16 to the explicit known-findings allow-list and require all 16 scenarios to be present. No FAIL is suppressed generally: any ERROR or any unlisted FAIL still fails CI. The separate focused addendum continues to require S2-15 honest PASS/NOT TESTED and permits only the known S2-16 FAIL.
+- Documentation correction: S2-15 is NOT TESTED (the browser reloaded instead of restoring from BFCache); original 15-scenario result is now 12 PASS / 2 FAIL / 1 NOT TESTED. S2-16 remains a separate reproducible failure, not reclassified as success.
+- Re-run the exact corrected head; do not merge on the first run.
+
+
+---
+
+## 2026-11-11 — PR #35 S2-11 eventual-consistency assertion correction
+
+- Exact corrected-head candidate before this fix: `e4b648f1f735983cb2c2171c3c38779c9b7a49b8`. CI run `42960736035`: Chromium CAS and R6 jobs passed; S2 job found the expected S2-02/S2-04/S2-16 findings plus an additional S2-11 failure.
+- S2-11 had already accepted that an immediate cross-tab marker read can be stale and measured convergence for `intent`, but after `resume()` it immediately asserted that every tab's `inspect()` was already `durable`. One trial returned `recovery` in a reader tab while the writer had committed. This is consistent with the already observed transient stale-read behavior; the test had no post-commit convergence wait, so it could not distinguish transient propagation delay from a persistent failure.
+- Fix: S2-11 now polls the committed marker and each tab's `inspect()` for up to 3 seconds, records commit convergence time, and fails if any tab does not converge. Immediate stale reads remain measured and are not hidden. No production source changed; S2-02/S2-04/S2-16 expectations are unchanged.
+- Exact-head CI must be rerun. If S2-11 still fails after the bounded convergence window, treat it as a separate product finding; do not allow-list it merely to make CI green.
