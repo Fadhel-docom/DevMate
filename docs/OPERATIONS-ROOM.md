@@ -2189,3 +2189,43 @@ One finding, direct dependency `playwright@1.49.1`: **GHSA-7mvr-c777-76hp** (CWE
 
 ### Not done on purpose
 Not touched: the tracked `e2e/r6-matrix/results.json` snapshot (still dated by its `sourceCommit`; the CI artifact is authoritative), proposal A (the STATUS current-state block) and any archiving, and every item outside the listed defect. Next exact action: ChatGPT re-verifies `d0e32ad` (+ docs-only commits) and decides on merge under the split gate. Live cutover remains prohibited.
+
+
+---
+
+## 2026-11-11 — ChatGPT final independent verification after Playwright remediation
+
+### Exact refs and diff discipline
+- PR #32 current head before this review update: `bf9b25f64f2823e155581cebf18716c4a2917b37`; base `feature/phase-1-foundation` at `00a59793f0452cd7ee0d8a27ffb0ef3bbac78bc4`; compare reports 59 commits ahead / 0 behind.
+- Implementation and test evidence SHA: `d0e32ad1116e3845cd2b6387fbe135e20caa8322`.
+- Compare `d0e32ad..bf9b25f` is documentation/evidence-only: `docs/OPERATIONS-ROOM.md`, `docs/STATUS.md`, and `e2e/r6-matrix/results.json`. No application source, tests, workflow, dependencies, or build inputs changed after the evidence SHA. Reusing exact-SHA CI is valid under the accepted docs/evidence-only rule. The tracked results snapshot itself declares `sourceCommit=d0e32ad...`, Playwright 1.65.0, Chromium 158.0.8127.18, Node 20.20.2, clean tree, 13 cases / 144 checks / 0 failures.
+- Current PR metadata: OPEN, not merged, mergeable=true. No inline review threads. Existing reviews are coordinator COMMENTED reviews on older heads; this ChatGPT review is recorded here as a substantive coordinator review, not represented as a GitHub APPROVE or external third-party review.
+
+### Security remediation — independently verified
+- The isolated R6 harness now pins `playwright@1.65.0`; lockfile pins `playwright-core@1.65.0`; both require Node >=20 and are compatible with the workflow's Node 20.
+- Package metadata, README and run.mjs comments correctly state that the suite runs in GitHub Actions and that Playwright is isolated from the app dependency tree.
+- The R6 job logs show both root and isolated `npm ci` report **found 0 vulnerabilities**. The root DevMate CI also reports zero vulnerabilities.
+- The full audit finding was confirmed by Claude's recorded `npm audit --json`: direct Playwright 1.49.1, GHSA-7mvr-c777-76hp, high, fixed in 1.55.1+, and fixAvailable 1.65.0. The new exact version is beyond the patched threshold.
+- This is a test-tool dependency fix, not a production dependency change.
+
+### Exact-SHA workflow verification at d0e32ad
+- DevMate CI run `42955182910`: completed / success; exact head `d0e32ad...`; 14 test files / 364 tests passed; `npm ci`, audit, tests, TypeScript/build all successful.
+- P1 IndexedDB CAS Chromium proof run `42955188832`: completed / success; exact checked-out SHA assertion passed; all 7 checks passed.
+- R6 Chromium matrix run `42955188768`: completed / success; exact checked-out SHA assertion passed; root and isolated `npm ci` both report zero vulnerabilities; result summary `13 cases / 144 checks / 0 failed`; artifact sourceCommit is `d0e32ad...`.
+- Logs additionally emit GitHub Actions Node 20 deprecation warnings for actions v4 being forced onto Node 24. They are warnings, not failed steps or a PR blocker; no app/runtime code is affected. Track action-version maintenance separately if/when GitHub deprecates the current action majors.
+- All three runs and all steps completed successfully. Their URLs are recorded in the PR description.
+
+### PR #32 final split-gate verdict
+**ACCEPT FOR MERGE of the safe, cutover-disabled code.** The earlier Playwright test-tool blocker is resolved and independently verified. The implementation's reachable production behaviour is truthful, read-only with respect to cutover, tested in Chromium, and does not expose the mutating controller in the production import graph. Archive/export remains non-destructive. No new blocker was found in the bounded remediation diff.
+
+**Capability activation remains REJECTED / PROHIBITED:** R1 is still not a stale-writer fence. C3/C10 show an already-open old bundle can still write the legacy key. The new app detects divergence and locks itself, but cannot prevent that old writer. The mutating controller remains unreachable from the shipped app. Nothing in this merge authorizes live cutover, migration, restore, deletion, deployment, or destructive action.
+
+### Accepted governance proposals — final state
+- Proposals 1–6: ACCEPT.
+- Proposal A: ACCEPT WITH REVISION (maintain a concise top-of-STATUS summary; keep history append-only; no archival/moves until links and anchors are mapped).
+- Proposal B: ACCEPT (explicit real / fault-injected-over-real-storage / simulated evidence taxonomy).
+- Proposal C: ACCEPT (one consolidated repair batch for defects enumerated by an exact-SHA coordinator verdict; no scope expansion or merge authority).
+- Claude's Playwright remediation is complete. No further Claude action is needed for PR #32's merge gate.
+
+### Merge action and post-merge verification
+The owner has directed ChatGPT to continue initiative; the repository's revised governance assigns final exact-SHA verification and merge to ChatGPT. Merge PR #32 using the current exact head as an expected-SHA lease, then verify GitHub reports merged and record the merge SHA. Immediately verify the base branch contains the merged commit and that the capability-activation prohibition remains documented. Do not trigger deployment or real cutover.
