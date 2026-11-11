@@ -1,6 +1,6 @@
 # DevMate Status
 
-> **Current state (2026-11-11; maintained summary):** PR #32 and PR #33 are merged into `feature/phase-1-foundation` (latest merge `09afb9fca7e93a5c716980fa2c3ad8220023c475`). PR #32 delivered safe, cutover-disabled recovery/archive; PR #33 added 17 tests and evidence that old `deleteBackup` can evade workspace-byte detection. **R1 remains unresolved; live cutover is prohibited.** The current localStorage multi-tab persistence issue S2-16 also remains unresolved. PR #38 is an isolated IndexedDB CAS spike, not wired into the app. PR #39 (Dedicated Worker race harness hardening) is the next open candidate; its exact prior-head CI passed but it must be rebased onto the current base and rerun before merge. Exact prior-head evidence: DevMate CI 42506665941 (9 files / 216 tests), Chromium proof 42506670469 (8 checks; 100 race trials, 50/50 winner identities; mutants 5/5). No application adoption, migration, cutover, deployment, provider integration, permission expansion, cost change, or RateNest work is authorized. Next: finish PR #39 rebase/review, then address S2-16 with a separate architecture/implementation gate. Read this summary and the latest Operations Room entry; historical sections are append-only.
+> **Current state (2026-11-11; maintained summary):** PR #32, PR #33 and PR #39 are merged into `feature/phase-1-foundation`; latest merge `ccd89f1750091cc47b469445780b88fd52bd12f6`. PR #32 added safe, cutover-disabled recovery/archive; PR #33 added 17 legacy-writer tests documenting that old `deleteBackup` can evade workspace-byte detection; PR #39 hardened the isolated IndexedDB CAS Chromium harness. PR #39 exact-head checks passed: DevMate CI 15 files / 381 tests; P1 Chromium 8/8 required checks (20/20 thread independence, 100/100 real races, 5/5 mutant rejection, racer exception negative control); R6 13 cases / 144 checks / 0 failures. **R1 remains unresolved; live cutover is prohibited. S2-16 remains a failure in the current localStorage application path.** PR #38 remains an isolated IndexedDB CAS spike, not wired into the app. Next dependency chain: rebase/review PR #35 S2 real-Chromium evidence, then PR #36 root-cause diagnosis, then PR #37 IndexedDB/CAS design. PR #34 accessibility and PR #40 roadmap request remain separate. No application adoption, migration, cutover, deployment, provider integration, permission expansion, cost change, or RateNest work is authorized. Read this summary and the latest Operations Room entry; historical sections are append-only.
 
 ## Current milestone
 Phase 1 — foundation and local demo.
@@ -8,8 +8,8 @@ Phase 1 — foundation and local demo.
 
 
 
-## Current milestone
-Phase 1 — foundation and local demo.
+
+
 
 ## Completed
 - [x] Created public GitHub repository with MIT license and README.
