@@ -2229,3 +2229,15 @@ Not touched: the tracked `e2e/r6-matrix/results.json` snapshot (still dated by i
 
 ### Merge action and post-merge verification
 The owner has directed ChatGPT to continue initiative; the repository's revised governance assigns final exact-SHA verification and merge to ChatGPT. Merge PR #32 using the current exact head as an expected-SHA lease, then verify GitHub reports merged and record the merge SHA. Immediately verify the base branch contains the merged commit and that the capability-activation prohibition remains documented. Do not trigger deployment or real cutover.
+
+
+---
+
+## 2026-11-11 — PR #32 merged and base-branch verification completed
+
+- PR #32 is **CLOSED / MERGED**. GitHub merge result: `3eed3053946731bbce5cbc158c3174ed5f8d212a` (squash merge), with expected PR head lease `e59c114a3156084553f5ab5d259208a75fa85fa4`.
+- Post-merge PR metadata independently confirms `state=closed`, `merged=true`, `merge_commit_sha=3eed305...`.
+- Git reference `refs/heads/feature/phase-1-foundation` independently resolves to the same `3eed305...`; the base branch contains the merge commit.
+- Post-merge source check on `feature/phase-1-foundation`: `src/cutoverState.ts` retains the explicit read-only-only production boundary. The mutating controller is not exposed by the shipped app. The PR body and merge commit message both preserve the explicit prohibition.
+- **R1 remains unresolved and live cutover remains prohibited.** The merge accepted safe, cutover-disabled recovery/archive functionality only. No live migration, restore, deletion, deployment, provider integration, permission expansion, cost change, or RateNest work was performed.
+- PR #32 merge gate is closed successfully; capability-activation gate remains closed pending a genuine stale-writer fence. The next task must be selected from the remaining Phase 1/PR-D roadmap after reading the latest status and open requirements, not by reviving the merged PR.
