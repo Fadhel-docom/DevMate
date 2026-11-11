@@ -484,13 +484,31 @@ await scenario("S2-11", "Cross-tab consistency of the marker (reader tabs vs wri
       const immediate = await r1.evaluate(() => localStorage.getItem("devmate-cutover-v1:workspace")); let settled = null; const t0 = Date.now();
       while (Date.now() - t0 < 3000) { if ((await r2.evaluate(() => localStorage.getItem("devmate-cutover-v1:workspace"))) === expected) { settled = Date.now() - t0; break; } await sleep(5); }
       await w.evaluate(async () => { await cur.makeController().resume(); });
-      const modes = await Promise.all([w, r1, r2].map((p) => p.evaluate(() => cur.makeController().inspect().mode)));
-      trials.push({ immediateStale: immediate !== expected, settledMs: settled, modes }); await ctx.close();
+      const committed = await w.evaluate(() => localStorage.getItem("devmate-cutover-v1:workspace"));
+      const t1 = Date.now(); let committedSettleMs = null; let finalModes = [];
+      while (Date.now() - t1 < 3000) {
+        const [markers, modesNow] = await Promise.all([
+          Promise.all([w, r1, r2].map((p) => p.evaluate(() => localStorage.getItem("devmate-cutover-v1:workspace")))),
+          Promise.all([w, r1, r2].map((p) => p.evaluate(() => cur.makeController().inspect().mode)))
+        ]);
+        finalModes = modesNow;
+        if (markers.every((m) => m === committed) && modesNow.every((m) => m === "durable")) { committedSettleMs = Date.now() - t1; break; }
+        await sleep(5);
+      }
+      trials.push({ immediateStale: immediate !== expected, settledMs: settled, committedSettleMs, finalModes }); await ctx.close();
     }
-    s.evidence = { trials: trials.length, immediateStaleReads: trials.filter((t) => t.immediateStale).length, maxSettleMs: Math.max(...trials.map((t) => t.settledMs ?? 99999)), unsettled: trials.filter((t) => t.settledMs === null).length };
-    check(s, "every reader eventually sees the writer's marker (within 3 s)", s.evidence.unsettled === 0, s.evidence);
-    check(s, "after resume() all three tabs report durable in every trial", trials.every((t) => t.modes.every((m) => m === "durable")), trials.filter((t) => !t.modes.every((m) => m === "durable")).slice(0, 2));
-    s.notTested.push(`Informational (not asserted): ${s.evidence.immediateStaleReads}/30 immediate cross-tab reads were stale in this run.`);
+    s.evidence = {
+      trials: trials.length,
+      immediateStaleReads: trials.filter((t) => t.immediateStale).length,
+      maxIntentSettleMs: Math.max(...trials.map((t) => t.settledMs ?? 99999)),
+      intentUnsettled: trials.filter((t) => t.settledMs === null).length,
+      maxCommittedSettleMs: Math.max(...trials.map((t) => t.committedSettleMs ?? 99999)),
+      committedUnsettled: trials.filter((t) => t.committedSettleMs === null).length,
+      finalModeFailures: trials.filter((t) => !t.finalModes.every((m) => m === "durable")).length
+    };
+    check(s, "every reader eventually sees the intent marker (within 3 s)", s.evidence.intentUnsettled === 0, s.evidence);
+    check(s, "after resume() every tab eventually sees committed and reports durable (within 3 s)", s.evidence.committedUnsettled === 0 && s.evidence.finalModeFailures === 0, trials.filter((t) => t.committedSettleMs === null || !t.finalModes.every((m) => m === "durable")).slice(0, 2));
+    s.notTested.push(`Informational (not asserted): ${s.evidence.immediateStaleReads}/30 immediate cross-tab reads were stale in this run; committed marker convergence is measured separately.`);
   });
 
 // ------------------------------------------------------------------ S2-12

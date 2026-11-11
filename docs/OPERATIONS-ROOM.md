@@ -2333,3 +2333,13 @@ Open and validate a Draft PR for the harness hardening. After exact-head CI and 
 - Corrective change: add S2-16 to the explicit known-findings allow-list and require all 16 scenarios to be present. No FAIL is suppressed generally: any ERROR or any unlisted FAIL still fails CI. The separate focused addendum continues to require S2-15 honest PASS/NOT TESTED and permits only the known S2-16 FAIL.
 - Documentation correction: S2-15 is NOT TESTED (the browser reloaded instead of restoring from BFCache); original 15-scenario result is now 12 PASS / 2 FAIL / 1 NOT TESTED. S2-16 remains a separate reproducible failure, not reclassified as success.
 - Re-run the exact corrected head; do not merge on the first run.
+
+
+---
+
+## 2026-11-11 — PR #35 S2-11 eventual-consistency assertion correction
+
+- Exact corrected-head candidate before this fix: `e4b648f1f735983cb2c2171c3c38779c9b7a49b8`. CI run `42960736035`: Chromium CAS and R6 jobs passed; S2 job found the expected S2-02/S2-04/S2-16 findings plus an additional S2-11 failure.
+- S2-11 had already accepted that an immediate cross-tab marker read can be stale and measured convergence for `intent`, but after `resume()` it immediately asserted that every tab's `inspect()` was already `durable`. One trial returned `recovery` in a reader tab while the writer had committed. This is consistent with the already observed transient stale-read behavior; the test had no post-commit convergence wait, so it could not distinguish transient propagation delay from a persistent failure.
+- Fix: S2-11 now polls the committed marker and each tab's `inspect()` for up to 3 seconds, records commit convergence time, and fails if any tab does not converge. Immediate stale reads remain measured and are not hidden. No production source changed; S2-02/S2-04/S2-16 expectations are unchanged.
+- Exact-head CI must be rerun. If S2-11 still fails after the bounded convergence window, treat it as a separate product finding; do not allow-list it merely to make CI green.
