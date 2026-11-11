@@ -2,8 +2,12 @@
   "name": "devmate-e2e-r6-matrix",
   "private": true,
   "version": "0.0.0",
-  "description": "Isolated real-Chromium harness for DevMate PR-D (R1 evidence, R6 matrix). Not part of the app's dependency tree or CI.",
+  "description": "Isolated real-Chromium harness for DevMate PR-D (R1 evidence, R6 matrix). Not part of the app's dependency tree; it is run in CI by .github/workflows/r6-chromium.yml. Playwright is pinned to an exact patched release (>= 1.55.1, GHSA-7mvr-c777-76hp).",
   "type": "module",
-  "scripts": { "test": "node run.mjs" },
-  "dependencies": { "playwright": "1.49.1" }
+  "scripts": {
+    "test": "node run.mjs"
+  },
+  "dependencies": {
+    "playwright": "1.65.0"
+  }
 }

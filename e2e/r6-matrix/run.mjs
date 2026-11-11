@@ -1,5 +1,5 @@
 // Real-Chromium evidence for PR-D (R1 narrowing, R6 matrix, S3 archive in the built app).
-// Not part of `npm test` and not run by GitHub Actions. Usage (from repo root, after `npm ci`):
+// Not part of `npm test`; run in GitHub Actions by .github/workflows/r6-chromium.yml. Usage (from repo root, after `npm ci`):
 //   cd e2e/r6-matrix && npm ci && npx playwright install chromium && cd ../.. && node e2e/r6-matrix/run.mjs
 // Writes e2e/r6-matrix/results.json. Exit code 1 if any check fails.
 import { chromium } from "playwright";
