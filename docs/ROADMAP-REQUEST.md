@@ -88,10 +88,7 @@ The first pair worth testing is Groq Free plus Cloudflare Workers AI Free. Neith
 | **Groq Free API** | Official API, tool-use support for selected models, explicit Free tier. Its data terms say inputs/outputs are not used for model training; ZDR is available. | Free limits are model- and organization-specific. The public rate-limit page separates Free limits from the Developer table; do not copy Developer limits as Free limits. Verify the actual account limits and ZDR setting before use. No guaranteed uninterrupted capacity. | First candidate. Public/synthetic tests first; private-code use only after ZDR is visibly enabled and the owner accepts processing terms and region. |
 | **Cloudflare Workers AI — GLM-4.7-Flash** | Listed model supports function/tool calling, has a 131K context window, and is marked ZDR. Workers AI includes a 10,000-neuron daily free allocation. | Daily neuron allocation is shared; input/output consume different neuron amounts. Model availability/free status can change. It shares Cloudflare infrastructure with the proposed backend, so a Cloudflare-wide outage pauses both orchestration and this fallback. | Second candidate. Qualify with synthetic/public tasks, then request owner approval for private-code processing. |
 | **Gemini API Free** | A real free API tier exists for eligible models. | Google Free-tier terms allow content to be used to improve products and may involve human review. Do not send confidential code, credentials, private project data, or personal data on this tier. | Public/synthetic-only optional provider; not in private-code failover. |
-| **Cerebras trial** | A small one-time trial credit is advertised; model eligibility varies. | A one-time credit is not a recurring free tier. | Development experiment only; not a long-term failover dependency. |
-| **Mistral Experiment / NVIDIA NIM free endpoints** | Free/trial access exists for some experimentation. | Free offers are restricted to prototyping/testing or have plan-specific data retention; they do not establish a dependable production service. | Exclude from live failover until a fresh model/terms review. |
 | **ChatGPT Free / Claude Free consumer sites** | Interactive consumer products exist. | They are not sanctioned machine-to-machine APIs. Anthropic's consumer terms prohibit automated bot/script access except as permitted through its API. API access is separate and must not be assumed free. | Do not automate consumer browser UIs. Use official APIs only. |
-| **GitHub Models** | Previously offered model access for experimentation. | GitHub announced its retirement on 2026-07-30. | Do not build on it. |
 
 ### Provider policy
 
@@ -113,7 +110,7 @@ This is model-provider failover, not multi-cloud disaster recovery. Workers AI s
 | **Cloudflare Workflows Free** | Durable orchestration, step retries, waits, and resume. | 3,000 steps/day; 1,024 steps/instance; 10 ms CPU/step; bounded persisted state; three-day retention for completed state/logs. D1 stores long-term history. | Recommended low-volume personal orchestrator. |
 | **Cloudflare D1 Free** | Persistent project/task/run/checkpoint ledger. | Daily read/write and storage quotas apply; over-quota operations fail rather than silently changing plans. Not unlimited throughput. | Recommended pilot source of truth; test SQL CAS and transaction behavior first. |
 | **Workers AI Free** | Second model endpoint without a separate provider key. | 10,000 neurons/day; model-specific input/output neuron costs apply. Quota exhaustion pauses the run. | Recommended fallback candidate. |
-| **GitHub Actions standard hosted runners** | Ephemeral checkout, build, test, browser test, patch validation, PR creation. | Standard runners are free for public repositories; each job maxes at six hours. Private repositories on GitHub Free have a monthly included-minutes and artifact-storage allowance; excess can be billed. | Use the existing public DevMate repository first. No private-repo execution until owner approval and a hard spending stop. |
+| **GitHub Actions standard hosted runners** | Ephemeral checkout, build, test, browser test, patch validation, PR creation. | Standard runners are free for public repositories; each job maxes at six hours. Private repositories on GitHub Free include 2,000 minutes/month and 500 MB of artifact storage; excess can be billed unless a hard spending stop is configured. | Use the existing public DevMate repository first. No private-repo execution until owner approval and a hard spending stop. |
 | **Browser tab / Service Worker** | UI and small event-driven tasks. | Browser may terminate idle service workers; event lifetime is bounded. Not an always-on scheduler. | Not the execution backend. |
 
 Cloudflare Queues are not required for the first pilot because Workflows already provides durable orchestration. If a separate queue is later justified, its Free plan has a 10,000-operations/day allowance and 24-hour message retention. D1 must still be the source of truth; a queue message is only a wake-up signal.
@@ -236,6 +233,8 @@ This proposal does not connect providers, create accounts/keys/secrets, grant pe
 - [Workers limits](https://developers.cloudflare.com/workers/platform/limits/), [Workflows limits](https://developers.cloudflare.com/workflows/reference/limits/), and [Workflows pricing](https://developers.cloudflare.com/workflows/reference/pricing/).
 - [D1 pricing](https://developers.cloudflare.com/d1/platform/pricing/) and [D1 FAQ](https://developers.cloudflare.com/d1/reference/faq/).
 - [Workers secrets](https://developers.cloudflare.com/workers/configuration/secrets/).
+- [Cloudflare Queues limits](https://developers.cloudflare.com/queues/platform/limits/) — optional queue quotas and retention.
+- [GitHub spending budgets](https://docs.github.com/en/billing/managing-your-billing/setting-up-budgets-to-control-spending) — hard-stop configuration before any private-repository overage.
 - [GitHub Actions hosted runners](https://docs.github.com/en/actions/reference/runners/github-hosted-runners), [usage limits](https://docs.github.com/en/actions/reference/limits), and [billing](https://docs.github.com/en/actions/concepts/billing-and-usage).
 - [MDN Service Worker lifecycle](https://developer.mozilla.org/en-US/docs/Web/API/Service_Worker_API/Using_Service_Workers).
 
@@ -243,7 +242,9 @@ Quotas, model availability, free-plan terms, and privacy settings can change. Re
 
 ---
 
-## Original owner task packet (preserved)
+## Original owner task packet (preserved as historical context)
+
+The following text is the original brief as received. Its status statements reflect the time it was written; the provider research and roadmap work are now recorded in the proposal above.
 
 # Roadmap request to the coordinator — autonomous multi-project management with provider failover
 
