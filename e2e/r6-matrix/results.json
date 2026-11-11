@@ -1,15 +1,15 @@
 {
-  "generatedAt": "2026-11-10T05:53:47.206Z",
+  "generatedAt": "2026-11-11T03:49:01.167Z",
   "command": "node e2e/r6-matrix/run.mjs",
   "environment": {
-    "chromium": "131.0.6778.33",
-    "playwright": "1.49.1",
+    "chromium": "158.0.8127.18",
+    "playwright": "1.65.0",
     "node": "v20.20.2",
     "os": "Linux 6.1.158+ x64",
     "headless": true,
     "origin": "http://localhost:<ephemeral>"
   },
-  "sourceCommit": "cc06f753ca262dae08b6d35c266b748b8fac41d3",
+  "sourceCommit": "d0e32ad1116e3845cd2b6387fbe135e20caa8322",
   "workingTreeDirty": false,
   "cases": [
     {
@@ -95,7 +95,7 @@
         {
           "name": "first load: panel describes the phase truthfully",
           "pass": true,
-          "detail": "Recovery: cutover not finished\n\nA storage cutover was declared and stopped at phase \"intent\". Editing is disabled on purpose. Your legacy workspace was preserved byte for byte and nothing has been del"
+          "detail": "Recovery: cutover not finished\n\nA storage cutover was declared and stopped at phase \"intent\". This version disabled editing on purpose and does not write your legacy workspace; it has deleted nothing."
         },
         {
           "name": "first load: editing is disabled",
@@ -140,7 +140,7 @@
         {
           "name": "after reload: panel describes the phase truthfully",
           "pass": true,
-          "detail": "Recovery: cutover not finished\n\nA storage cutover was declared and stopped at phase \"intent\". Editing is disabled on purpose. Your legacy workspace was preserved byte for byte and nothing has been del"
+          "detail": "Recovery: cutover not finished\n\nA storage cutover was declared and stopped at phase \"intent\". This version disabled editing on purpose and does not write your legacy workspace; it has deleted nothing."
         },
         {
           "name": "after reload: editing is disabled",
@@ -199,7 +199,7 @@
         {
           "name": "first load: panel describes the phase truthfully",
           "pass": true,
-          "detail": "Recovery: cutover not finished\n\nA storage cutover was declared and stopped at phase \"profiles-verified\". Editing is disabled on purpose. Your legacy workspace was preserved byte for byte and nothing h"
+          "detail": "Recovery: cutover not finished\n\nA storage cutover was declared and stopped at phase \"profiles-verified\". This version disabled editing on purpose and does not write your legacy workspace; it has delet"
         },
         {
           "name": "first load: editing is disabled",
@@ -244,7 +244,7 @@
         {
           "name": "after reload: panel describes the phase truthfully",
           "pass": true,
-          "detail": "Recovery: cutover not finished\n\nA storage cutover was declared and stopped at phase \"profiles-verified\". Editing is disabled on purpose. Your legacy workspace was preserved byte for byte and nothing h"
+          "detail": "Recovery: cutover not finished\n\nA storage cutover was declared and stopped at phase \"profiles-verified\". This version disabled editing on purpose and does not write your legacy workspace; it has delet"
         },
         {
           "name": "after reload: editing is disabled",
@@ -303,7 +303,7 @@
         {
           "name": "first load: panel describes the phase truthfully",
           "pass": true,
-          "detail": "Recovery: cutover not finished\n\nA storage cutover was declared and stopped at phase \"stores-verified\". Editing is disabled on purpose. Your legacy workspace was preserved byte for byte and nothing has"
+          "detail": "Recovery: cutover not finished\n\nA storage cutover was declared and stopped at phase \"stores-verified\". This version disabled editing on purpose and does not write your legacy workspace; it has deleted"
         },
         {
           "name": "first load: editing is disabled",
@@ -348,7 +348,7 @@
         {
           "name": "after reload: panel describes the phase truthfully",
           "pass": true,
-          "detail": "Recovery: cutover not finished\n\nA storage cutover was declared and stopped at phase \"stores-verified\". Editing is disabled on purpose. Your legacy workspace was preserved byte for byte and nothing has"
+          "detail": "Recovery: cutover not finished\n\nA storage cutover was declared and stopped at phase \"stores-verified\". This version disabled editing on purpose and does not write your legacy workspace; it has deleted"
         },
         {
           "name": "after reload: editing is disabled",
@@ -781,7 +781,7 @@
             },
             {
               "ok": true,
-              "changed": false,
+              "changed": true,
               "reason": null
             },
             {
@@ -822,7 +822,130 @@
             },
             {
               "ok": true,
-              "changed": false,
+              "changed": true,
+              "reason": null
+            },
+            {
+              "ok": true,
+              "changed": true,
+              "reason": null
+            }
+          ],
+          "markerWriteOrder": [
+            "intent",
+            "profiles-verified",
+            "stores-verified",
+            "committed"
+          ],
+          "final": "durable",
+          "stores": {
+            "migrationVerified": true,
+            "storesVerified": true
+          }
+        },
+        {
+          "begins": [
+            {
+              "ok": true,
+              "changed": true,
+              "reason": null
+            },
+            {
+              "ok": false,
+              "reason": "marker-present"
+            }
+          ],
+          "resumes": [
+            {
+              "ok": true,
+              "changed": true,
+              "reason": null
+            },
+            {
+              "ok": true,
+              "changed": true,
+              "reason": null
+            },
+            {
+              "ok": true,
+              "changed": true,
+              "reason": null
+            }
+          ],
+          "markerWriteOrder": [
+            "intent",
+            "profiles-verified",
+            "stores-verified",
+            "committed"
+          ],
+          "final": "durable",
+          "stores": {
+            "migrationVerified": true,
+            "storesVerified": true
+          }
+        },
+        {
+          "begins": [
+            {
+              "ok": true,
+              "changed": true,
+              "reason": null
+            },
+            {
+              "ok": false,
+              "reason": "marker-present"
+            }
+          ],
+          "resumes": [
+            {
+              "ok": true,
+              "changed": true,
+              "reason": null
+            },
+            {
+              "ok": true,
+              "changed": true,
+              "reason": null
+            },
+            {
+              "ok": true,
+              "changed": true,
+              "reason": null
+            }
+          ],
+          "markerWriteOrder": [
+            "intent",
+            "profiles-verified",
+            "stores-verified",
+            "committed"
+          ],
+          "final": "durable",
+          "stores": {
+            "migrationVerified": true,
+            "storesVerified": true
+          }
+        },
+        {
+          "begins": [
+            {
+              "ok": true,
+              "changed": true,
+              "reason": null
+            },
+            {
+              "ok": false,
+              "reason": "marker-present"
+            }
+          ],
+          "resumes": [
+            {
+              "ok": true,
+              "changed": true,
+              "reason": null
+            },
+            {
+              "ok": true,
+              "changed": true,
               "reason": null
             },
             {
@@ -863,7 +986,89 @@
             },
             {
               "ok": true,
-              "changed": false,
+              "changed": true,
+              "reason": null
+            },
+            {
+              "ok": true,
+              "changed": true,
+              "reason": null
+            }
+          ],
+          "markerWriteOrder": [
+            "intent",
+            "profiles-verified",
+            "stores-verified",
+            "committed"
+          ],
+          "final": "durable",
+          "stores": {
+            "migrationVerified": true,
+            "storesVerified": true
+          }
+        },
+        {
+          "begins": [
+            {
+              "ok": true,
+              "changed": true,
+              "reason": null
+            },
+            {
+              "ok": false,
+              "reason": "marker-present"
+            }
+          ],
+          "resumes": [
+            {
+              "ok": true,
+              "changed": true,
+              "reason": null
+            },
+            {
+              "ok": true,
+              "changed": true,
+              "reason": null
+            },
+            {
+              "ok": true,
+              "changed": true,
+              "reason": null
+            }
+          ],
+          "markerWriteOrder": [
+            "intent",
+            "profiles-verified",
+            "stores-verified",
+            "committed"
+          ],
+          "final": "durable",
+          "stores": {
+            "migrationVerified": true,
+            "storesVerified": true
+          }
+        },
+        {
+          "begins": [
+            {
+              "ok": true,
+              "changed": true,
+              "reason": null
+            },
+            {
+              "ok": false,
+              "reason": "marker-present"
+            }
+          ],
+          "resumes": [
+            {
+              "ok": true,
+              "changed": true,
+              "reason": null
+            },
+            {
+              "ok": true,
+              "changed": true,
               "reason": null
             },
             {
@@ -904,12 +1109,12 @@
             },
             {
               "ok": true,
-              "changed": false,
+              "changed": true,
               "reason": null
             },
             {
               "ok": true,
-              "changed": false,
+              "changed": true,
               "reason": null
             }
           ],
@@ -945,217 +1150,12 @@
             },
             {
               "ok": true,
-              "changed": false,
-              "reason": null
-            },
-            {
-              "ok": true,
-              "changed": false,
-              "reason": null
-            }
-          ],
-          "markerWriteOrder": [
-            "intent",
-            "profiles-verified",
-            "stores-verified",
-            "committed"
-          ],
-          "final": "durable",
-          "stores": {
-            "migrationVerified": true,
-            "storesVerified": true
-          }
-        },
-        {
-          "begins": [
-            {
-              "ok": true,
-              "changed": true,
-              "reason": null
-            },
-            {
-              "ok": false,
-              "reason": "marker-present"
-            }
-          ],
-          "resumes": [
-            {
-              "ok": true,
               "changed": true,
               "reason": null
             },
             {
               "ok": true,
-              "changed": false,
-              "reason": null
-            },
-            {
-              "ok": true,
-              "changed": false,
-              "reason": null
-            }
-          ],
-          "markerWriteOrder": [
-            "intent",
-            "profiles-verified",
-            "stores-verified",
-            "committed"
-          ],
-          "final": "durable",
-          "stores": {
-            "migrationVerified": true,
-            "storesVerified": true
-          }
-        },
-        {
-          "begins": [
-            {
-              "ok": true,
               "changed": true,
-              "reason": null
-            },
-            {
-              "ok": false,
-              "reason": "marker-present"
-            }
-          ],
-          "resumes": [
-            {
-              "ok": true,
-              "changed": true,
-              "reason": null
-            },
-            {
-              "ok": true,
-              "changed": false,
-              "reason": null
-            },
-            {
-              "ok": true,
-              "changed": false,
-              "reason": null
-            }
-          ],
-          "markerWriteOrder": [
-            "intent",
-            "profiles-verified",
-            "stores-verified",
-            "committed"
-          ],
-          "final": "durable",
-          "stores": {
-            "migrationVerified": true,
-            "storesVerified": true
-          }
-        },
-        {
-          "begins": [
-            {
-              "ok": true,
-              "changed": true,
-              "reason": null
-            },
-            {
-              "ok": false,
-              "reason": "marker-present"
-            }
-          ],
-          "resumes": [
-            {
-              "ok": true,
-              "changed": true,
-              "reason": null
-            },
-            {
-              "ok": true,
-              "changed": false,
-              "reason": null
-            },
-            {
-              "ok": true,
-              "changed": false,
-              "reason": null
-            }
-          ],
-          "markerWriteOrder": [
-            "intent",
-            "profiles-verified",
-            "stores-verified",
-            "committed"
-          ],
-          "final": "durable",
-          "stores": {
-            "migrationVerified": true,
-            "storesVerified": true
-          }
-        },
-        {
-          "begins": [
-            {
-              "ok": true,
-              "changed": true,
-              "reason": null
-            },
-            {
-              "ok": false,
-              "reason": "marker-present"
-            }
-          ],
-          "resumes": [
-            {
-              "ok": true,
-              "changed": true,
-              "reason": null
-            },
-            {
-              "ok": true,
-              "changed": false,
-              "reason": null
-            },
-            {
-              "ok": true,
-              "changed": false,
-              "reason": null
-            }
-          ],
-          "markerWriteOrder": [
-            "intent",
-            "profiles-verified",
-            "stores-verified",
-            "committed"
-          ],
-          "final": "durable",
-          "stores": {
-            "migrationVerified": true,
-            "storesVerified": true
-          }
-        },
-        {
-          "begins": [
-            {
-              "ok": true,
-              "changed": true,
-              "reason": null
-            },
-            {
-              "ok": false,
-              "reason": "marker-present"
-            }
-          ],
-          "resumes": [
-            {
-              "ok": true,
-              "changed": true,
-              "reason": null
-            },
-            {
-              "ok": true,
-              "changed": false,
-              "reason": null
-            },
-            {
-              "ok": true,
-              "changed": false,
               "reason": null
             }
           ],
@@ -1351,14 +1351,14 @@
           "name": "tab kill: state after kill is never indeterminate or malformed",
           "pass": true,
           "detail": [
-            "durable",
-            "durable",
-            "durable",
-            "durable",
-            "durable",
-            "durable",
-            "durable",
-            "durable",
+            "recovery",
+            "recovery",
+            "recovery",
+            "recovery",
+            "recovery",
+            "recovery",
+            "recovery",
+            "recovery",
             "durable",
             "durable",
             "durable",
@@ -1373,18 +1373,18 @@
           "name": "tab kill: the killed tab's Web Lock does not block recovery (resume completes quickly)",
           "pass": true,
           "detail": [
-            11,
-            11,
-            11,
-            7,
-            7,
-            7,
-            8,
-            12,
-            12,
-            17,
+            22,
+            18,
+            14,
+            26,
+            15,
+            14,
+            23,
+            18,
             10,
-            10
+            10,
+            12,
+            11
           ]
         },
         {
@@ -1395,13 +1395,13 @@
       "trials": [
         {
           "killAfterMs": 0,
-          "modeAfterKill": "durable",
+          "modeAfterKill": "recovery",
           "legacyExact": true,
           "resumed": {
             "ok": true,
             "mode": "durable"
           },
-          "resumeMs": 11,
+          "resumeMs": 22,
           "stores": {
             "migrationVerified": true,
             "storesVerified": true
@@ -1409,13 +1409,13 @@
         },
         {
           "killAfterMs": 1,
-          "modeAfterKill": "durable",
+          "modeAfterKill": "recovery",
           "legacyExact": true,
           "resumed": {
             "ok": true,
             "mode": "durable"
           },
-          "resumeMs": 11,
+          "resumeMs": 18,
           "stores": {
             "migrationVerified": true,
             "storesVerified": true
@@ -1423,13 +1423,13 @@
         },
         {
           "killAfterMs": 2,
-          "modeAfterKill": "durable",
+          "modeAfterKill": "recovery",
           "legacyExact": true,
           "resumed": {
             "ok": true,
             "mode": "durable"
           },
-          "resumeMs": 11,
+          "resumeMs": 14,
           "stores": {
             "migrationVerified": true,
             "storesVerified": true
@@ -1437,13 +1437,13 @@
         },
         {
           "killAfterMs": 3,
-          "modeAfterKill": "durable",
+          "modeAfterKill": "recovery",
           "legacyExact": true,
           "resumed": {
             "ok": true,
             "mode": "durable"
           },
-          "resumeMs": 7,
+          "resumeMs": 26,
           "stores": {
             "migrationVerified": true,
             "storesVerified": true
@@ -1451,13 +1451,13 @@
         },
         {
           "killAfterMs": 5,
-          "modeAfterKill": "durable",
+          "modeAfterKill": "recovery",
           "legacyExact": true,
           "resumed": {
             "ok": true,
             "mode": "durable"
           },
-          "resumeMs": 7,
+          "resumeMs": 15,
           "stores": {
             "migrationVerified": true,
             "storesVerified": true
@@ -1465,13 +1465,13 @@
         },
         {
           "killAfterMs": 8,
-          "modeAfterKill": "durable",
+          "modeAfterKill": "recovery",
           "legacyExact": true,
           "resumed": {
             "ok": true,
             "mode": "durable"
           },
-          "resumeMs": 7,
+          "resumeMs": 14,
           "stores": {
             "migrationVerified": true,
             "storesVerified": true
@@ -1479,13 +1479,13 @@
         },
         {
           "killAfterMs": 12,
-          "modeAfterKill": "durable",
+          "modeAfterKill": "recovery",
           "legacyExact": true,
           "resumed": {
             "ok": true,
             "mode": "durable"
           },
-          "resumeMs": 8,
+          "resumeMs": 23,
           "stores": {
             "migrationVerified": true,
             "storesVerified": true
@@ -1493,13 +1493,13 @@
         },
         {
           "killAfterMs": 16,
-          "modeAfterKill": "durable",
+          "modeAfterKill": "recovery",
           "legacyExact": true,
           "resumed": {
             "ok": true,
             "mode": "durable"
           },
-          "resumeMs": 12,
+          "resumeMs": 18,
           "stores": {
             "migrationVerified": true,
             "storesVerified": true
@@ -1513,7 +1513,7 @@
             "ok": true,
             "mode": "durable"
           },
-          "resumeMs": 12,
+          "resumeMs": 10,
           "stores": {
             "migrationVerified": true,
             "storesVerified": true
@@ -1527,7 +1527,7 @@
             "ok": true,
             "mode": "durable"
           },
-          "resumeMs": 17,
+          "resumeMs": 10,
           "stores": {
             "migrationVerified": true,
             "storesVerified": true
@@ -1541,7 +1541,7 @@
             "ok": true,
             "mode": "durable"
           },
-          "resumeMs": 10,
+          "resumeMs": 12,
           "stores": {
             "migrationVerified": true,
             "storesVerified": true
@@ -1555,7 +1555,7 @@
             "ok": true,
             "mode": "durable"
           },
-          "resumeMs": 10,
+          "resumeMs": 11,
           "stores": {
             "migrationVerified": true,
             "storesVerified": true
@@ -1576,9 +1576,9 @@
           }
         },
         {
-          "name": "timeout is bounded (waited 8007 ms, expected about 8000)",
+          "name": "timeout is bounded (waited 8014 ms, expected about 8000)",
           "pass": true,
-          "detail": 8007
+          "detail": 8014
         },
         {
           "name": "no marker and no preserved copy were written while contended",
@@ -1610,11 +1610,55 @@
         }
       ],
       "totalWritesInCleanRun": 11
+    },
+    {
+      "id": "C10",
+      "title": "Live refresh in a real open tab: another tab's write is shown without a reload (real storage events)",
+      "checks": [
+        {
+          "name": "10a before the old write: recovery status, no alert",
+          "pass": true
+        },
+        {
+          "name": "10a the old writer succeeds (R1 limitation again)",
+          "pass": true
+        },
+        {
+          "name": "10a the open page flips to an alert WITHOUT reloading",
+          "pass": true
+        },
+        {
+          "name": "10a the alert names the divergence and states the real limitation",
+          "pass": true
+        },
+        {
+          "name": "10a the current (diverged) source appears live and editing stays locked",
+          "pass": true
+        },
+        {
+          "name": "10a the page made no storage write while refreshing",
+          "pass": true,
+          "detail": []
+        },
+        {
+          "name": "10b legacy mode: editing enabled before the marker",
+          "pass": true
+        },
+        {
+          "name": "10b the open page locks editing and shows the recovery panel without reloading",
+          "pass": true
+        },
+        {
+          "name": "10b the page made no storage write",
+          "pass": true,
+          "detail": []
+        }
+      ]
     }
   ],
   "summary": {
-    "cases": 12,
-    "checks": 135,
+    "cases": 13,
+    "checks": 144,
     "failedChecks": 0,
     "passed": true
   }

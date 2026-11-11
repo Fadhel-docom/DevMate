@@ -2166,3 +2166,26 @@ Claude: perform only the isolated Playwright audit/remediation and stale harness
 
 ### 2026-11-11 — Security advisory precision correction
 The preceding review note's tentative description of the Playwright finding as missing-Origin/DNS-rebinding behaviour and a `<1.56.0` threshold is **not verified and must not be repeated as fact**. The CI log exposed only the severity count, not the full audit JSON. A confirmed GitHub-reviewed Playwright advisory is GHSA-7mvr-c777-76hp / CVE-2025-59288: affected versions `<1.55.1`, patched in `1.55.1`, involving installer scripts using `curl -k` without certificate verification (GitHub Advisory Database: https://github.com/advisories/GHSA-7mvr-c777-76hp). This advisory may explain the observed alert, but only the full isolated-harness `npm audit --json` can confirm the exact finding and dependency path. Claude's assignment remains: inspect the full audit, upgrade to a current patched stable version, regenerate the lockfile, and verify the result. Do not conflate the separate Playwright MCP server DNS-rebinding advisory with the npm `playwright` package.
+
+
+---
+
+## 2026-11-11 — Claude: isolated Playwright security follow-up (bounded repair batch under accepted proposal C) — **DONE; stopped for ChatGPT exact-SHA re-verification**
+
+**Evidence SHA: `d0e32ad1116e3845cd2b6387fbe135e20caa8322`.** Scope was only what ChatGPT's 2026-11-11 verdict listed: audit the isolated harness, upgrade Playwright, regenerate the lockfile with npm, fix stale wording, rerun the full R6 matrix. No scope expansion, no merge. `git diff d1c1128..d0e32ad --name-only` = `e2e/r6-matrix/{README.md,package.json,package-lock.json,run.mjs}` only (no `src/`, no workflow file). Commits after `d0e32ad` are documentation only.
+
+### Audit (full `npm audit --json` in `e2e/r6-matrix`, before the change)
+One finding, direct dependency `playwright@1.49.1`: **GHSA-7mvr-c777-76hp** (CWE-347, severity high, range `<1.55.1`): browsers downloaded and installed without verifying the TLS certificate. It is the advisory ChatGPT named as a candidate; the JSON confirms it and the dependency path (`node_modules/playwright`, direct; `playwright-core` only as its dependency). `fixAvailable`: 1.65.0, not semver-major. It affects the installer used by the test tool, not the production app.
+
+### Change
+- `npm install playwright@1.65.0 --save-exact` in `e2e/r6-matrix` (npm regenerated `package-lock.json`; no hand edit, no `audit fix --force`). 1.65.0 is the current `latest` dist-tag and requires Node ≥ 20 (CI and the sandbox use Node 20).
+- `package.json` description corrected (it said "Not part of … CI"); it now states the harness runs in `r6-chromium.yml` and why the version is pinned. `README.md` and the header comment of `run.mjs` no longer say "not run by GitHub Actions" and no longer cite 1.49.1.
+- After the change: isolated `npm audit` → **0 vulnerabilities** (info/low/moderate/high/critical all 0).
+
+### Verification at `d0e32ad`
+- Local clean run of `node e2e/r6-matrix/run.mjs`: **13 cases / 144 checks / 0 failed**, Playwright 1.65.0, **Chromium 158.0.8127.18** (the earlier evidence used Chromium 131, so this also re-proves the suite on a much newer browser).
+- GitHub Actions on `d0e32ad`, all success: DevMate CI https://github.com/Fadhel-docom/DevMate/actions/runs/42955182910 ; P1 IndexedDB CAS Chromium proof https://github.com/Fadhel-docom/DevMate/actions/runs/42955188832 ; R6 Chromium matrix https://github.com/Fadhel-docom/DevMate/actions/runs/42955188768 (checked-out SHA asserted = `d0e32ad…`; both `npm ci` steps print "found 0 vulnerabilities"; summary `{"cases":13,"checks":144,"failedChecks":0,"passed":true}`, artifact `sourceCommit` = `d0e32ad…`).
+- Application code, unit tests and workflows are byte-identical to the previously verified `d3a15d7` (no `src/` change), so the 364-test result carries over; DevMate CI re-ran them anyway on this SHA.
+
+### Not done on purpose
+Not touched: the tracked `e2e/r6-matrix/results.json` snapshot (still dated by its `sourceCommit`; the CI artifact is authoritative), proposal A (the STATUS current-state block) and any archiving, and every item outside the listed defect. Next exact action: ChatGPT re-verifies `d0e32ad` (+ docs-only commits) and decides on merge under the split gate. Live cutover remains prohibited.
