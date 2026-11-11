@@ -7,7 +7,7 @@
 Adopt a **cloud-orchestrated, checkpoint-first architecture** as the target for DevMate:
 
 - Cloudflare Workers + Workflows for the API and durable orchestration.
-- Cloudflare D1 as the authoritative project/task/run/checkpoint ledger.
+- Cloudflare D1 as the authoritative project/task/run/checkpoint ledger for the pilot, subject to confirming the Free plan is suitable for the intended personal production use.
 - Groq Free API as the first external model candidate, subject to account-level ZDR verification.
 - Cloudflare Workers AI (GLM-4.7-Flash) as a second free model candidate.
 - A least-privilege GitHub App for selected repositories.
@@ -108,7 +108,7 @@ This is model-provider failover, not multi-cloud disaster recovery. Workers AI s
 |---|---|---|---|
 | **Cloudflare Workers Free** | API, authentication checks, webhooks, provider routing. | 100,000 requests/day; 10 ms CPU per request; five Cron triggers/account. CPU-heavy work must be split or delegated. | Control plane only. |
 | **Cloudflare Workflows Free** | Durable orchestration, step retries, waits, and resume. | 3,000 steps/day; 1,024 steps/instance; 10 ms CPU/step; bounded persisted state; three-day retention for completed state/logs. D1 stores long-term history. | Recommended low-volume personal orchestrator. |
-| **Cloudflare D1 Free** | Persistent project/task/run/checkpoint ledger. | Daily read/write and storage quotas apply; over-quota operations fail rather than silently changing plans. Not unlimited throughput. | Recommended pilot source of truth; test SQL CAS and transaction behavior first. |
+| **Cloudflare D1 Free** | Persistent project/task/run/checkpoint ledger. | 5 million rows read/day, 100,000 rows written/day, 5 GB total storage, and 10 databases. A database is single-threaded; Cloudflare estimates about 1,000 simple 1 ms queries/second, but 100 ms queries yield about 10/second. Exceeding daily limits returns errors; Cloudflare describes Free as a prototype/experiment tier. | Recommended pilot source of truth; start with one indexed database partitioned by project ID. Confirm Free-plan suitability before relying on it for personal production use. |
 | **Workers AI Free** | Second model endpoint without a separate provider key. | 10,000 neurons/day; model-specific input/output neuron costs apply. Quota exhaustion pauses the run. | Recommended fallback candidate. |
 | **GitHub Actions standard hosted runners** | Ephemeral checkout, build, test, browser test, patch validation, PR creation. | Standard runners are free for public repositories; each job maxes at six hours. Private repositories on GitHub Free include 2,000 minutes/month and 500 MB of artifact storage; excess can be billed unless a hard spending stop is configured. | Use the existing public DevMate repository first. No private-repo execution until owner approval and a hard spending stop. |
 | **Browser tab / Service Worker** | UI and small event-driven tasks. | Browser may terminate idle service workers; event lifetime is bounded. Not an always-on scheduler. | Not the execution backend. |
@@ -145,7 +145,7 @@ Run states: `QUEUED`, `PLANNING`, `EXECUTING`, `VERIFYING`, `COMPLETED`, `WAITIN
 ### M0 — Close evidence and choose the storage authority
 Finish independent review/rebase of current evidence PRs; correct the S2-16 root-cause wording; keep PR #37 Draft; rebase PR #34 accessibility work after the storage sequence. Decide Cloudflare D1/Workflows versus IndexedDB as the authoritative store. Recommendation: Cloudflare-first. R1 and legacy migration remain separately gated.
 
-**Exit:** owner records the architecture decision. No migration in M0.
+**Exit:** owner records the architecture decision. No migration in M0. Cloudflare's D1 Free plan is explicitly guaranteed for prototyping/experimentation; before M5, confirm its terms and reliability are suitable for the intended personal production use. If not, stop rather than silently move to Paid.
 
 ### M1 — Cloudflare durability proof (synthetic data only)
 Create an isolated Worker + Workflow + D1 proof with synthetic projects/tasks. Implement versioned D1 CAS, append-only events, and checkpoints before/after every step. No GitHub App, provider key, real project data, or production UI.
