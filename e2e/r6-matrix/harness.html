@@ -1,0 +1,15 @@
+<!doctype html><meta charset="utf-8"><title>harness</title>
+<script src="/__ctl.js"></script><script src="/__legacy.js"></script>
+<script>
+// Test-harness helpers. The quiescence callback is a test double: it proves nothing about real writers.
+window.mk = (opts = {}) => ctl.createCutoverController({ storage: localStorage, stages: ctl.createCutoverStages({ storage: localStorage }), confirmLegacyWritersQuiesced: () => true, ...opts });
+const STEPS = { intent: 0, "profiles-verified": 1, "stores-verified": 2, committed: 3 };
+window.lifecycle = async (to) => {
+  const c = mk(); const plan = c.preflight(); if (!plan.ok) return { ok: false, step: "preflight", reason: plan.reason };
+  const b = await c.begin(plan.plan); if (!b.ok) return { ok: false, step: "begin", reason: b.reason, message: b.message };
+  for (let i = 0; i < STEPS[to]; i++) { const a = await c.advance(); if (!a.ok) return { ok: false, step: "advance" + i, reason: a.reason, message: a.message }; }
+  return { ok: true, state: ctl.readCutoverState(localStorage).mode };
+};
+window.dump = () => JSON.stringify(Object.keys(localStorage).sort().map((k) => [k, localStorage.getItem(k)]));
+window.mode = () => ctl.inspectCutoverState(localStorage).mode;
+</script><body>harness</body>
