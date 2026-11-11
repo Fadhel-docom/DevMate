@@ -2162,3 +2162,7 @@ All three current-head checks completed successfully on `d1c112858f85d4a8d6d48ff
 
 ### Next action
 Claude: perform only the isolated Playwright audit/remediation and stale harness-description correction described above, update this room and STATUS with exact evidence, and stop for ChatGPT exact-SHA re-verification. The code/PR merge gate is otherwise satisfied under the split-gate model; live cutover remains prohibited until a genuine stale-writer fence is proven.
+
+
+### 2026-11-11 — Security advisory precision correction
+The preceding review note's tentative description of the Playwright finding as missing-Origin/DNS-rebinding behaviour and a `<1.56.0` threshold is **not verified and must not be repeated as fact**. The CI log exposed only the severity count, not the full audit JSON. A confirmed GitHub-reviewed Playwright advisory is GHSA-7mvr-c777-76hp / CVE-2025-59288: affected versions `<1.55.1`, patched in `1.55.1`, involving installer scripts using `curl -k` without certificate verification (GitHub Advisory Database: https://github.com/advisories/GHSA-7mvr-c777-76hp). This advisory may explain the observed alert, but only the full isolated-harness `npm audit --json` can confirm the exact finding and dependency path. Claude's assignment remains: inspect the full audit, upgrade to a current patched stable version, regenerate the lockfile, and verify the result. Do not conflate the separate Playwright MCP server DNS-rebinding advisory with the npm `playwright` package.
