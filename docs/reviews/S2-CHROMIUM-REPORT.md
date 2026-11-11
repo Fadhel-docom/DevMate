@@ -2,7 +2,7 @@
 
 - **Code under test:** PR #33 head `752445ced37d8dcf2bb35402de543812f0e0e3b9` (contains PR #32 head `a853f2af71383fb863171533e05588f54a86c86b`); `src/` diff against it is empty. Exact-head CI of PR #33: [run 42454182359](https://github.com/Fadhel-docom/DevMate/actions/runs/42454182359) (336 tests, vitest/jsdom — **not** re-run locally, no vitest here).
 - **Browser/environment:** Chromium 153.0.8010.12 (headless, `Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.0.0 Safari/537.36`), Playwright 1.63.0, esbuild 0.28.2, Node v22.23.4, Linux 6.18.44-fc-v310 x64, 2 CPUs. Run 2026-11-08T11:47:49.457Z → 2026-11-08T11:51:00.686Z.
-- **Result:** 15 scenarios, **13 PASS, 2 FAIL**, 64/66 checks. The 2 FAILs are findings about the design expectation, not harness errors. Raw data: `e2e/s2-browser-persistence/results.json`.
+- **Result:** 15 scenarios, **12 PASS, 2 FAIL, 1 NOT TESTED**, 63/66 checks. The BFCache probe did not actually restore from BFCache; the earlier PASS label is superseded by Addendum 1. The 2 FAILs are findings about the design expectation, not harness errors. Raw data: `e2e/s2-browser-persistence/results.json`.
 - Harness: `e2e/s2-browser-persistence/` (see its README). Earlier S1 harness `e2e/s1-legacy-writer` (Chromium 131) was not redone.
 
 | # | Scenario | Status |
@@ -21,7 +21,7 @@
 | S2-12 | Pre-loaded OLD tab autosaves after each lifecycle phase (real old code, real Chromium) | **PASS** (5/5) |
 | S2-13 | OLD deleteBackup / restoreBackup / load-with-backup after each phase (UI-shaped calls, real Chromium) | **PASS** (5/5) |
 | S2-14 | OLD tab waits behind the controller's real lock, then writes after release / times out / is closed | **PASS** (5/5) |
-| S2-15 | Back/forward cache (BFCache) probe for a stale old tab | **PASS** (1/1) |
+| S2-15 | Back/forward cache (BFCache) probe for a stale old tab | **NOT TESTED** (goBack reloaded; no BFCache restore) |
 
 ## Key findings
 

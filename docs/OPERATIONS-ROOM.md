@@ -2322,3 +2322,14 @@ Open and validate a Draft PR for the harness hardening. After exact-head CI and 
 - Not done / why: no fix (production code is out of scope); BFCache not testable in this headless build; real UI not run.
 - Help request to partner/owner: decide whether this save-path defect is in scope for PR-D or a separate issue; independent review of record 2.
 - Boundaries kept: no production change, PR #32/#33 untouched, no S3, no cutover, nothing merged.
+
+
+---
+
+## 2026-11-11 — PR #35 CI gate correction after first exact-head run
+
+- PR #35 head before correction: `2431ed0629bc0d0f39748cc897c6332e34bc4def`, directly based on current base `b7672daa9138d8a8f6bbc43e6fb5d70e508983e1`.
+- Exact-head P1 run `42960213571`: Chromium CAS job passed; R6 passed (13 cases / 144 checks / 0 failures); S2 harness ran, but its workflow gate failed because it still expected 15 scenarios and only allow-listed S2-02/S2-04. The newly added S2-16 was a known, documented product finding (8/40 simultaneous pairs both acknowledged; one acknowledged edit missing in the sustained 50-edit run), but was omitted from the full-suite allow-list. This is a **workflow expectation bug**, not a harness execution error.
+- Corrective change: add S2-16 to the explicit known-findings allow-list and require all 16 scenarios to be present. No FAIL is suppressed generally: any ERROR or any unlisted FAIL still fails CI. The separate focused addendum continues to require S2-15 honest PASS/NOT TESTED and permits only the known S2-16 FAIL.
+- Documentation correction: S2-15 is NOT TESTED (the browser reloaded instead of restoring from BFCache); original 15-scenario result is now 12 PASS / 2 FAIL / 1 NOT TESTED. S2-16 remains a separate reproducible failure, not reclassified as success.
+- Re-run the exact corrected head; do not merge on the first run.
