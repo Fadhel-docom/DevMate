@@ -58,12 +58,12 @@ jobs:
         env:
           DEVMATE_TEST_URL: http://127.0.0.1:4173
         run: node e2e/cas-store-harness/run-chromium.mjs
-      - name: Runner self-test - uncaught page and worker exceptions must fail fast
+      - name: Runner self-test - uncaught page, second-tab and racer-worker exceptions must fail fast
         env:
           DEVMATE_TEST_URL: http://127.0.0.1:4173
           DEVMATE_HARNESS_TIMEOUT_MS: "60000"
         run: |
-          for mode in page-exception worker-exception; do
+          for mode in page-exception worker-exception racer-exception; do
             start="$(date +%s)"
             if DEVMATE_HARNESS_QUERY="?selftest=${mode}" node e2e/cas-store-harness/run-chromium.mjs > "/tmp/selftest-${mode}.log" 2>&1; then
               echo "runner PASSED a deliberately failing page (${mode})"; cat "/tmp/selftest-${mode}.log"; exit 1
@@ -73,5 +73,11 @@ jobs:
             grep -n "SELFTEST\|monitored\|worker=1" "/tmp/selftest-${mode}.log" | head -n 8
             grep -q "SELFTEST" "/tmp/selftest-${mode}.log" || { echo "failure was not caused by the injected exception"; cat "/tmp/selftest-${mode}.log"; exit 1; }
             test "$elapsed" -lt 45
+            if [ "$mode" = "racer-exception" ]; then
+              # The failure must be the racer's own in-worker error report, not a timeout or a host/CDP fallback.
+              grep -q "Chromium harness failed: racer parent: uncaught: .*SELFTEST racer uncaught exception" "/tmp/selftest-${mode}.log" || { echo "racer-exception did not fail through the racer.js error monitor"; cat "/tmp/selftest-${mode}.log"; exit 1; }
+              if grep -q "did not finish within\|timeout after" "/tmp/selftest-${mode}.log"; then echo "racer-exception failed by timeout"; cat "/tmp/selftest-${mode}.log"; exit 1; fi
+              test "$elapsed" -lt 20
+            fi
           done
           grep -q "worker=1" /tmp/selftest-worker-exception.log || { echo "worker tab was not monitored by the runner"; exit 1; }

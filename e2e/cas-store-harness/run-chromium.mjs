@@ -10,7 +10,7 @@ const chromiumBin = process.env.CHROMIUM_BIN ?? "chromium";
 const overallTimeoutMs = Number(process.env.DEVMATE_HARNESS_TIMEOUT_MS ?? 240000);
 // A passing run must have executed every one of these checks (guards against silently skipped checks).
 const REQUIRED_CHECKS = [
-  "ATOMICITY-REAL", "ATOMICITY-MUTANT-SPLIT", "RACE-REAL", "RACE-MUTANT",
+  "ATOMICITY-REAL", "ATOMICITY-MUTANT-SPLIT", "THREADS-INDEPENDENT", "RACE-REAL", "RACE-MUTANT",
   "BACKUP-LIMIT", "ERRCLASS-REQUEST-ERROR", "VERSIONCHANGE-FAIL-CLOSED"
 ];
 
