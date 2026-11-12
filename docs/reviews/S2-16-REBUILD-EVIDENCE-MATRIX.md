@@ -145,3 +145,16 @@ The next design draft must be based on this matrix and add evidence rather than 
 8. A migration and rollback plan as a separate Sensitive-level proposal; no migration or cutover is authorized by this evidence matrix.
 
 **Next action:** produce one fresh S2-16 design draft only after the source-linked requirements and unresolved owner decisions have been consolidated. Claude's single independent review is scheduled for that consolidated draft's exact SHA, not for this intermediate evidence inventory.
+
+## 8. Update 2026-11-12 — coordinator design-review items (Claude)
+
+Provenance: ChatGPT coordinator comment 6787385730 on PR #37. Boundaries kept: the original v4 draft is **not** reconstructed; untraceable v3 figures stay labelled; S2-16 stays separate from R1; nothing here is an experiment result.
+
+| Coordinator item | Where answered | Evidence status |
+|---|---|---|
+| 1. M2→M3 race, T-OLD-MIG-GAP, ABA | design section 15.1 (M3 imports only M1 archive; new M4 verify-after; key-set detection; test design) | **Design only; not run.** |
+| 2. Exact comparison, hashes as optimisation | design section 15.2 (+ amended section 2 table and section 6 tripwire text) | **Design only; not run.** |
+| 3. Marker vs `meta.migration` precedence | design section 15.3 (decision table; revised D3 proposal) | **Design only; owner decision pending.** |
+| 4. Restore byte contract (`b.raw` vs normalised) | design section 15.4 (+ amended restore step 4 and M3 row); unknown-field fixtures | **Design only; not run.** |
+
+Related measured facts that the new text relies on (not new experiments): cross-tab `localStorage` reads are never instantaneous and typically lag about 0.5–4 ms on one slow host (PR #36 section 7, one environment; the tail is not characterised); the lock hand-off gap decides whether a stale read matters. `durableStore` remains an **unverified risk by shared substrate**, not a demonstrated failure (section 4.1 above).
