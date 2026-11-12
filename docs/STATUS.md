@@ -1011,3 +1011,13 @@ Open a Draft PR from `feature/p2-cas-harness-hardening` to `feature/phase-1-foun
 - F1: the PR #39 description is rewritten to the final Dedicated Worker design and carries the exact-head CI and Chromium evidence.
 - Unchanged: R1 and S2-16 remain open; the IndexedDB CAS stays an isolated prototype; PR #39 stays Draft pending independent verification.
 
+<!-- Carried over from PR #34 (feature/keyboard-accessibility) when its branch was synchronised with the base on 2026-11-11; dated entries below are historical. -->
+## Current state — 2026-11-08 (keyboard accessibility PR open; other work unchanged)
+
+- Branch `feature/keyboard-accessibility`, base `feature/phase-1-foundation` at `3c60a8529ae99d869c3c98970c2df9ff37895d42`. One PR, ready for review, not merged.
+- Scope: focus indicator, skip link and landmarks, accessible names, polite announcements for actions, chat log semantics, loading/error semantics, focus return after reload, backup-group/dialog semantics. No storage, recovery, dependency, provider or design changes.
+- Local verification (sandbox, Node 24.22.1, npm 10.9.2): 9 test files / 227 tests passed (216 before + 11 new); `tsc --noEmit && vite build` passed.
+- PR #34: https://github.com/Fadhel-docom/DevMate/pull/34. Implementation commit `105e6b52785efdbd4fb351ab976ec9c5f9b5d747`; exact-head Actions run `42459518037` (`verify`) concluded success for `npm ci`, audit report, `npm test` and `npm run build` (job/step conclusions only; raw logs not inspected). A docs-only commit follows that SHA to record this.
+- Not verified: real browser, Android, screen readers, automated axe/Lighthouse, and colour contrast of existing small text.
+- PR #32 and PR #33 are untouched and keep their own status; expect a textual conflict in `src/App.tsx`, `src/BackupManager.tsx` and `src/App.test.tsx` for whichever merges second.
+- No merge, deployment, or `main` change was made by this task.

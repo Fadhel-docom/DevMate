@@ -96,6 +96,30 @@ export default function App() {
   const [messages, setMessages] = useState<Message[]>([
     { id: "welcome", role: "assistant", text: "Hi! I’m DevMate. Tell me what you want to build, fix, or understand. This preview uses a local demo assistant and does not call an AI service." }
   ]);
+  const mainRef = useRef<HTMLElement>(null);
+  const reloadRef = useRef<HTMLButtonElement>(null);
+  const [reloadTick, setReloadTick] = useState(0);
+  // Polite, visually hidden announcements for outcomes that have no other text on screen
+  // (project or task added, active project changed, empty submit). Rendered in a keyed node
+  // so an identical message is announced again instead of being silently deduplicated.
+  const [announcement, setAnnouncement] = useState({ id: 0, text: "" });
+  function announce(text: string) { setAnnouncement((current) => ({ id: current.id + 1, text })); }
+
+  useEffect(() => {
+    if (!loaded) return;
+    announce(`Workspace ready. ${projects.length} ${projects.length === 1 ? "project" : "projects"}.`);
+  }, [loaded]);
+
+  useEffect(() => {
+    // The reload button unmounts while the workspace reloads, which would drop keyboard focus onto <body>.
+    if (reloadTick > 0) {
+      const target = reloadRef.current ?? mainRef.current;
+      // <main> is a programmatic focus target, not an interactive control. Mark it so the stylesheet shows a visible
+      // indicator even when the browser would not treat this focus as :focus-visible (for example after a mouse click).
+      if (target === mainRef.current) target?.setAttribute("data-focus-moved", "true");
+      target?.focus();
+    }
+  }, [reloadTick]);
 
   useEffect(() => {
     let active = true;
@@ -205,44 +229,58 @@ export default function App() {
     event.preventDefault();
     if (!canEdit) return;
     const name = newProject.trim();
-    if (!name) return;
+    if (!name) { announce("Enter a project name first."); return; }
     const project = { id: crypto.randomUUID(), name, tasks: [] };
     setProjects((current) => [...current, project]);
     setActiveId(project.id);
     setNewProject("");
+    announce(`Project added: ${name}. It is now selected.`);
   }
   function addTask(event: FormEvent) {
     event.preventDefault();
     if (!canEdit) return;
     const title = newTask.trim();
-    if (!title || !activeProject) return;
+    if (!title) { announce("Enter a task description first."); return; }
+    if (!activeProject) return;
     const task = { id: crypto.randomUUID(), title, done: false, createdAt: Date.now() };
     setProjects((current) => current.map((project) =>
       project.id === activeProject.id ? { ...project, tasks: [...project.tasks, task] } : project
     ));
     setNewTask("");
+    announce(`Task added: ${title}`);
   }
   function toggleTask(taskId: string) {
     if (!canEdit) return;
+    const target = activeProject?.tasks.find((task) => task.id === taskId);
+    if (target) announce(`${target.done ? "Task reopened" : "Task completed"}: ${target.title}`);
     setProjects((current) => current.map((project) => project.id === activeProject.id
       ? { ...project, tasks: project.tasks.map((task) => task.id === taskId ? { ...task, done: !task.done } : task) }
       : project
     ));
   }
+  function selectProject(project: Project) {
+    if (project.id === activeProject?.id) return;
+    setActiveId(project.id);
+    const open = project.tasks.filter((task) => !task.done).length;
+    announce(`Showing ${project.name}. ${open} open ${open === 1 ? "task" : "tasks"}.`);
+  }
   function sendMessage(event: FormEvent) {
     event.preventDefault();
     const text = prompt.trim();
-    if (!text) return;
+    if (!text) { announce("Type a message first."); return; }
     const response = "I’ve saved your message in this demo conversation. AI connection is intentionally disabled in Phase 1, so no API is called and no usage quota is consumed. The next step is to connect a free/approved model provider safely.";
     setMessages((current) => [...current, { id: crypto.randomUUID(), role: "user", text }, { id: crypto.randomUUID(), role: "assistant", text: response }]);
     setPrompt("");
   }
   return (
-    <main className="shell">
+    <div className="shell">
+      <a className="skip-link" href="#main-content">Skip to main content</a>
       <header className="topbar">
-        <a className="brand" href="/" aria-label="DevMate home"><span className="brand-mark">D</span><span>DevMate</span></a>
+        <a className="brand" href="/" aria-label="DevMate home"><span className="brand-mark" aria-hidden="true">D</span><span>DevMate</span></a>
         <span className="top-note">Your coding workspace</span>
       </header>
+      <main id="main-content" ref={mainRef} tabIndex={-1} aria-busy={!loaded} onBlur={(event) => { if (event.target === event.currentTarget) event.currentTarget.removeAttribute("data-focus-moved"); }}>
+      <div className="sr-only" aria-live="polite" aria-atomic="true" data-testid="sr-announcer"><span key={announcement.id}>{announcement.text}</span></div>
       {!loaded && <p role="status" style={noticeStyle}>Loading your workspace safely…</p>}
       {startupNotice && <p role="status" style={noticeStyle}>{startupNotice}</p>}
       {cutoverBanner && <p role={cutoverBanner.tone} data-testid="cutover-banner" style={cutoverBanner.tone === "alert" ? errorStyle : noticeStyle}>{cutoverBanner.text}</p>}
@@ -250,7 +288,7 @@ export default function App() {
       {saveFailure && <p role="alert" style={errorStyle}>{saveMessage(saveFailure)}</p>}
       {recoveryRequired && <p role="alert" style={errorStyle}>Editing is locked. Restore the retained pre-restore backup from the Backups panel before continuing.</p>}
       {loaded && !recoveryRequired && (initial?.status === "unavailable" || saveFailure?.reason === "conflict") && (
-        <button type="button" className="secondary-button" onClick={() => { void reloadFromStorage(); }}>
+        <button type="button" ref={reloadRef} className="secondary-button" onClick={() => { void reloadFromStorage().then(() => setReloadTick((tick) => tick + 1)); }}>
           Reload saved workspace
         </button>
       )}
@@ -261,48 +299,49 @@ export default function App() {
         <div className="status"><span className="status-dot" /> Phase 1 · Local demo · No AI API calls</div>
       </section>
       <div className="workspace">
-        <aside className="panel project-panel">
-          <div className="section-heading"><div><p className="eyebrow">WORKSPACE</p><h2>Projects</h2></div><span className="count">{projects.length}</span></div>
+        <aside className="panel project-panel" aria-labelledby="projects-heading">
+          <div className="section-heading"><div><p className="eyebrow">WORKSPACE</p><h2 id="projects-heading">Projects</h2></div><span className="count">{projects.length}<span className="sr-only"> {projects.length === 1 ? "project" : "projects"}</span></span></div>
           <form className="inline-form" onSubmit={addProject}>
             <input aria-label="New project name" disabled={!canEdit} value={newProject} onChange={(event) => setNewProject(event.target.value)} placeholder="New project name" />
             <button className="icon-button" type="submit" aria-label="Add project" disabled={!canEdit}>+</button>
           </form>
           <nav className="project-list" aria-label="Projects">
             {projects.map((project) => (
-              <button key={project.id} disabled={!loaded} className={project.id === activeProject?.id ? "project-link active" : "project-link"} onClick={() => setActiveId(project.id)}>
-                <span className="project-symbol">▦</span><span>{project.name}</span>
+              <button key={project.id} disabled={!loaded} aria-current={project.id === activeProject?.id ? "true" : undefined} className={project.id === activeProject?.id ? "project-link active" : "project-link"} onClick={() => selectProject(project)}>
+                <span className="project-symbol" aria-hidden="true">▦</span><span>{project.name}</span>
               </button>
             ))}
           </nav>
         </aside>
-        <section className="panel tasks-panel">
-          <div className="section-heading"><div><p className="eyebrow">PLAN THE WORK</p><h2>{activeProject?.name ?? "Tasks"}</h2></div><span className="count">{activeProject?.tasks.filter((task) => !task.done).length ?? 0} open</span></div>
+        <section className="panel tasks-panel" aria-labelledby="tasks-heading">
+          <div className="section-heading"><div><p className="eyebrow">PLAN THE WORK</p><h2 id="tasks-heading">{activeProject ? <><span className="sr-only">Tasks for </span>{activeProject.name}</> : "Tasks"}</h2></div><span className="count">{activeProject?.tasks.filter((task) => !task.done).length ?? 0} open</span></div>
           <form className="task-form" onSubmit={addTask}>
             <input aria-label="New task" disabled={!canEdit} value={newTask} onChange={(event) => setNewTask(event.target.value)} placeholder="Add a coding task…" />
             <button type="submit" className="primary-button" disabled={!canEdit}>Add task</button>
           </form>
-          <div className="task-list">
+          <div className="task-list" role="group" aria-labelledby="tasks-heading">
             {activeProject?.tasks.length ? activeProject.tasks.map((task) => (
               <label className={task.done ? "task done" : "task"} key={task.id}>
                 <input type="checkbox" disabled={!canEdit} checked={task.done} onChange={() => toggleTask(task.id)} /><span>{task.title}</span>
               </label>
-            )) : <div className="empty-state"><span className="empty-icon">✓</span><strong>A clear space to start</strong><p>Add your first task. Your project data stays in this browser.</p></div>}
+            )) : <div className="empty-state"><span className="empty-icon" aria-hidden="true">✓</span><strong>A clear space to start</strong><p>Add your first task. Your project data stays in this browser.</p></div>}
           </div>
         </section>
-        <section className="panel chat-panel">
-          <div className="section-heading"><div><p className="eyebrow">THINK IT THROUGH</p><h2>DevMate chat</h2></div><span className="demo-pill">DEMO</span></div>
-          <div className="messages" aria-live="polite">
+        <section className="panel chat-panel" aria-labelledby="chat-heading">
+          <div className="section-heading"><div><p className="eyebrow">THINK IT THROUGH</p><h2 id="chat-heading">DevMate chat</h2></div><span className="demo-pill">DEMO</span></div>
+          <div className="messages" role="log" aria-label="Conversation with DevMate" aria-live="polite" aria-atomic="false" aria-relevant="additions" tabIndex={0}>
             {messages.map((message) => <div key={message.id} className={message.role === "user" ? "message user-message" : "message assistant-message"}><span className="message-role">{message.role === "user" ? "YOU" : "DEVMATE"}</span><p>{message.text}</p></div>)}
           </div>
           <form className="chat-form" onSubmit={sendMessage}>
-            <input aria-label="Message DevMate" disabled={!loaded} value={prompt} onChange={(event) => setPrompt(event.target.value)} placeholder="Describe what you want to work on…" />
+            <input aria-label="Message DevMate" aria-describedby="chat-demo-note" disabled={!loaded} value={prompt} onChange={(event) => setPrompt(event.target.value)} placeholder="Describe what you want to work on…" />
             <button type="submit" className="send-button" aria-label="Send message" disabled={!loaded}>↑</button>
           </form>
-          <p className="privacy-note">Demo mode · Messages are not sent to an AI provider.</p>
+          <p className="privacy-note" id="chat-demo-note">Demo mode · Messages are not sent to an AI provider.</p>
         </section>
         <BackupManager onRestoreStart={() => setLoaded(false)} onRestored={reloadFromStorage} refreshKey={backupRefreshKey} writesBlocked={cutover.mode !== "legacy"} />
       </div>
+      </main>
       <footer><span>DEVMATE</span><span>Built to make focused progress easier.</span></footer>
-    </main>
+    </div>
   );
 }

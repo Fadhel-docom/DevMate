@@ -313,6 +313,258 @@ describe("App cross-tab lock behaviour", () => {
 });
 
 
+describe("keyboard accessibility and screen-reader semantics", () => {
+  const ownDescriptor = Object.getOwnPropertyDescriptor(window, "localStorage");
+  const TWO_PROJECTS = JSON.stringify([
+    { id: "a", name: "Alpha", tasks: [{ id: "t1", title: "One", done: false, createdAt: 1 }] },
+    { id: "b", name: "Beta", tasks: [] }
+  ]);
+  let host: HTMLElement;
+  let root: Root;
+  let storage: FakeStorage;
+  beforeEach(() => { installFakeLocks(); storage = new FakeStorage(); });
+  afterEach(async () => {
+    await act(async () => root.unmount());
+    host.remove();
+    uninstallLocks();
+    if (ownDescriptor) Object.defineProperty(window, "localStorage", ownDescriptor);
+    else delete (window as { localStorage?: unknown }).localStorage;
+  });
+  async function mountApp() {
+    Object.defineProperty(window, "localStorage", { configurable: true, get: () => storage });
+    host = document.createElement("div"); document.body.appendChild(host); root = createRoot(host);
+    await act(async () => { root.render(<StrictMode><App /></StrictMode>); await new Promise((resolve) => setTimeout(resolve, 0)); });
+  }
+  const tick = () => new Promise((resolve) => setTimeout(resolve, 0));
+  function visibleText(node: Node): string {
+    if (node instanceof Element && node.getAttribute("aria-hidden") === "true") return "";
+    if (node.nodeType === Node.TEXT_NODE) return node.textContent ?? "";
+    return Array.from(node.childNodes).map(visibleText).join("");
+  }
+  /** Simplified accessible-name computation: aria-labelledby, aria-label, wrapping label, then text without aria-hidden parts. */
+  function accessibleName(element: Element): string {
+    const labelledBy = element.getAttribute("aria-labelledby");
+    if (labelledBy) return labelledBy.split(/\s+/).map((id) => visibleText(document.getElementById(id) ?? document.createTextNode(""))).join(" ").trim();
+    const label = element.getAttribute("aria-label");
+    if (label) return label.trim();
+    const wrapping = element instanceof HTMLInputElement ? element.closest("label") : null;
+    return visibleText(wrapping ?? element).trim();
+  }
+  const announcer = () => host.querySelector('[data-testid="sr-announcer"]') as HTMLElement;
+  async function setInput(label: string, value: string) {
+    const input = host.querySelector(`input[aria-label="${label}"]`) as HTMLInputElement;
+    const setValue = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!;
+    await act(async () => { setValue.call(input, value); input.dispatchEvent(new Event("input", { bubbles: true })); });
+  }
+  async function submit(selector: string) {
+    await act(async () => {
+      (host.querySelector(selector) as HTMLFormElement).dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
+      await tick();
+    });
+  }
+
+  it("uses real landmarks with one main region; the skip link is the first focusable element in DOM order and targets it (DOM order only: it does not simulate Tab; real keyboard behaviour is checked in Chromium by e2e/r6-matrix C11)", async () => {
+    await mountApp();
+    expect(host.querySelectorAll("main")).toHaveLength(1);
+    const main = host.querySelector("main")!;
+    expect(main.id).toBe("main-content");
+    expect(main.getAttribute("tabindex")).toBe("-1");
+    expect(host.querySelector("header")).not.toBeNull();
+    expect(host.querySelector("footer")).not.toBeNull();
+    expect(main.querySelector("header")).toBeNull();
+    expect(main.querySelector("footer")).toBeNull();
+    const firstStop = Array.from(host.querySelectorAll<HTMLElement>("a[href],button,input,[tabindex]")).find((element) => !element.hasAttribute("disabled"))!;
+    expect(firstStop.getAttribute("href")).toBe("#main-content");
+    expect(accessibleName(firstStop)).toBe("Skip to main content");
+    expect(host.querySelector(firstStop.getAttribute("href")!)).toBe(main);
+    expect(accessibleName(host.querySelector(".brand")!)).toBe("DevMate home");
+  });
+
+  it("gives every button, link and field an accessible name, including the icon-only buttons, without reading decorative glyphs", async () => {
+    storage.values.set(BACKUP_KEY, JSON.stringify([{ id: "old", name: "Old", tasks: [] }]));
+    storage.values.set(STORAGE_KEY, TWO_PROJECTS);
+    await mountApp();
+    const controls = Array.from(host.querySelectorAll("button, input, a[href]"));
+    expect(controls.length).toBeGreaterThan(8);
+    for (const control of controls) expect(accessibleName(control), control.outerHTML).not.toBe("");
+    const names = controls.map(accessibleName);
+    expect(names).toEqual(expect.arrayContaining(["Add project", "Send message", "New project name", "New task", "Message DevMate", "DevMate home", "Alpha", "Beta", "Restore", "Delete"]));
+    for (const glyph of ["▦", "✓", "↑"]) expect(names.some((name) => name.includes(glyph))).toBe(false);
+  });
+
+  it("marks the active project with aria-current, keeps project buttons focusable, and announces a change of project", async () => {
+    storage.values.set(STORAGE_KEY, TWO_PROJECTS);
+    await mountApp();
+    const buttons = Array.from(host.querySelectorAll('nav[aria-label="Projects"] button')) as HTMLButtonElement[];
+    expect(buttons.map(accessibleName)).toEqual(["Alpha", "Beta"]);
+    expect(buttons.map((button) => button.getAttribute("aria-current"))).toEqual(["true", null]);
+    buttons[1].focus();
+    expect(document.activeElement).toBe(buttons[1]);
+    await act(async () => { buttons[1].click(); await tick(); });
+    expect(buttons.map((button) => button.getAttribute("aria-current"))).toEqual([null, "true"]);
+    expect(document.activeElement).toBe(buttons[1]);
+    expect(announcer().textContent).toBe("Showing Beta. 0 open tasks.");
+    expect(host.querySelector("#tasks-heading")?.textContent).toBe("Tasks for Beta");
+    expect(accessibleName(host.querySelector(".project-panel")!)).toBe("Projects");
+    expect(host.querySelector(".project-panel .count")?.textContent).toBe("2 projects");
+  });
+
+  it("labels each task checkbox by its title, groups tasks under the project heading, and announces completion and reopening", async () => {
+    storage.values.set(STORAGE_KEY, TWO_PROJECTS);
+    await mountApp();
+    const checkbox = host.querySelector('.task input[type="checkbox"]') as HTMLInputElement;
+    expect(accessibleName(checkbox)).toBe("One");
+    const group = host.querySelector('[role="group"][aria-labelledby="tasks-heading"]')!;
+    expect(group.contains(checkbox)).toBe(true);
+    expect(accessibleName(group)).toBe("Tasks for Alpha");
+    checkbox.focus();
+    expect(document.activeElement).toBe(checkbox);
+    await act(async () => { checkbox.click(); await tick(); });
+    expect(announcer().textContent).toBe("Task completed: One");
+    await act(async () => { checkbox.click(); await tick(); });
+    expect(announcer().textContent).toBe("Task reopened: One");
+  });
+
+  it("announces successes and empty submissions instead of failing silently", async () => {
+    await mountApp();
+    await submit("form.inline-form");
+    expect(announcer().textContent).toBe("Enter a project name first.");
+    await setInput("New project name", "Gamma");
+    await submit("form.inline-form");
+    expect(announcer().textContent).toBe("Project added: Gamma. It is now selected.");
+    await submit("form.task-form");
+    expect(announcer().textContent).toBe("Enter a task description first.");
+    await setInput("New task", "Write docs");
+    await submit("form.task-form");
+    expect(announcer().textContent).toBe("Task added: Write docs");
+    await submit("form.chat-form");
+    expect(announcer().textContent).toBe("Type a message first.");
+  });
+
+  it("keeps the announcer polite, atomic and free of status/alert roles, and re-announces an identical message in a fresh node", async () => {
+    await mountApp();
+    const live = announcer();
+    expect(live.getAttribute("aria-live")).toBe("polite");
+    expect(live.getAttribute("aria-atomic")).toBe("true");
+    expect(live.getAttribute("role")).toBeNull();
+    expect(live.className).toContain("sr-only");
+    await submit("form.inline-form");
+    const first = live.firstElementChild;
+    await submit("form.inline-form");
+    const second = live.firstElementChild;
+    expect(second).not.toBe(first);
+    expect(second?.textContent).toBe(first?.textContent);
+  });
+
+  it("exposes the chat as a named, keyboard-scrollable log that announces only additions and never re-creates old messages", async () => {
+    await mountApp();
+    const log = host.querySelector('[role="log"]') as HTMLElement;
+    expect(accessibleName(log)).toBe("Conversation with DevMate");
+    expect(log.getAttribute("tabindex")).toBe("0");
+    expect(log.getAttribute("aria-live")).toBe("polite");
+    expect(log.getAttribute("aria-atomic")).toBe("false");
+    expect(log.getAttribute("aria-relevant")).toBe("additions");
+    expect(accessibleName(log.closest("section")!)).toBe("DevMate chat");
+    const input = host.querySelector('input[aria-label="Message DevMate"]') as HTMLInputElement;
+    expect(document.getElementById(input.getAttribute("aria-describedby")!)?.textContent).toContain("not sent to an AI provider");
+    const welcome = log.firstElementChild;
+    const before = log.children.length;
+    await setInput("Message DevMate", "Hello");
+    await submit("form.chat-form");
+    expect(log.children.length).toBe(before + 2);
+    expect(log.firstElementChild).toBe(welcome);
+    expect(log.textContent).toContain("Hello");
+  });
+
+  it("shows a loading status and aria-busy while storage is pending, then clears both and announces readiness", async () => {
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => { release = resolve; });
+    Object.defineProperty(navigator, "locks", {
+      configurable: true,
+      value: { request(_name: string, _options: unknown, callback: () => Promise<unknown>) { return gate.then(() => callback()); } }
+    });
+    await mountApp();
+    const main = host.querySelector("main")!;
+    expect(host.querySelector('[role="status"]')?.textContent).toContain("Loading your workspace safely");
+    expect(main.getAttribute("aria-busy")).toBe("true");
+    expect((host.querySelector('input[aria-label="New project name"]') as HTMLInputElement).disabled).toBe(true);
+    await act(async () => { release(); await tick(); await tick(); });
+    expect(host.querySelector('[role="status"]')).toBeNull();
+    expect(main.getAttribute("aria-busy")).toBe("false");
+    expect(announcer().textContent).toBe("Workspace ready. 1 project.");
+  });
+
+  it("keeps error messages as alerts and returns keyboard focus to the main region after reloading from unavailable storage", async () => {
+    storage.failReads = true;
+    storage.values.set(STORAGE_KEY, TWO_PROJECTS);
+    await mountApp();
+    expect(host.querySelector('[role="status"]')?.textContent).toContain("Browser storage is unavailable");
+    const retry = Array.from(host.querySelectorAll("button")).find((button) => button.textContent?.includes("Reload saved workspace")) as HTMLButtonElement;
+    retry.focus();
+    expect(document.activeElement).toBe(retry);
+    storage.failReads = false;
+    await act(async () => { retry.click(); await tick(); await tick(); });
+    expect(host.contains(retry)).toBe(false);
+    expect(document.activeElement).toBe(host.querySelector("main"));
+    expect(host.querySelector("main")?.getAttribute("data-focus-moved")).toBe("true");   // the stylesheet shows a visible indicator for this attribute
+    await act(async () => { (host.querySelector("main") as HTMLElement).blur(); await tick(); });
+    expect(host.querySelector("main")?.hasAttribute("data-focus-moved")).toBe(false);
+    expect(host.textContent).toContain("Beta");
+  });
+
+  it("groups each backup's actions under its slot title and describes the confirmation dialog", async () => {
+    storage.values.set(BACKUP_KEY, JSON.stringify([{ id: "old", name: "Old", tasks: [] }]));
+    await mountApp();
+    expect(host.querySelector(".backups-panel .count")?.textContent).toBe("1 backup");
+    const actions = host.querySelector(".backup-list .backup-actions") as HTMLElement;
+    expect(actions.getAttribute("role")).toBe("group");
+    expect(accessibleName(actions)).toMatch(/^Slot \d/);
+    const remove = Array.from(actions.querySelectorAll("button")).find((button) => button.textContent === "Delete") as HTMLButtonElement;
+    await act(async () => { remove.click(); await tick(); });
+    const dialog = host.querySelector("dialog") as HTMLElement;
+    expect(accessibleName(dialog)).toBe("Delete this backup?");
+    expect(document.getElementById(dialog.getAttribute("aria-describedby")!)?.textContent).toContain("permanently removes");
+    const cancel = Array.from(dialog.querySelectorAll("button")).find((button) => button.textContent === "Cancel") as HTMLButtonElement;
+    await act(async () => { cancel.click(); await tick(); });
+    expect(host.querySelector("dialog")).toBeNull();
+  });
+
+  it("static source check of styles.css: a visible focus ring overrides the old outline:none, plus skip-link and sr-only rules (not a rendered check)", async () => {
+    // Vitest replaces imported CSS (including ?raw) with an empty string, so read the real file from disk.
+    // The specifier is a variable and untyped on purpose: the project does not depend on @types/node.
+    const nodeFs = "node:fs";
+    const fs = (await import(/* @vite-ignore */ nodeFs)) as { readFileSync(path: string, encoding: string): string };
+    const cwd = (globalThis as { process?: { cwd(): string } }).process?.cwd() ?? ".";
+    const css = fs.readFileSync(`${cwd}/src/styles.css`, "utf8");
+    const base = css.indexOf(".inline-form input,.task-form input,.chat-form input{");
+    const ring = css.indexOf("input:focus-visible");
+    expect(base).toBeGreaterThanOrEqual(0);
+    expect(css.slice(base, base + 400)).toContain("outline:none");
+    expect(ring).toBeGreaterThan(base);
+    expect(css).toMatch(/a:focus-visible,button:focus-visible,input:focus-visible[^{]*\{[^}]*outline:3px solid #3a2fb0/);
+    expect(css).toContain(".skip-link{");
+    expect(css).toContain(".sr-only{");
+  });
+
+  it("the same visible focus ring also covers the recovery panel's read-only textarea and details summary", async () => {
+    const nodeFs = "node:fs";
+    const fs = (await import(/* @vite-ignore */ nodeFs)) as { readFileSync(path: string, encoding: string): string };
+    const cwd = (globalThis as { process?: { cwd(): string } }).process?.cwd() ?? ".";
+    const css = fs.readFileSync(`${cwd}/src/styles.css`, "utf8");
+    expect(css).toMatch(/textarea:focus-visible[^{]*\{[^}]*outline:3px solid #3a2fb0/);
+    expect(css).toMatch(/summary:focus-visible[^{]*\{[^}]*outline:3px solid #3a2fb0/);
+  });
+
+  it("the programmatic focus target (<main>) has a visible indicator when focus is moved to it by the app, and none for ordinary focus", async () => {
+    const nodeFs = "node:fs";
+    const fs = (await import(/* @vite-ignore */ nodeFs)) as { readFileSync(path: string, encoding: string): string };
+    const cwd = (globalThis as { process?: { cwd(): string } }).process?.cwd() ?? ".";
+    const css = fs.readFileSync(`${cwd}/src/styles.css`, "utf8");
+    expect(css).toMatch(/main\[data-focus-moved\]:focus\{outline:3px solid #3a2fb0/);
+    expect(css.indexOf("main[data-focus-moved]:focus")).toBeGreaterThan(css.indexOf('main[tabindex="-1"]:focus-visible{outline:none}'));   // later rule wins at equal specificity
+  });
+});
+
 describe("workspace edit safety gate", () => {
   it("blocks edits after an unverified storage write", () => {
     expect(canEditWorkspace(true, false, "ok", "verify")).toBe(false);
