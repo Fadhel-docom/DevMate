@@ -2353,3 +2353,215 @@ Open and validate a Draft PR for the harness hardening. After exact-head CI and 
 - Added: section 7 of `docs/reviews/S2-16-ROOT-CAUSE-INVESTIGATION.md` (refreshed line references, independent reproduction), `e2e/s2-browser-persistence/diag-localstorage-visibility.mjs` and three data files. No `src/`, workflow or test-expectation change.
 - Independent run (Chromium 158, 1 vCPU): `diag-s2-16` 0/60 both-acknowledged (the original host: 35/60); hand-off gap 1.1–3.2 ms. Plain `localStorage` cross-tab visibility: never instantaneous; p50 about 0.5–1.1 ms. Consistent with a host-dependent window; S2-04/S2-16 stay open findings (CI-recorded), not resolved by non-reproduction.
 - No safety boundary changes: R1 unresolved, live cutover prohibited. Next in the owner-ordered chain: PR #37 (IndexedDB/CAS design).
+
+## 2026-11-08 (later) — IndexedDB + CAS design phase (Claude #2)
+
+- Done: `docs/INDEXEDDB-CAS-STORE-DESIGN.md` (design only) on branch `design/indexeddb-cas-store`, stacked on PR #36. No production code, no migration, no cutover; S2-16 and its results unchanged; PR #32/#33/#35/#36 untouched; nothing merged.
+- Contents: schema, CAS interfaces and transactions (`version`/`expectedVersion`), restore-versus-save race handling, migration state machine M0–M3, R1 treatment (explicitly NOT solved: stranded-edit residual, tripwire, optional sentinel), failure matrix (quota, blocked, versionchange, close), 17 real-Chromium test families, 8-PR plan, assumptions A1–A9, decisions D1–D9.
+- Help request to the owner: decisions D1–D9 (notably D1 start of P1, D3 relation to PR #32, D4 sentinel, D5 acceptance of the R1 residual).
+
+
+## 70. S2-16 design consolidation and single-source-of-truth correction — 2026-11-09 — ChatGPT coordinator
+
+### Why this entry exists
+The owner identified that the S2-16 design work was being passed between separate assistant conversations as manually relayed drafts and files, creating version confusion (v3 versus v4), duplicated explanations, and loss of control. The repository must be the shared project memory; the owner must not be the message bus between agents. This is an operational correction, not approval of a storage design.
+
+### Starting checkpoint and live repository evidence
+- Repository: `Fadhel-docom/DevMate`.
+- Existing design PR: [PR #37](https://github.com/Fadhel-docom/DevMate/pull/37), branch `design/indexeddb-cas-store`, starting head `3e6129aab4da2eba8a1ffdefb128b2bb3fe6ecd3`, base `diag/s2-16-root-cause`.
+- Root-cause PR: [PR #36](https://github.com/Fadhel-docom/DevMate/pull/36), head `1447a2577ea2e09f469a0fc0dfdd377745122f71`, base `test/s2-chromium-persistence`.
+- Browser evidence PR: [PR #35](https://github.com/Fadhel-docom/DevMate/pull/35), head `622502e31d2f5266183020f4f7b6fa284bafcaec`, base `feature/r1-legacy-writer-matrix`.
+- Harness hardening PR: [PR #39](https://github.com/Fadhel-docom/DevMate/pull/39), Draft, head `067bc066abe06d28c36048b432b6e9081fc214ea`, base `feature/phase-1-foundation`.
+- PR #38 is already merged into `feature/phase-1-foundation` at `00a59793f0452cd7ee0d8a27ffb0ef3bbac78bc4`; its IndexedDB CAS prototype remains isolated and is not wired into the app.
+- PRs #35, #36, #37, and #39 are separate/stacked work. Do not merge them as a batch or assume one contains another PR's latest changes. Recheck exact live heads before any review or merge.
+- The repository root has no `CLAUDE.md` on the inspected design branch. The operative start instructions are `docs/SESSION-START.md`, `docs/AGENT-HANDOFF.md`, `docs/STATUS.md`, `docs/OPERATIONS-ROOM.md`, `docs/DECISIONS.md`, and the approved constitution. Do not ask a new contributor to read a nonexistent root file.
+
+### Design artifacts and version control
+- The earlier design document `docs/INDEXEDDB-CAS-STORE-DESIGN.md` remains the prior design proposal on this branch; it is not silently treated as v3 or v4.
+- The owner supplied the complete S2-16 v3 draft in the ChatGPT conversation on 2026-11-09. ChatGPT archived that supplied text at `docs/reviews/S2-16-v3-DRAFT.md` in commit `4147521a2a66c3ffdd2e48d9c975e31d0e75365d`. This archive is a record of the submitted draft, not an approval.
+- The owner and prior conversation record identify a later v4 draft: it uses IndexedDB stores `workspace`, `backups`, `meta`, `attempts`, and `commits`; treats `raw` as the single source of truth; classifies outcomes as `committed` / `not-committed` / `unknown`; and contains six owner decisions. The complete verbatim v4 text has not yet been captured in this repository. Do not reconstruct it from this summary or claim it has been archived.
+- The v3 text has an internal count inconsistency: section 12 lists five owner decisions, while section 16 says four. Preserve this as a source-draft observation; do not silently rewrite the archived draft.
+
+### Verified evidence carried forward (not rerun in this session)
+From the Chromium 153 evidence at SHA `067bc066abe06d28c36048b432b6e9081fc214ea`:
+- Web Locks mutual exclusion: 20/20 in the separate lock test.
+- `saveProjectsLocked` lost acknowledged updates in 23/100 and 16/60 trials in the recorded scenarios.
+- Reads after direct lock handoff were stale in 34/200 trials; after a Node cycle, 4/200 in one run and 0/200 in another.
+- Raw CAS without application code accepted both tabs in 3/100 trials.
+- `restoreBackup` overwrote an acknowledged modification in 9/40 trials; 6 of those did not retain a pre-restore snapshot containing that modification.
+- These are environment-specific observations, not universal browser claims. No new tests were run in this documentation session.
+
+### Current design and safety boundaries
+- S2-16 remains unresolved in the current application localStorage path.
+- R1 remains a separate unresolved legacy-writer boundary. Detection is not prevention; an old loaded bundle can continue writing localStorage.
+- PR #38 does not solve S2-16 or R1 and does not authorize app integration, migration, cutover, S3, production use, or real user-data operations.
+- No IndexedDB application integration, migration, cutover, production operation, deployment, or provider integration was performed in this session.
+- No design version is approved by this entry. Owner-reserved decisions remain open until explicit decisions are recorded in `docs/DECISIONS.md`.
+
+### Assigned next action — Claude, one bounded task
+1. Read `docs/SESSION-START.md`, the latest `docs/STATUS.md` and this operations-room entry, `docs/DECISIONS.md`, the approved constitution, and the exact PR #37 diff/head.
+2. Recover the complete original v4 text from the prior S2-16 conversation available to the assigned Claude session. Do not ask the owner to resend the three evidence files; they are already in the repository/PR evidence. If the full v4 text is genuinely inaccessible, state that limitation precisely and do not invent it.
+3. Store the complete v4 as a versioned repository artifact (prefer `docs/reviews/S2-16-v4-DRAFT.md`) and update this same operations room and STATUS with its source, exact branch/commit, and status. Do not overwrite the archived v3.
+4. Compare v3 and v4 against the five known blocking review points: InvalidStateError settlement; attempts evidence lifecycle; corrupt-record repair independent of corrupt revision; request.onerror/preventDefault/quota/abort semantics; Web Locks owner-liveness proof using ifAvailable and unique ownerNonce. Also check commits pruning, restore atomic order, canonical raw policy, and I3.
+5. Return one consolidated verdict and only the remaining blockers/owner-reserved decisions. Do not produce another redesign or v5 unless a concrete blocker requires it.
+
+### Authority and exclusions
+- This assignment is documentation/design review only. No production code, no migration, no cutover, no S3, no deployment, no changes to RateNest or any other repository, no Google Jules, and no merge of PR #37.
+- Work must stay on `design/indexeddb-cas-store` (the existing PR #37 branch) unless the coordinator explicitly reassigns it. Do not create a parallel design PR or edit overlapping files from another branch.
+- ChatGPT is the coordinator for this bounded review and will verify the resulting exact SHA. Claude is the assigned independent design reviewer/contributor, not a separate source of truth.
+- **Last verified checkpoint:** v3 archive commit `4147521a2a66c3ffdd2e48d9c975e31d0e75365d`; PR #37 branch now includes this archive. PR #37 remains open and unmerged.
+- **Next exact action:** Claude recovers and archives the verbatim v4 draft on this same branch, then performs the focused comparison above. Handoff owner: ChatGPT coordinator.
+
+
+## 71. S2-16 recovery audit — v4 draft NOT FOUND in any available source; no v4 file created — 2026-11-09 — Claude (assigned reviewer)
+
+### Actor and authorization
+- Executed by Claude through the GitHub connector (Composio) under the owner's delegation; GitHub displays the owner's account (`Fadhel-docom`). Task source: entry 70 and the PR #37 coordinator comment, plus the owner's explicit recovery instruction of 2026-11-09.
+- Starting checkpoint: PR #37 head `34b74b7969c21b8507445497aecd4cd3768ce3b6` (rechecked live before writing; unchanged). Scope: documentation only, on `design/indexeddb-cas-store`. No `main` change, no merge, no code, no migration/cutover/S3, no deployment, no Jules, no RateNest.
+
+### What was inspected (Verified = observed through the GitHub API this session)
+- Read in full: `docs/SESSION-START.md`, `docs/DECISIONS.md` (D-001, D-002), `docs/STATUS.md` and `docs/OPERATIONS-ROOM.md` (tails and S2-16/v4 searches) on both `feature/phase-1-foundation` (`00a59793...`) and the PR #37 branch; `docs/reviews/S2-16-v3-DRAFT.md`; `docs/reviews/S2-16-ROOT-CAUSE-INVESTIGATION.md`; headings and keyword scans of `docs/INDEXEDDB-CAS-STORE-DESIGN.md`. The constitution was not re-read in full in this session.
+- Enumerated all 61 branches and all 39 PRs; fetched the recursive file tree of every branch head (61 trees, none truncated); read bodies and file lists of PRs #32-#39; read all 18 issue/PR comments and 0 review comments in the repository; read the latest 12 commits of the PR #37 branch; listed check runs for the heads of #32, #34, #35, #36, #37, #39.
+
+### Verified findings
+1. **No v4 draft exists in the repository.** No file whose path contains `S2-16`, `v4` or `DRAFT` other than: `docs/reviews/S2-16-v3-DRAFT.md` (PR #37 branch only), `docs/reviews/S2-16-ROOT-CAUSE-INVESTIGATION.md`, `e2e/s2-browser-persistence/diag-s2-16*.{mjs,json}`, and the unrelated constitution v1.1 draft. No PR body, issue comment, or review comment contains v4 text; the only S2-16 comment is the PR #37 coordinator handoff. Only the latest 12 commit messages of the PR #37 branch were read; commit history of other branches was not scanned for v4 text.
+2. **No v4 text was accessible to this Claude session.** This session has no earlier S2-16 conversation in its context and no tool for searching earlier conversations; no artifact or document with v4 content was found. The v4 text therefore remains unrecovered. It was not reconstructed from the five-store / six-decision summary in entry 70, and no file named `S2-16-v4-DRAFT.md` was created, so that name is not occupied by anything other than the real text.
+3. **The repository's documentation is split across unmerged stacked branches.** `feature/phase-1-foundation` `docs/STATUS.md` and `docs/OPERATIONS-ROOM.md` end at the 2026-11-07 PR-D design checkpoint and contain no S2-16, S2 or P1 record. The newest records exist only on separate branches: #32 -> #33 -> #35 -> #36 -> #37 form one stack (PR #37 branch is the most complete); #34 and #39 are independent branches off `feature/phase-1-foundation`. The copies of STATUS and OPERATIONS-ROOM on these branches differ (for example STATUS is 98,215 bytes on `feature/phase-1-foundation`, 103,074 on #39, 111,306 on #35, 113,763 on #37 before this entry).
+4. **Traceability gap in the evidence quoted by v3 and entry 70.** The figures 23/100, 16/60, 34/200, 4/200, 3/100 and 9/40 occur only in `S2-16-v3-DRAFT.md`, entry 70 and the 2026-11-09 STATUS section. They do not occur in the STATUS, OPERATIONS-ROOM, P1 remediation or S2 report files at `067bc066...` (PR #39) or `622502e3...` (PR #35), nor in the S2-16 root-cause investigation. The evidence file v3 cites (`results-067bc06.json`) is not present in any branch tree. SHA `067bc066...` is the PR #39 CAS-harness head, whereas the real `saveProjectsLocked` S2-16 harness is in PR #35 (`622502e3...`). The S2-16 figures that ARE committed: 15/40 simultaneous both-succeeded trials, 1-2 lost edits in 50 sustained edits (PR #35 addendum), and the instrumented 60-trial run with 35/60 both-ok, 20/40 and 20/40 (PR #36, `diag-s2-16-results.json`). **Correction to entry 70:** the heading "Verified evidence carried forward" overstated these six figures; they are *Reported by the owner-supplied v3, not traceable to a committed artifact*. Entry 70 is left unedited (append-only); this entry supersedes its labelling.
+5. **CI (check-run conclusions only; job logs not inspected):** `verify` success on #32 (`a853f2af`), #34 (`a0b675ae`), #35 (`622502e3`); `verify` and `chromium-cas` success on #39 (`067bc066`). No check runs exist for the heads of #36 (`1447a257`) and #37 (`34b74b79`) (likely workflow trigger filters per entry 68 — Hypothesis).
+
+### v3 / v4 / PR #37 comparison — what can and cannot be said
+- **v4: not comparable.** It does not exist in the repository, so no verdict on v4 is issued.
+- **v3 (archived, unapproved):** keyword scan of the archived text finds no occurrence of `ownerNonce`, `ifAvailable`, `InvalidStateError`, `preventDefault`, `prune/pruning`, `I3`, a `commits` store, or `not-committed`. v3 keeps its commit-attempt log in `sessionStorage` (no `attempts` store), makes `raw` derived from normalized `projects`, creates backups only on restore or over a bad original, and treats Web Locks as not a correctness mechanism. These features (five stores, raw as sole source of truth, committed/not-committed/unknown, six decisions) are exactly the v4 signature in entry 70, which is consistent with v4 being a later, different draft rather than an edit of v3.
+- **PR #37 `INDEXEDDB-CAS-STORE-DESIGN.md`:** the earlier design proposal (D1-D9, `version/expectedVersion`, M0-M3). Keyword scan: none of the terms above; `attempts` once. It is neither v3 nor v4.
+- **Where the work actually stands (S2-16):** root cause established for Chromium 153 (stale cross-tab `localStorage` reads inside the lock); S2-16 remains FAIL in the application path; the IndexedDB CAS spike (PR #38) is merged but isolated; PR #39 hardens its harness (Draft, CI green, independent review outstanding per prior records); the design (v3/v4/PR #37 document) is unapproved and its blocking review points are unresolved because the decisive draft (v4) is missing.
+- **Not done:** the focused comparison against the five blocking review points and the commits-pruning, restore-order, canonical-raw and I3 checks, because they require v4. A full read of the 424-line v3 against those points was not performed; only the keyword and section scans above.
+
+### Blockers and owner-reserved matters
+- B1: verbatim v4 text is not in the repository or available to this session. It must be placed in the repository from the conversation that produced it, either by that assistant committing it to `docs/reviews/S2-16-v4-DRAFT.md` on this branch, or by pasting it once into a comment on PR #37 for archival. Until then, no consolidated verdict.
+- B2: the six traceability figures in finding 4 need either the real evidence file committed or relabelling in STATUS.
+- B3: STATUS/OPERATIONS-ROOM divergence across stacked branches needs a coordinator plan to reconcile without merging PRs out of order (merge decisions remain with the owner; PR #1 hold unchanged).
+- Owner-reserved decisions D1-D9 (entry 69) and the v3/v4 owner decisions remain open; none is approved by this entry.
+
+### Work intentionally not performed
+No v4 reconstruction, no v5, no new design, no code or test run, no change to PR bases/heads other than this docs commit, no merge, no deployment.
+
+### Last verified checkpoint and next exact action
+- Last verified checkpoint: PR #37 head `34b74b7969c21b8507445497aecd4cd3768ce3b6` before this docs commit; v3 archive commit `4147521a2a66c3ffdd2e48d9c975e31d0e75365d`.
+- Next exact action: obtain the verbatim v4 text into the repository (B1). Handoff owner: ChatGPT coordinator, who should ask the assistant/conversation that authored v4 to commit it, not the owner. After B1, Claude performs the v3/v4 comparison once and returns one verdict.
+
+
+
+## 72. Owner resets S2-16 work and assigns ChatGPT as coordinator — 2026-11-09 — ChatGPT
+
+### Owner instruction and scope
+The owner explicitly changed the working arrangement:
+- ChatGPT leads and coordinates the current DevMate work.
+- Claude performs one independent review of a consolidated, reviewable deliverable; Claude is not to run a competing plan or repeated review cycles.
+- Keep the owner's daily involvement to approximately 15–30 minutes maximum. Batch routine work and ask only for genuine owner-reserved decisions or blockers.
+- Stop spending time trying to recover the missing S2-16 v4 draft. Organize the material that exists and rebuild the design from a clean, evidence-based baseline.
+- The owner wants all work recorded in the repository so that progress is not lost between sessions.
+
+This is a task-specific assignment under constitution v1.2 §4 (owner may issue a later task-specific assignment). It does not amend the constitution, change the global approval hierarchy, or authorize otherwise gated work.
+
+### Starting checkpoint and sources inspected
+- Repository: `Fadhel-docom/DevMate`.
+- Working branch: `design/indexeddb-cas-store`; PR #37 remains open and unmerged: https://github.com/Fadhel-docom/DevMate/pull/37.
+- Last known branch commit inspected: `90b8b53b8822b164ea1186bc7fb6acaf6ce87f79` ("docs(S2-16): update status after v4 recovery audit"). This commit was fetched directly. The file contents below were fetched from the live branch immediately before this update.
+- Read the approved constitution v1.2, project-governance model, session-start protocol, agent-handoff protocol, STATUS, OPERATIONS-ROOM, DECISIONS, ARCHITECTURE, TOOL-REGISTRY, ROADMAP-REQUEST, and the archived v3 draft. Read the current PR search results and issue bodies for #1, #37, #38, #39 and #40.
+- Main-branch README currently describes only the initial web workspace; the richer governance and S2-16 records are on unmerged working branches. Do not mistake the existence of those branch documents for integration into main.
+
+### Current verified project facts
+1. PR #38 is closed/merged into `feature/phase-1-foundation` as the isolated IndexedDB CAS spike; it is not wired into the application.
+2. PR #37 is open/unmerged and contains the prior IndexedDB design proposal plus the v3 archive and latest S2-16 documentation record. It is not an approved design.
+3. PR #39 is open and described as Draft. Its PR body reports exact-head CI and Chromium harness success on SHA `067bc066abe06d28c36048b432b6e9081fc214ea`; the independent review is still outstanding in the inspected record. Its evidence is for the CAS harness, not proof that the current application localStorage S2-16 defect is fixed.
+4. S2-16 remains unresolved in the current application localStorage path. R1 remains a separate unresolved stale-writer boundary. No production integration, migration, cutover, or user-data operation is permitted.
+5. The v4 recovery audit in entry 71 remains a historical record. The owner now directs that recovery work stop. No original v4 has been recovered; no replacement may be labelled as the original v4.
+6. v3 remains an archived, unapproved draft. The earlier `INDEXEDDB-CAS-STORE-DESIGN.md` remains a separate earlier proposal. Neither is silently promoted to the new baseline.
+7. Several figures previously repeated in v3/entry 70 are explicitly untraceable to a committed results artifact. They must not be used as verified measurements. The committed reports and harness artifacts must be inspected directly before an evidence matrix is finalized.
+8. The repository's docs are divergent across stacked and independent branches. This session has not merged or rebased any branch and has not treated a merge as a shortcut to reconciliation.
+
+### Work performed in this session
+- Re-read the current governing and operating documents listed above.
+- Rechecked the open PR inventory and the recorded status of #37, #39 and #40.
+- Appended this entry and a new current-direction section to `docs/STATUS.md` on the existing PR #37 branch. Historical entries were not edited.
+- No application code, test harness, CI workflow, PR base, PR merge state, deployment, provider connection, secret, permission, or other repository was changed.
+- No tests or builds were run; this is a documentation and coordination checkpoint only.
+- GitHub writes were executed by ChatGPT through the GitHub connector under the owner's task-specific delegation; GitHub may display the owner's shared account.
+
+### Rebuild method — proposed working sequence, not a design approval
+A. Evidence inventory: inspect the committed S2-16 reports, raw results, harness source, exact SHAs, and CI logs. For every claim record its source, reproducibility, browser/runtime, denominator, and whether it is independently verified, reported, hypothetical, or unknown. Do not mix the P1 CAS harness evidence with the application localStorage defect.
+B. Requirements baseline: write the defect statement, invariants, threat/failure model, recovery guarantees, compatibility constraints, and acceptance criteria from evidence and the approved governance rules.
+C. Fresh design draft: create a newly named draft with a new version lineage. Explicitly compare it to v3 and the earlier proposal only as historical material. Record owner-reserved decisions as open; do not guess their answers.
+D. Isolated proof: prototype only behind a separate harness and synthetic data. No application wiring, migration, cutover, deployment, or production data.
+E. One independent review: ask Claude once to review the consolidated exact SHA, relevant source artifacts, tests and residual risks. Re-review only if a material code/design change is made or a blocking finding needs confirmation.
+
+### Boundaries and open decisions
+- No new phase is started merely because this sequence is recorded; the sequence is the coordinator's bounded work plan within the owner's instruction.
+- No owner-reserved architecture, security, data migration, durability, or production decision is inferred.
+- PR #1 remains on hold. PRs #32–#37 are not to be merged as a batch. PR #39 and PR #40 are not modified by this entry.
+- No paid tools, provider keys, API connections, Google Jules, new permissions, deployment, or work on RateNest.
+
+### Last verified checkpoint and next exact action
+- Last verified checkpoint: the current PR #37 branch documents, including entry 71 and the archived v3 draft; prior commit `90b8b53b8822b164ea1186bc7fb6acaf6ce87f79`.
+- Next exact action: inspect `docs/reviews/S2-CHROMIUM-REPORT.md`, `docs/reviews/S2-16-ROOT-CAUSE-INVESTIGATION.md`, the committed S2-16 JSON/diagnostic artifacts, and the harness source; then create a source-linked evidence matrix. Handoff owner: ChatGPT coordinator.
+
+
+
+## 73. S2-16 evidence matrix rebuilt from committed artifacts — 2026-11-09 — ChatGPT
+
+### Task and starting checkpoint
+- Task: stop recovering the missing v4; consolidate only source-backed S2-16 evidence and establish a clean baseline for a fresh design.
+- Coordinator: ChatGPT, under the owner's task-specific assignment in entry 72.
+- Starting branch: `design/indexeddb-cas-store`; prior documentation checkpoint included entry 72. PR #37 remains open/unmerged.
+- This is a documentation/evidence task, Small risk. No production code or stored user data was touched.
+
+### Sources inspected directly
+- `docs/reviews/S2-CHROMIUM-REPORT.md` (blob `3449adf99b9b50a3836a535af591915146f3584d`), including Addendum 1.
+- `e2e/s2-browser-persistence/results.addendum-1.json` (blob `bebe8cd01d80b44f18c12d100531dab9863f8868`), parsed directly.
+- `docs/reviews/S2-16-ROOT-CAUSE-INVESTIGATION.md` (blob `a21d60294643ba7d03ad0b980b9797c243600471`).
+- `e2e/s2-browser-persistence/diag-s2-16-results.json` (blob `b27eec4b57cd1fe8f0019bd7936914cabb9b5afa`), parsed directly.
+- `e2e/s2-browser-persistence/diag-s2-16.mjs` (blob `f4f58e7103923c8ad54b8efb07779c56c0d72c9c`).
+- `src/storage.ts` at PR #33 code head `752445ced37d8dcf2bb35402de543812f0e0e3b9` (blob `168b71cdeef419fc4f077065a068ffee481b7003`), compare/save/lock implementation inspected.
+- Harness metadata identifies PR #33 head `752445ced37d8dcf2bb35402de543812f0e0e3b9` as the code under test and addendum harness commit `dc2983e51dddc468e672637f1167a0dccdf7a26d` as the clean harness commit.
+
+### Evidence conclusions
+1. **Direct S2-16 simultaneous case:** 40 trials; one tab succeeded in 25; both returned `ok` in 15; one acknowledged edit was absent from final storage in each of those 15. Directly inspected in the committed raw addendum JSON.
+2. **Direct S2-16 sustained case:** 50 acknowledged edits; 48 present; 2 missing; 6 conflicts reported. Directly inspected in the committed raw addendum JSON.
+3. **Sequential control:** an outdated baseline used 1.5 seconds after the first save returned `conflict`; no overwrite in that case.
+4. **Instrumented diagnostic:** real `saveProjectsLocked` had 35/60 and 20/40 both-success trials, with the acknowledged edit missing in each. The second tab's compare-read saw the old baseline in all both-success trials. This supports stale localStorage read visibility after lock handoff as the observed mechanism.
+5. **Timing variants:** 5/25/100 ms artificial holds yielded 0 losses in 40 trials each. These are explicitly diagnostic variants, not production code and not a correctness guarantee. No delay-based fix is accepted.
+6. **Separate risks:** R1 remains unresolved; old `deleteBackup` was not detected in the S2 report; BFCache was NOT TESTED; PR #38 is an isolated CAS spike; PR #39's CAS harness is not evidence that the application localStorage path is fixed.
+7. **Excluded claims:** figures 23/100, 16/60, 34/200, 4/200, 3/100 and 9/40 remain reported-but-untraceable and are not used as verified measurements.
+
+### Artifact created
+- Added `docs/reviews/S2-16-REBUILD-EVIDENCE-MATRIX.md`, commit `289377b9a5a81049129e2d21d7c09b0123fda0b6`.
+- The matrix classifies source-backed observations, reported repeat results, hypotheses, and unknowns; records exact provenance and test limits; and defines minimum requirements for a fresh design draft.
+- Updated STATUS with a new current-state checkpoint. Prior historical records were not rewritten.
+- No test/build/browser/CI run was executed by ChatGPT in this task. This session inspected committed artifacts; it did not rerun the historical experiments.
+- No app code, migration, cutover, deployment, provider, key, permission, main branch, merge, or unrelated repository was changed.
+
+### Last verified checkpoint and next exact action
+- Artifact commit: `289377b9a5a81049129e2d21d7c09b0123fda0b6`.
+- Next exact action: draft a fresh, clearly named S2-16 design from the evidence matrix and governance constraints. Do not reuse the missing-v4 name, do not silently promote v3/earlier proposal, and keep R1 as a separate gate. Claude's single independent review is for the consolidated draft's exact SHA after it is ready.
+- Handoff owner: ChatGPT coordinator.
+
+
+## 74. Additional audit: durableStore is localStorage-backed and lacks real multi-tab proof — 2026-11-09 — ChatGPT
+
+- Inspected `src/durableStore.ts` on `feature/phase-1-foundation` (blob `90d44e21e48c0a22a1e2402fb524d14717690d54`) and its unit tests (blob `ead53f7399fae90ee365ae4fb3e0093f0cddabe2`).
+- Observed: the module stores records, journals, migration markers and backups in localStorage; it uses the shared Web Lock wrapper and a revision check, then performs journal/data/read-back writes and rollback. The tests use MemoryStorage and an injected runExclusive callback; they do not test real cross-tab storage visibility.
+- Inspected `src/App.tsx` on `feature/phase-1-foundation`; no `createDurableStore` reference was found. This does not establish UI wiring.
+- Classification: **Unknown / not verified** for cross-tab correctness. This is an adoption risk based on shared substrate, not a confirmed production/UI defect. Do not call this module a proven fix for S2-16.
+- Added this limitation and required real-Chromium follow-up to `docs/reviews/S2-16-REBUILD-EVIDENCE-MATRIX.md`, commit `e32d4459cb98f9b66fe7878289d1de51ed292560`.
+- No code or tests changed or run; no app wiring, migration, cutover, deployment, or merge.
+- Next: incorporate this as an explicit verification requirement in the fresh S2-16 design draft.
+
+
+---
+
+## 2026-11-11 — PR #37 rebuilt on the rebuilt PR #36 head; design review notes added (Claude)
+
+- PR #37's branch was stacked on the old PR #36 history (47 commits, 37 files, `mergeable_state` unknown). Its unique content (`docs/INDEXEDDB-CAS-STORE-DESIGN.md`, `docs/reviews/S2-16-REBUILD-EVIDENCE-MATRIX.md`, `docs/reviews/S2-16-v3-DRAFT.md`, and the room entries above) was re-created on PR #36's rebuilt head (first `fb725681b743355828b59590b17c57411a4353a8`; after the coordinator's wording correction `3934dfeb01b9de0272ad130b5d158644653ca3e5`). Old tip `d847149c79e7fef4cf4c4cc5086d4a3d45a8c343` stays reachable by SHA. The STATUS.md hunk of the old branch (a 2026-11-09 consolidation block and a header line) was **not** carried: it is superseded by the maintained summary at the top of the current STATUS.
+- Added section 14 to the design (facts changed since writing, eight review comments, explicit non-decisions). No decision D1–D9 is made; no implementation; no code, test, workflow or dependency change.
+- Still draft; owner architecture decision pending; R1 unresolved; live cutover prohibited. Next in the owner-ordered chain: PR #34 (accessibility), then PR #40 (roadmap request).
