@@ -1,0 +1,1665 @@
+{
+  "generatedAt": "2026-11-11T03:49:01.167Z",
+  "command": "node e2e/r6-matrix/run.mjs",
+  "environment": {
+    "chromium": "158.0.8127.18",
+    "playwright": "1.65.0",
+    "node": "v20.20.2",
+    "os": "Linux 6.1.158+ x64",
+    "headless": true,
+    "origin": "http://localhost:<ephemeral>"
+  },
+  "sourceCommit": "d0e32ad1116e3845cd2b6387fbe135e20caa8322",
+  "workingTreeDirty": false,
+  "cases": [
+    {
+      "id": "C1",
+      "title": "Production bundle cannot start a cutover (R1 narrowing); legacy mode still works in the built app",
+      "checks": [
+        {
+          "name": "built bundle does not contain \"legacy-writers-not-quiesced\"",
+          "pass": true
+        },
+        {
+          "name": "built bundle does not contain \"confirmLegacyWritersQuiesced\"",
+          "pass": true
+        },
+        {
+          "name": "built bundle does not contain \"preserve-quota\"",
+          "pass": true
+        },
+        {
+          "name": "built bundle does not contain \"stage-failed\"",
+          "pass": true
+        },
+        {
+          "name": "built bundle does not contain \"createCutoverStages\"",
+          "pass": true
+        },
+        {
+          "name": "built bundle contains the read-only marker key (barrier/inspector present)",
+          "pass": true
+        },
+        {
+          "name": "built bundle contains no marker writer: no setItem call is adjacent to the marker key",
+          "pass": true
+        },
+        {
+          "name": "legacy mode: project input is enabled",
+          "pass": true
+        },
+        {
+          "name": "legacy mode: no recovery panel and no cutover banner",
+          "pass": true
+        },
+        {
+          "name": "no UI control mentions cutover, migrate or commit",
+          "pass": true,
+          "detail": [
+            "ddevmate",
+            "new project name",
+            "+",
+            "▦alpha é€😀",
+            "▦bravo",
+            "▦charlie",
+            "new task",
+            "add task",
+            "",
+            "",
+            "message devmate",
+            "↑"
+          ]
+        },
+        {
+          "name": "page exposes no cutover globals",
+          "pass": true
+        },
+        {
+          "name": "legacy editing in the built app still saves to localStorage",
+          "pass": true
+        }
+      ]
+    },
+    {
+      "id": "C2-intent",
+      "title": "Built app in real Chromium at cutover phase \"intent\": truthful state, locked editing, read-only task list, byte-exact raw export, reload keeps state",
+      "checks": [
+        {
+          "name": "harness reached the phase",
+          "pass": true,
+          "detail": {
+            "ok": true,
+            "state": "recovery"
+          }
+        },
+        {
+          "name": "first load: panel describes the phase truthfully",
+          "pass": true,
+          "detail": "Recovery: cutover not finished\n\nA storage cutover was declared and stopped at phase \"intent\". This version disabled editing on purpose and does not write your legacy workspace; it has deleted nothing."
+        },
+        {
+          "name": "first load: editing is disabled",
+          "pass": true
+        },
+        {
+          "name": "first load: legacy tasks are listed read-only (3 tasks)",
+          "pass": true
+        },
+        {
+          "name": "first load: panel has no input, form or destructive control",
+          "pass": true
+        },
+        {
+          "name": "first load: downloaded file bytes equal the stored legacy bytes (UTF-8, 313 bytes)",
+          "pass": true,
+          "detail": {
+            "got": 313,
+            "filename": "devmate-legacy-preserved-copy.txt"
+          }
+        },
+        {
+          "name": "first load: status region announces the download (role=status)",
+          "pass": true
+        },
+        {
+          "name": "first load: panel is a labelled region",
+          "pass": true
+        },
+        {
+          "name": "first load: mobile 360px layout has no horizontal overflow",
+          "pass": true,
+          "detail": {
+            "sw": 360,
+            "iw": 360
+          }
+        },
+        {
+          "name": "first load: loading the app and exporting wrote nothing to storage",
+          "pass": true
+        },
+        {
+          "name": "after reload: panel describes the phase truthfully",
+          "pass": true,
+          "detail": "Recovery: cutover not finished\n\nA storage cutover was declared and stopped at phase \"intent\". This version disabled editing on purpose and does not write your legacy workspace; it has deleted nothing."
+        },
+        {
+          "name": "after reload: editing is disabled",
+          "pass": true
+        },
+        {
+          "name": "after reload: legacy tasks are listed read-only (3 tasks)",
+          "pass": true
+        },
+        {
+          "name": "after reload: panel has no input, form or destructive control",
+          "pass": true
+        },
+        {
+          "name": "after reload: downloaded file bytes equal the stored legacy bytes (UTF-8, 313 bytes)",
+          "pass": true,
+          "detail": {
+            "got": 313,
+            "filename": "devmate-legacy-preserved-copy.txt"
+          }
+        },
+        {
+          "name": "after reload: status region announces the download (role=status)",
+          "pass": true
+        },
+        {
+          "name": "after reload: panel is a labelled region",
+          "pass": true
+        },
+        {
+          "name": "after reload: mobile 360px layout has no horizontal overflow",
+          "pass": true,
+          "detail": {
+            "sw": 360,
+            "iw": 360
+          }
+        },
+        {
+          "name": "after reload: loading the app and exporting wrote nothing to storage",
+          "pass": true
+        }
+      ]
+    },
+    {
+      "id": "C2-profiles-verified",
+      "title": "Built app in real Chromium at cutover phase \"profiles-verified\": truthful state, locked editing, read-only task list, byte-exact raw export, reload keeps state",
+      "checks": [
+        {
+          "name": "harness reached the phase",
+          "pass": true,
+          "detail": {
+            "ok": true,
+            "state": "recovery"
+          }
+        },
+        {
+          "name": "first load: panel describes the phase truthfully",
+          "pass": true,
+          "detail": "Recovery: cutover not finished\n\nA storage cutover was declared and stopped at phase \"profiles-verified\". This version disabled editing on purpose and does not write your legacy workspace; it has delet"
+        },
+        {
+          "name": "first load: editing is disabled",
+          "pass": true
+        },
+        {
+          "name": "first load: legacy tasks are listed read-only (3 tasks)",
+          "pass": true
+        },
+        {
+          "name": "first load: panel has no input, form or destructive control",
+          "pass": true
+        },
+        {
+          "name": "first load: downloaded file bytes equal the stored legacy bytes (UTF-8, 313 bytes)",
+          "pass": true,
+          "detail": {
+            "got": 313,
+            "filename": "devmate-legacy-preserved-copy.txt"
+          }
+        },
+        {
+          "name": "first load: status region announces the download (role=status)",
+          "pass": true
+        },
+        {
+          "name": "first load: panel is a labelled region",
+          "pass": true
+        },
+        {
+          "name": "first load: mobile 360px layout has no horizontal overflow",
+          "pass": true,
+          "detail": {
+            "sw": 360,
+            "iw": 360
+          }
+        },
+        {
+          "name": "first load: loading the app and exporting wrote nothing to storage",
+          "pass": true
+        },
+        {
+          "name": "after reload: panel describes the phase truthfully",
+          "pass": true,
+          "detail": "Recovery: cutover not finished\n\nA storage cutover was declared and stopped at phase \"profiles-verified\". This version disabled editing on purpose and does not write your legacy workspace; it has delet"
+        },
+        {
+          "name": "after reload: editing is disabled",
+          "pass": true
+        },
+        {
+          "name": "after reload: legacy tasks are listed read-only (3 tasks)",
+          "pass": true
+        },
+        {
+          "name": "after reload: panel has no input, form or destructive control",
+          "pass": true
+        },
+        {
+          "name": "after reload: downloaded file bytes equal the stored legacy bytes (UTF-8, 313 bytes)",
+          "pass": true,
+          "detail": {
+            "got": 313,
+            "filename": "devmate-legacy-preserved-copy.txt"
+          }
+        },
+        {
+          "name": "after reload: status region announces the download (role=status)",
+          "pass": true
+        },
+        {
+          "name": "after reload: panel is a labelled region",
+          "pass": true
+        },
+        {
+          "name": "after reload: mobile 360px layout has no horizontal overflow",
+          "pass": true,
+          "detail": {
+            "sw": 360,
+            "iw": 360
+          }
+        },
+        {
+          "name": "after reload: loading the app and exporting wrote nothing to storage",
+          "pass": true
+        }
+      ]
+    },
+    {
+      "id": "C2-stores-verified",
+      "title": "Built app in real Chromium at cutover phase \"stores-verified\": truthful state, locked editing, read-only task list, byte-exact raw export, reload keeps state",
+      "checks": [
+        {
+          "name": "harness reached the phase",
+          "pass": true,
+          "detail": {
+            "ok": true,
+            "state": "recovery"
+          }
+        },
+        {
+          "name": "first load: panel describes the phase truthfully",
+          "pass": true,
+          "detail": "Recovery: cutover not finished\n\nA storage cutover was declared and stopped at phase \"stores-verified\". This version disabled editing on purpose and does not write your legacy workspace; it has deleted"
+        },
+        {
+          "name": "first load: editing is disabled",
+          "pass": true
+        },
+        {
+          "name": "first load: legacy tasks are listed read-only (3 tasks)",
+          "pass": true
+        },
+        {
+          "name": "first load: panel has no input, form or destructive control",
+          "pass": true
+        },
+        {
+          "name": "first load: downloaded file bytes equal the stored legacy bytes (UTF-8, 313 bytes)",
+          "pass": true,
+          "detail": {
+            "got": 313,
+            "filename": "devmate-legacy-preserved-copy.txt"
+          }
+        },
+        {
+          "name": "first load: status region announces the download (role=status)",
+          "pass": true
+        },
+        {
+          "name": "first load: panel is a labelled region",
+          "pass": true
+        },
+        {
+          "name": "first load: mobile 360px layout has no horizontal overflow",
+          "pass": true,
+          "detail": {
+            "sw": 360,
+            "iw": 360
+          }
+        },
+        {
+          "name": "first load: loading the app and exporting wrote nothing to storage",
+          "pass": true
+        },
+        {
+          "name": "after reload: panel describes the phase truthfully",
+          "pass": true,
+          "detail": "Recovery: cutover not finished\n\nA storage cutover was declared and stopped at phase \"stores-verified\". This version disabled editing on purpose and does not write your legacy workspace; it has deleted"
+        },
+        {
+          "name": "after reload: editing is disabled",
+          "pass": true
+        },
+        {
+          "name": "after reload: legacy tasks are listed read-only (3 tasks)",
+          "pass": true
+        },
+        {
+          "name": "after reload: panel has no input, form or destructive control",
+          "pass": true
+        },
+        {
+          "name": "after reload: downloaded file bytes equal the stored legacy bytes (UTF-8, 313 bytes)",
+          "pass": true,
+          "detail": {
+            "got": 313,
+            "filename": "devmate-legacy-preserved-copy.txt"
+          }
+        },
+        {
+          "name": "after reload: status region announces the download (role=status)",
+          "pass": true
+        },
+        {
+          "name": "after reload: panel is a labelled region",
+          "pass": true
+        },
+        {
+          "name": "after reload: mobile 360px layout has no horizontal overflow",
+          "pass": true,
+          "detail": {
+            "sw": 360,
+            "iw": 360
+          }
+        },
+        {
+          "name": "after reload: loading the app and exporting wrote nothing to storage",
+          "pass": true
+        }
+      ]
+    },
+    {
+      "id": "C2-committed",
+      "title": "Built app in real Chromium at cutover phase \"committed\": truthful state, locked editing, read-only task list, byte-exact raw export, reload keeps state",
+      "checks": [
+        {
+          "name": "harness reached the phase",
+          "pass": true,
+          "detail": {
+            "ok": true,
+            "state": "durable"
+          }
+        },
+        {
+          "name": "first load: panel describes the phase truthfully",
+          "pass": true,
+          "detail": "Durable mode recorded; legacy data is an archive\n\nA completed cutover is recorded in this browser. This version has no durable workspace screen, so durable data cannot be shown here. The legacy worksp"
+        },
+        {
+          "name": "first load: editing is disabled",
+          "pass": true
+        },
+        {
+          "name": "first load: legacy tasks are listed read-only (3 tasks)",
+          "pass": true
+        },
+        {
+          "name": "first load: panel has no input, form or destructive control",
+          "pass": true
+        },
+        {
+          "name": "first load: downloaded file bytes equal the stored legacy bytes (UTF-8, 313 bytes)",
+          "pass": true,
+          "detail": {
+            "got": 313,
+            "filename": "devmate-legacy-preserved-copy.txt"
+          }
+        },
+        {
+          "name": "first load: status region announces the download (role=status)",
+          "pass": true
+        },
+        {
+          "name": "first load: panel is a labelled region",
+          "pass": true
+        },
+        {
+          "name": "first load: mobile 360px layout has no horizontal overflow",
+          "pass": true,
+          "detail": {
+            "sw": 360,
+            "iw": 360
+          }
+        },
+        {
+          "name": "first load: loading the app and exporting wrote nothing to storage",
+          "pass": true
+        },
+        {
+          "name": "after reload: panel describes the phase truthfully",
+          "pass": true,
+          "detail": "Durable mode recorded; legacy data is an archive\n\nA completed cutover is recorded in this browser. This version has no durable workspace screen, so durable data cannot be shown here. The legacy worksp"
+        },
+        {
+          "name": "after reload: editing is disabled",
+          "pass": true
+        },
+        {
+          "name": "after reload: legacy tasks are listed read-only (3 tasks)",
+          "pass": true
+        },
+        {
+          "name": "after reload: panel has no input, form or destructive control",
+          "pass": true
+        },
+        {
+          "name": "after reload: downloaded file bytes equal the stored legacy bytes (UTF-8, 313 bytes)",
+          "pass": true,
+          "detail": {
+            "got": 313,
+            "filename": "devmate-legacy-preserved-copy.txt"
+          }
+        },
+        {
+          "name": "after reload: status region announces the download (role=status)",
+          "pass": true
+        },
+        {
+          "name": "after reload: panel is a labelled region",
+          "pass": true
+        },
+        {
+          "name": "after reload: mobile 360px layout has no horizontal overflow",
+          "pass": true,
+          "detail": {
+            "sw": 360,
+            "iw": 360
+          }
+        },
+        {
+          "name": "after reload: loading the app and exporting wrote nothing to storage",
+          "pass": true
+        }
+      ]
+    },
+    {
+      "id": "C3",
+      "title": "Divergence and unreadable-state truthfulness in the built app (old writer, malformed marker, unreadable marker)",
+      "checks": [
+        {
+          "name": "LIMITATION (not a fix): the unmodified pre-barrier writer still succeeds after \"intent\"",
+          "pass": true,
+          "detail": {
+            "ok": true
+          }
+        },
+        {
+          "name": "after old-writer divergence at \"intent\": app reports an alert, editing locked",
+          "pass": true
+        },
+        {
+          "name": "after divergence at \"intent\": both sources are offered",
+          "pass": true
+        },
+        {
+          "name": "divergence at \"intent\": preserved export equals the original bytes",
+          "pass": true
+        },
+        {
+          "name": "divergence at \"intent\": current export equals the diverged bytes",
+          "pass": true
+        },
+        {
+          "name": "LIMITATION (not a fix): the unmodified pre-barrier writer still succeeds after \"committed\"",
+          "pass": true,
+          "detail": {
+            "ok": true
+          }
+        },
+        {
+          "name": "after old-writer divergence at \"committed\": app reports an alert, editing locked",
+          "pass": true
+        },
+        {
+          "name": "after divergence at \"committed\": both sources are offered",
+          "pass": true
+        },
+        {
+          "name": "divergence at \"committed\": preserved export equals the original bytes",
+          "pass": true
+        },
+        {
+          "name": "divergence at \"committed\": current export equals the diverged bytes",
+          "pass": true
+        },
+        {
+          "name": "malformed marker: alert, editing locked, still exports legacy bytes",
+          "pass": true
+        },
+        {
+          "name": "malformed marker: nothing written",
+          "pass": true
+        },
+        {
+          "name": "FAULT-INJECTED marker read failure: alert + editing locked",
+          "pass": true
+        },
+        {
+          "name": "FAULT-INJECTED marker read failure: the app performed no storage write",
+          "pass": true,
+          "detail": []
+        }
+      ]
+    },
+    {
+      "id": "C4",
+      "title": "Two real tabs, real Web Locks: contention and ordering (10 trials)",
+      "checks": [
+        {
+          "name": "every trial: exactly one tab declares intent; the other is a no-op or is refused with marker-present (never a second marker)",
+          "pass": true,
+          "detail": [
+            [
+              {
+                "ok": true,
+                "changed": true,
+                "reason": null
+              },
+              {
+                "ok": false,
+                "reason": "marker-present"
+              }
+            ],
+            [
+              {
+                "ok": true,
+                "changed": true,
+                "reason": null
+              },
+              {
+                "ok": false,
+                "reason": "marker-present"
+              }
+            ],
+            [
+              {
+                "ok": true,
+                "changed": true,
+                "reason": null
+              },
+              {
+                "ok": false,
+                "reason": "marker-present"
+              }
+            ],
+            [
+              {
+                "ok": true,
+                "changed": true,
+                "reason": null
+              },
+              {
+                "ok": false,
+                "reason": "marker-present"
+              }
+            ],
+            [
+              {
+                "ok": true,
+                "changed": true,
+                "reason": null
+              },
+              {
+                "ok": false,
+                "reason": "marker-present"
+              }
+            ],
+            [
+              {
+                "ok": true,
+                "changed": true,
+                "reason": null
+              },
+              {
+                "ok": false,
+                "reason": "marker-present"
+              }
+            ],
+            [
+              {
+                "ok": true,
+                "changed": true,
+                "reason": null
+              },
+              {
+                "ok": false,
+                "reason": "marker-present"
+              }
+            ],
+            [
+              {
+                "ok": true,
+                "changed": true,
+                "reason": null
+              },
+              {
+                "ok": false,
+                "reason": "marker-present"
+              }
+            ],
+            [
+              {
+                "ok": true,
+                "changed": true,
+                "reason": null
+              },
+              {
+                "ok": false,
+                "reason": "marker-present"
+              }
+            ],
+            [
+              {
+                "ok": true,
+                "changed": true,
+                "reason": null
+              },
+              {
+                "ok": false,
+                "reason": "marker-present"
+              }
+            ]
+          ]
+        },
+        {
+          "name": "every trial: all resume() calls ok",
+          "pass": true
+        },
+        {
+          "name": "every trial: marker writes happened exactly once per phase, in order",
+          "pass": true,
+          "detail": [
+            [
+              "intent",
+              "profiles-verified",
+              "stores-verified",
+              "committed"
+            ],
+            [
+              "intent",
+              "profiles-verified",
+              "stores-verified",
+              "committed"
+            ],
+            [
+              "intent",
+              "profiles-verified",
+              "stores-verified",
+              "committed"
+            ],
+            [
+              "intent",
+              "profiles-verified",
+              "stores-verified",
+              "committed"
+            ],
+            [
+              "intent",
+              "profiles-verified",
+              "stores-verified",
+              "committed"
+            ],
+            [
+              "intent",
+              "profiles-verified",
+              "stores-verified",
+              "committed"
+            ],
+            [
+              "intent",
+              "profiles-verified",
+              "stores-verified",
+              "committed"
+            ],
+            [
+              "intent",
+              "profiles-verified",
+              "stores-verified",
+              "committed"
+            ],
+            [
+              "intent",
+              "profiles-verified",
+              "stores-verified",
+              "committed"
+            ],
+            [
+              "intent",
+              "profiles-verified",
+              "stores-verified",
+              "committed"
+            ]
+          ]
+        },
+        {
+          "name": "every trial: final mode durable with verified profiles and stores",
+          "pass": true
+        }
+      ],
+      "trials": [
+        {
+          "begins": [
+            {
+              "ok": true,
+              "changed": true,
+              "reason": null
+            },
+            {
+              "ok": false,
+              "reason": "marker-present"
+            }
+          ],
+          "resumes": [
+            {
+              "ok": true,
+              "changed": true,
+              "reason": null
+            },
+            {
+              "ok": true,
+              "changed": true,
+              "reason": null
+            },
+            {
+              "ok": true,
+              "changed": false,
+              "reason": null
+            }
+          ],
+          "markerWriteOrder": [
+            "intent",
+            "profiles-verified",
+            "stores-verified",
+            "committed"
+          ],
+          "final": "durable",
+          "stores": {
+            "migrationVerified": true,
+            "storesVerified": true
+          }
+        },
+        {
+          "begins": [
+            {
+              "ok": true,
+              "changed": true,
+              "reason": null
+            },
+            {
+              "ok": false,
+              "reason": "marker-present"
+            }
+          ],
+          "resumes": [
+            {
+              "ok": true,
+              "changed": true,
+              "reason": null
+            },
+            {
+              "ok": true,
+              "changed": true,
+              "reason": null
+            },
+            {
+              "ok": true,
+              "changed": true,
+              "reason": null
+            }
+          ],
+          "markerWriteOrder": [
+            "intent",
+            "profiles-verified",
+            "stores-verified",
+            "committed"
+          ],
+          "final": "durable",
+          "stores": {
+            "migrationVerified": true,
+            "storesVerified": true
+          }
+        },
+        {
+          "begins": [
+            {
+              "ok": true,
+              "changed": true,
+              "reason": null
+            },
+            {
+              "ok": false,
+              "reason": "marker-present"
+            }
+          ],
+          "resumes": [
+            {
+              "ok": true,
+              "changed": true,
+              "reason": null
+            },
+            {
+              "ok": true,
+              "changed": true,
+              "reason": null
+            },
+            {
+              "ok": true,
+              "changed": true,
+              "reason": null
+            }
+          ],
+          "markerWriteOrder": [
+            "intent",
+            "profiles-verified",
+            "stores-verified",
+            "committed"
+          ],
+          "final": "durable",
+          "stores": {
+            "migrationVerified": true,
+            "storesVerified": true
+          }
+        },
+        {
+          "begins": [
+            {
+              "ok": true,
+              "changed": true,
+              "reason": null
+            },
+            {
+              "ok": false,
+              "reason": "marker-present"
+            }
+          ],
+          "resumes": [
+            {
+              "ok": true,
+              "changed": true,
+              "reason": null
+            },
+            {
+              "ok": true,
+              "changed": true,
+              "reason": null
+            },
+            {
+              "ok": true,
+              "changed": true,
+              "reason": null
+            }
+          ],
+          "markerWriteOrder": [
+            "intent",
+            "profiles-verified",
+            "stores-verified",
+            "committed"
+          ],
+          "final": "durable",
+          "stores": {
+            "migrationVerified": true,
+            "storesVerified": true
+          }
+        },
+        {
+          "begins": [
+            {
+              "ok": true,
+              "changed": true,
+              "reason": null
+            },
+            {
+              "ok": false,
+              "reason": "marker-present"
+            }
+          ],
+          "resumes": [
+            {
+              "ok": true,
+              "changed": true,
+              "reason": null
+            },
+            {
+              "ok": true,
+              "changed": true,
+              "reason": null
+            },
+            {
+              "ok": true,
+              "changed": false,
+              "reason": null
+            }
+          ],
+          "markerWriteOrder": [
+            "intent",
+            "profiles-verified",
+            "stores-verified",
+            "committed"
+          ],
+          "final": "durable",
+          "stores": {
+            "migrationVerified": true,
+            "storesVerified": true
+          }
+        },
+        {
+          "begins": [
+            {
+              "ok": true,
+              "changed": true,
+              "reason": null
+            },
+            {
+              "ok": false,
+              "reason": "marker-present"
+            }
+          ],
+          "resumes": [
+            {
+              "ok": true,
+              "changed": true,
+              "reason": null
+            },
+            {
+              "ok": true,
+              "changed": true,
+              "reason": null
+            },
+            {
+              "ok": true,
+              "changed": true,
+              "reason": null
+            }
+          ],
+          "markerWriteOrder": [
+            "intent",
+            "profiles-verified",
+            "stores-verified",
+            "committed"
+          ],
+          "final": "durable",
+          "stores": {
+            "migrationVerified": true,
+            "storesVerified": true
+          }
+        },
+        {
+          "begins": [
+            {
+              "ok": true,
+              "changed": true,
+              "reason": null
+            },
+            {
+              "ok": false,
+              "reason": "marker-present"
+            }
+          ],
+          "resumes": [
+            {
+              "ok": true,
+              "changed": true,
+              "reason": null
+            },
+            {
+              "ok": true,
+              "changed": true,
+              "reason": null
+            },
+            {
+              "ok": true,
+              "changed": true,
+              "reason": null
+            }
+          ],
+          "markerWriteOrder": [
+            "intent",
+            "profiles-verified",
+            "stores-verified",
+            "committed"
+          ],
+          "final": "durable",
+          "stores": {
+            "migrationVerified": true,
+            "storesVerified": true
+          }
+        },
+        {
+          "begins": [
+            {
+              "ok": true,
+              "changed": true,
+              "reason": null
+            },
+            {
+              "ok": false,
+              "reason": "marker-present"
+            }
+          ],
+          "resumes": [
+            {
+              "ok": true,
+              "changed": true,
+              "reason": null
+            },
+            {
+              "ok": true,
+              "changed": true,
+              "reason": null
+            },
+            {
+              "ok": true,
+              "changed": false,
+              "reason": null
+            }
+          ],
+          "markerWriteOrder": [
+            "intent",
+            "profiles-verified",
+            "stores-verified",
+            "committed"
+          ],
+          "final": "durable",
+          "stores": {
+            "migrationVerified": true,
+            "storesVerified": true
+          }
+        },
+        {
+          "begins": [
+            {
+              "ok": true,
+              "changed": true,
+              "reason": null
+            },
+            {
+              "ok": false,
+              "reason": "marker-present"
+            }
+          ],
+          "resumes": [
+            {
+              "ok": true,
+              "changed": true,
+              "reason": null
+            },
+            {
+              "ok": true,
+              "changed": true,
+              "reason": null
+            },
+            {
+              "ok": true,
+              "changed": true,
+              "reason": null
+            }
+          ],
+          "markerWriteOrder": [
+            "intent",
+            "profiles-verified",
+            "stores-verified",
+            "committed"
+          ],
+          "final": "durable",
+          "stores": {
+            "migrationVerified": true,
+            "storesVerified": true
+          }
+        },
+        {
+          "begins": [
+            {
+              "ok": true,
+              "changed": true,
+              "reason": null
+            },
+            {
+              "ok": false,
+              "reason": "marker-present"
+            }
+          ],
+          "resumes": [
+            {
+              "ok": true,
+              "changed": true,
+              "reason": null
+            },
+            {
+              "ok": true,
+              "changed": true,
+              "reason": null
+            },
+            {
+              "ok": true,
+              "changed": true,
+              "reason": null
+            }
+          ],
+          "markerWriteOrder": [
+            "intent",
+            "profiles-verified",
+            "stores-verified",
+            "committed"
+          ],
+          "final": "durable",
+          "stores": {
+            "migrationVerified": true,
+            "storesVerified": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "C5",
+      "title": "Real browser quota exhaustion (QuotaExceededError from Chromium, not simulated)",
+      "checks": [
+        {
+          "name": "storage is genuinely full (browser throws QuotaExceededError)",
+          "pass": true,
+          "detail": "QuotaExceededError"
+        },
+        {
+          "name": "begin fails closed with a quota-class reason",
+          "pass": true,
+          "detail": {
+            "ok": false,
+            "step": "begin",
+            "reason": "preserve-quota",
+            "message": "Browser storage is full; the raw legacy copy was not preserved."
+          }
+        },
+        {
+          "name": "no marker was written and legacy bytes are untouched",
+          "pass": true
+        },
+        {
+          "name": "after freeing space the same lifecycle completes",
+          "pass": true,
+          "detail": {
+            "ok": true,
+            "state": "durable"
+          }
+        },
+        {
+          "name": "legacy bytes still exact after recovery",
+          "pass": true
+        },
+        {
+          "name": "intent declared",
+          "pass": true
+        },
+        {
+          "name": "migration under quota fails closed: stage-failed, still recovery, not durable",
+          "pass": true,
+          "detail": {
+            "ok": false,
+            "reason": "stage-failed",
+            "stage": "write-failed",
+            "mode": "recovery"
+          }
+        },
+        {
+          "name": "legacy and preserved copy untouched under quota",
+          "pass": true
+        },
+        {
+          "name": "after freeing space, resume completes to durable",
+          "pass": true,
+          "detail": {
+            "ok": true,
+            "mode": "durable"
+          }
+        }
+      ]
+    },
+    {
+      "id": "C6",
+      "title": "Marker write / read-back / read failures over real Storage (fault injection on Storage.prototype; storage itself is real)",
+      "faultInjected": true,
+      "checks": [
+        {
+          "name": "marker write throws -> marker-write-failed, no marker, legacy exact",
+          "pass": true,
+          "detail": {
+            "ok": false,
+            "step": "begin",
+            "reason": "marker-write-failed",
+            "message": "The cutover marker could not be written: injected marker write failure"
+          }
+        },
+        {
+          "name": "marker write silently dropped -> marker-verify-failed (never reports success)",
+          "pass": true,
+          "detail": {
+            "ok": false,
+            "step": "begin",
+            "reason": "marker-verify-failed",
+            "message": "The cutover marker could not be read back exactly."
+          }
+        },
+        {
+          "name": "dropped advance write: verify failure, marker stays at intent",
+          "pass": true,
+          "detail": {
+            "ok": false,
+            "reason": "marker-verify-failed",
+            "mode": "recovery",
+            "phase": "intent"
+          }
+        },
+        {
+          "name": "after the fault is removed, resume completes forward-only",
+          "pass": true,
+          "detail": {
+            "ok": true,
+            "mode": "durable"
+          }
+        },
+        {
+          "name": "marker read throws -> state indeterminate, begin refused, legacy save refused (cutover-indeterminate)",
+          "pass": true,
+          "detail": {
+            "inspect": "indeterminate",
+            "begin": "preflight:marker-present",
+            "legacySave": "cutover-indeterminate"
+          }
+        },
+        {
+          "name": "Web Locks unavailable -> lock-unavailable and nothing written",
+          "pass": true,
+          "detail": "lock-unavailable"
+        }
+      ]
+    },
+    {
+      "id": "C7",
+      "title": "Restart at every phase and real tab kill mid-lifecycle (page.close during begin/resume), 12 trials",
+      "checks": [
+        {
+          "name": "restart at \"intent\": fresh page sees the same mode (recovery) and resume reaches durable",
+          "pass": true,
+          "detail": {
+            "s1": "recovery",
+            "s2": "recovery",
+            "res": {
+              "ok": true,
+              "mode": "durable"
+            }
+          }
+        },
+        {
+          "name": "restart at \"profiles-verified\": fresh page sees the same mode (recovery) and resume reaches durable",
+          "pass": true,
+          "detail": {
+            "s1": "recovery",
+            "s2": "recovery",
+            "res": {
+              "ok": true,
+              "mode": "durable"
+            }
+          }
+        },
+        {
+          "name": "restart at \"stores-verified\": fresh page sees the same mode (recovery) and resume reaches durable",
+          "pass": true,
+          "detail": {
+            "s1": "recovery",
+            "s2": "recovery",
+            "res": {
+              "ok": true,
+              "mode": "durable"
+            }
+          }
+        },
+        {
+          "name": "restart at \"committed\": fresh page sees the same mode (durable) and resume reaches durable",
+          "pass": true,
+          "detail": {
+            "s1": "durable",
+            "s2": "durable",
+            "res": {
+              "ok": true,
+              "mode": "durable"
+            }
+          }
+        },
+        {
+          "name": "tab kill: state after kill is never indeterminate or malformed",
+          "pass": true,
+          "detail": [
+            "recovery",
+            "recovery",
+            "recovery",
+            "recovery",
+            "recovery",
+            "recovery",
+            "recovery",
+            "recovery",
+            "durable",
+            "durable",
+            "durable",
+            "durable"
+          ]
+        },
+        {
+          "name": "tab kill: legacy bytes are exact after every kill",
+          "pass": true
+        },
+        {
+          "name": "tab kill: the killed tab's Web Lock does not block recovery (resume completes quickly)",
+          "pass": true,
+          "detail": [
+            22,
+            18,
+            14,
+            26,
+            15,
+            14,
+            23,
+            18,
+            10,
+            10,
+            12,
+            11
+          ]
+        },
+        {
+          "name": "tab kill: after recovery profiles and stores verify",
+          "pass": true
+        }
+      ],
+      "trials": [
+        {
+          "killAfterMs": 0,
+          "modeAfterKill": "recovery",
+          "legacyExact": true,
+          "resumed": {
+            "ok": true,
+            "mode": "durable"
+          },
+          "resumeMs": 22,
+          "stores": {
+            "migrationVerified": true,
+            "storesVerified": true
+          }
+        },
+        {
+          "killAfterMs": 1,
+          "modeAfterKill": "recovery",
+          "legacyExact": true,
+          "resumed": {
+            "ok": true,
+            "mode": "durable"
+          },
+          "resumeMs": 18,
+          "stores": {
+            "migrationVerified": true,
+            "storesVerified": true
+          }
+        },
+        {
+          "killAfterMs": 2,
+          "modeAfterKill": "recovery",
+          "legacyExact": true,
+          "resumed": {
+            "ok": true,
+            "mode": "durable"
+          },
+          "resumeMs": 14,
+          "stores": {
+            "migrationVerified": true,
+            "storesVerified": true
+          }
+        },
+        {
+          "killAfterMs": 3,
+          "modeAfterKill": "recovery",
+          "legacyExact": true,
+          "resumed": {
+            "ok": true,
+            "mode": "durable"
+          },
+          "resumeMs": 26,
+          "stores": {
+            "migrationVerified": true,
+            "storesVerified": true
+          }
+        },
+        {
+          "killAfterMs": 5,
+          "modeAfterKill": "recovery",
+          "legacyExact": true,
+          "resumed": {
+            "ok": true,
+            "mode": "durable"
+          },
+          "resumeMs": 15,
+          "stores": {
+            "migrationVerified": true,
+            "storesVerified": true
+          }
+        },
+        {
+          "killAfterMs": 8,
+          "modeAfterKill": "recovery",
+          "legacyExact": true,
+          "resumed": {
+            "ok": true,
+            "mode": "durable"
+          },
+          "resumeMs": 14,
+          "stores": {
+            "migrationVerified": true,
+            "storesVerified": true
+          }
+        },
+        {
+          "killAfterMs": 12,
+          "modeAfterKill": "recovery",
+          "legacyExact": true,
+          "resumed": {
+            "ok": true,
+            "mode": "durable"
+          },
+          "resumeMs": 23,
+          "stores": {
+            "migrationVerified": true,
+            "storesVerified": true
+          }
+        },
+        {
+          "killAfterMs": 16,
+          "modeAfterKill": "recovery",
+          "legacyExact": true,
+          "resumed": {
+            "ok": true,
+            "mode": "durable"
+          },
+          "resumeMs": 18,
+          "stores": {
+            "migrationVerified": true,
+            "storesVerified": true
+          }
+        },
+        {
+          "killAfterMs": 20,
+          "modeAfterKill": "durable",
+          "legacyExact": true,
+          "resumed": {
+            "ok": true,
+            "mode": "durable"
+          },
+          "resumeMs": 10,
+          "stores": {
+            "migrationVerified": true,
+            "storesVerified": true
+          }
+        },
+        {
+          "killAfterMs": 30,
+          "modeAfterKill": "durable",
+          "legacyExact": true,
+          "resumed": {
+            "ok": true,
+            "mode": "durable"
+          },
+          "resumeMs": 10,
+          "stores": {
+            "migrationVerified": true,
+            "storesVerified": true
+          }
+        },
+        {
+          "killAfterMs": 40,
+          "modeAfterKill": "durable",
+          "legacyExact": true,
+          "resumed": {
+            "ok": true,
+            "mode": "durable"
+          },
+          "resumeMs": 12,
+          "stores": {
+            "migrationVerified": true,
+            "storesVerified": true
+          }
+        },
+        {
+          "killAfterMs": 60,
+          "modeAfterKill": "durable",
+          "legacyExact": true,
+          "resumed": {
+            "ok": true,
+            "mode": "durable"
+          },
+          "resumeMs": 11,
+          "stores": {
+            "migrationVerified": true,
+            "storesVerified": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "C8",
+      "title": "Real Web Lock contention and timeout",
+      "checks": [
+        {
+          "name": "while another tab holds the lock, begin() times out fail-closed",
+          "pass": true,
+          "detail": {
+            "ok": false,
+            "reason": "lock-timeout"
+          }
+        },
+        {
+          "name": "timeout is bounded (waited 8014 ms, expected about 8000)",
+          "pass": true,
+          "detail": 8014
+        },
+        {
+          "name": "no marker and no preserved copy were written while contended",
+          "pass": true
+        },
+        {
+          "name": "after the holder releases, the lifecycle completes",
+          "pass": true,
+          "detail": {
+            "ok": true,
+            "state": "durable"
+          }
+        }
+      ]
+    },
+    {
+      "id": "C9",
+      "title": "Interrupted-write sweep in real Chromium: fail before / after every localStorage write (error and quota), restart, retry",
+      "checks": [
+        {
+          "name": "clean run counted its writes",
+          "pass": true,
+          "detail": 11
+        },
+        {
+          "name": "all 44 injected failure points recover to durable with exact legacy bytes, monotonic phases and verified stores",
+          "pass": true,
+          "detail": []
+        }
+      ],
+      "totalWritesInCleanRun": 11
+    },
+    {
+      "id": "C10",
+      "title": "Live refresh in a real open tab: another tab's write is shown without a reload (real storage events)",
+      "checks": [
+        {
+          "name": "10a before the old write: recovery status, no alert",
+          "pass": true
+        },
+        {
+          "name": "10a the old writer succeeds (R1 limitation again)",
+          "pass": true
+        },
+        {
+          "name": "10a the open page flips to an alert WITHOUT reloading",
+          "pass": true
+        },
+        {
+          "name": "10a the alert names the divergence and states the real limitation",
+          "pass": true
+        },
+        {
+          "name": "10a the current (diverged) source appears live and editing stays locked",
+          "pass": true
+        },
+        {
+          "name": "10a the page made no storage write while refreshing",
+          "pass": true,
+          "detail": []
+        },
+        {
+          "name": "10b legacy mode: editing enabled before the marker",
+          "pass": true
+        },
+        {
+          "name": "10b the open page locks editing and shows the recovery panel without reloading",
+          "pass": true
+        },
+        {
+          "name": "10b the page made no storage write",
+          "pass": true,
+          "detail": []
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "cases": 13,
+    "checks": 144,
+    "failedChecks": 0,
+    "passed": true
+  }
+}

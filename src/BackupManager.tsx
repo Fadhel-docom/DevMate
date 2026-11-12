@@ -1,14 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { deleteBackup, listBackups, restoreBackup, type BackupInfo, type RestoreResult } from "./storage";
 
-type Props = { onRestoreStart?: () => void; onRestored: (safeToResume?: boolean) => void | Promise<void>; refreshKey?: number };
+type Props = { onRestoreStart?: () => void; onRestored: (safeToResume?: boolean) => void | Promise<void>; refreshKey?: number; writesBlocked?: boolean };
 type Pending = { action: "restore" | "delete"; backup: BackupInfo } | null;
 
 export function isRestoreSafeToResume(result: RestoreResult): boolean {
   return result.ok || result.rollbackVerified === true;
 }
 
-export default function BackupManager({ onRestoreStart, onRestored, refreshKey = 0 }: Props) {
+export default function BackupManager({ onRestoreStart, onRestored, refreshKey = 0, writesBlocked = false }: Props) {
   const [backups, setBackups] = useState<BackupInfo[]>([]);
   const [pending, setPending] = useState<Pending>(null);
   const [error, setError] = useState<string | null>(null);
@@ -86,14 +86,15 @@ export default function BackupManager({ onRestoreStart, onRestored, refreshKey =
               </div>
               <code className="backup-preview">{backup.preview || "(empty backup)"}</code>
               <div className="backup-actions" role="group" aria-labelledby={`backup-title-${backup.key}`}>
-                <button className="primary-button" type="button" disabled={busy || !backup.restorable} onClick={() => { setError(null); setPending({ action: "restore", backup }); }}>Restore</button>
-                <button className="secondary-button" type="button" disabled={busy} onClick={() => { setError(null); setPending({ action: "delete", backup }); }}>Delete</button>
+                <button className="primary-button" type="button" disabled={busy || writesBlocked || !backup.restorable} onClick={() => { setError(null); setPending({ action: "restore", backup }); }}>Restore</button>
+                <button className="secondary-button" type="button" disabled={busy || writesBlocked} onClick={() => { setError(null); setPending({ action: "delete", backup }); }}>Delete</button>
                 {!backup.restorable && <button className="secondary-button" type="button" disabled={busy} onClick={() => exportRaw(backup)}>Export raw</button>}
               </div>
             </li>
           ))}
         </ul>
       )}
+      {writesBlocked && <p className="backup-note" role="note">A storage cutover marker exists, so restoring or deleting legacy backups is blocked. Backups remain readable and can be exported.</p>}
       <p className="backup-note">Restoring first preserves the current workspace as another backup when possible. Backups are stored only in this browser.</p>
       {pending && (
         <dialog ref={dialogRef} className="confirm-dialog" aria-labelledby="backup-confirm-title" aria-describedby="backup-confirm-text" onCancel={(event) => { event.preventDefault(); if (!busy) setPending(null); }}>

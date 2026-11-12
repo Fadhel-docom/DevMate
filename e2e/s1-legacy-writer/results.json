@@ -1,0 +1,167 @@
+{
+  "chromium": "131.0.6778.33",
+  "origin": "http://localhost:<ephemeral>",
+  "scenarios": {
+    "old-writer-after-intent": {
+      "trials": [
+        {
+          "oldWriteOk": true,
+          "writerSeesNewValue": true,
+          "newTabImmediateReadStale": false,
+          "inspectImmediate": "indeterminate",
+          "newTabSettledAfterMs": 1,
+          "inspectSettled": "indeterminate",
+          "state": {
+            "began": true,
+            "resumed": null,
+            "mode": "recovery",
+            "locksType": "object"
+          }
+        },
+        {
+          "oldWriteOk": true,
+          "writerSeesNewValue": true,
+          "newTabImmediateReadStale": true,
+          "inspectImmediate": "indeterminate",
+          "newTabSettledAfterMs": 1,
+          "inspectSettled": "indeterminate",
+          "state": {
+            "began": true,
+            "resumed": null,
+            "mode": "recovery",
+            "locksType": "object"
+          }
+        },
+        {
+          "oldWriteOk": true,
+          "writerSeesNewValue": true,
+          "newTabImmediateReadStale": true,
+          "inspectImmediate": "indeterminate",
+          "newTabSettledAfterMs": 1,
+          "inspectSettled": "indeterminate",
+          "state": {
+            "began": true,
+            "resumed": null,
+            "mode": "recovery",
+            "locksType": "object"
+          }
+        },
+        {
+          "oldWriteOk": true,
+          "writerSeesNewValue": true,
+          "newTabImmediateReadStale": false,
+          "inspectImmediate": "indeterminate",
+          "newTabSettledAfterMs": 0,
+          "inspectSettled": "indeterminate",
+          "state": {
+            "began": true,
+            "resumed": null,
+            "mode": "recovery",
+            "locksType": "object"
+          }
+        },
+        {
+          "oldWriteOk": true,
+          "writerSeesNewValue": true,
+          "newTabImmediateReadStale": true,
+          "inspectImmediate": "indeterminate",
+          "newTabSettledAfterMs": 1,
+          "inspectSettled": "indeterminate",
+          "state": {
+            "began": true,
+            "resumed": null,
+            "mode": "recovery",
+            "locksType": "object"
+          }
+        }
+      ]
+    },
+    "old-writer-after-committed": {
+      "trials": [
+        {
+          "oldWriteOk": true,
+          "writerSeesNewValue": true,
+          "newTabImmediateReadStale": true,
+          "inspectImmediate": "indeterminate",
+          "newTabSettledAfterMs": 2,
+          "inspectSettled": "indeterminate",
+          "state": {
+            "began": true,
+            "resumed": true,
+            "mode": "durable",
+            "locksType": "object"
+          }
+        },
+        {
+          "oldWriteOk": true,
+          "writerSeesNewValue": true,
+          "newTabImmediateReadStale": true,
+          "inspectImmediate": "indeterminate",
+          "newTabSettledAfterMs": 1,
+          "inspectSettled": "indeterminate",
+          "state": {
+            "began": true,
+            "resumed": true,
+            "mode": "durable",
+            "locksType": "object"
+          }
+        },
+        {
+          "oldWriteOk": true,
+          "writerSeesNewValue": true,
+          "newTabImmediateReadStale": true,
+          "inspectImmediate": "indeterminate",
+          "newTabSettledAfterMs": 1,
+          "inspectSettled": "indeterminate",
+          "state": {
+            "began": true,
+            "resumed": true,
+            "mode": "durable",
+            "locksType": "object"
+          }
+        },
+        {
+          "oldWriteOk": true,
+          "writerSeesNewValue": true,
+          "newTabImmediateReadStale": true,
+          "inspectImmediate": "indeterminate",
+          "newTabSettledAfterMs": 1,
+          "inspectSettled": "indeterminate",
+          "state": {
+            "began": true,
+            "resumed": true,
+            "mode": "durable",
+            "locksType": "object"
+          }
+        },
+        {
+          "oldWriteOk": true,
+          "writerSeesNewValue": true,
+          "newTabImmediateReadStale": true,
+          "inspectImmediate": "indeterminate",
+          "newTabSettledAfterMs": 1,
+          "inspectSettled": "indeterminate",
+          "state": {
+            "began": true,
+            "resumed": true,
+            "mode": "durable",
+            "locksType": "object"
+          }
+        }
+      ]
+    },
+    "lock-held-mitigation-experiment": {
+      "whileHeld": {
+        "ok": false,
+        "reason": "lock-timeout",
+        "waitedMs": 8005,
+        "legacyUnchanged": true
+      },
+      "afterHolderClosed": {
+        "ok": true,
+        "reason": null,
+        "legacyChanged": true
+      }
+    }
+  }
+}

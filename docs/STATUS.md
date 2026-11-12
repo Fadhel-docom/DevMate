@@ -1,9 +1,15 @@
 # DevMate Status
 
-> Current state: see the latest dated PR-C / PR-D checkpoint at the end of this file. Earlier dated checkpoints are historical.
+> **Current state (2026-11-11; maintained summary):** PR #32, PR #33 and PR #39 are merged into `feature/phase-1-foundation`; latest merge `ccd89f1750091cc47b469445780b88fd52bd12f6`. PR #32 added safe, cutover-disabled recovery/archive; PR #33 added 17 legacy-writer tests documenting that old `deleteBackup` can evade workspace-byte detection; PR #39 hardened the isolated IndexedDB CAS Chromium harness. PR #39 exact-head checks passed: DevMate CI 15 files / 381 tests; P1 Chromium 8/8 required checks (20/20 thread independence, 100/100 real races, 5/5 mutant rejection, racer exception negative control); R6 13 cases / 144 checks / 0 failures. **R1 remains unresolved; live cutover is prohibited. S2-16 remains a failure in the current localStorage application path.** PR #38 remains an isolated IndexedDB CAS spike, not wired into the app. Next dependency chain: rebase/review PR #35 S2 real-Chromium evidence, then PR #36 root-cause diagnosis, then PR #37 IndexedDB/CAS design. PR #34 accessibility and PR #40 roadmap request remain separate. No application adoption, migration, cutover, deployment, provider integration, permission expansion, cost change, or RateNest work is authorized. Read this summary and the latest Operations Room entry; historical sections are append-only.
 
 ## Current milestone
 Phase 1 — foundation and local demo.
+
+
+
+
+
+
 
 ## Completed
 - [x] Created public GitHub repository with MIT license and README.
@@ -790,6 +796,222 @@ Run the full Vitest suite, TypeScript/Vite production build, and dependency audi
 ### PR-D restart-safety correction
 - Design review identified a restart gap between profile migration and final cutover marker. PR-D design now requires a durable cutover-intent marker before any migration, checked under the shared lock by every legacy write path. An intent/intermediate marker forces read-only recovery mode across reloads and tabs; it cannot silently fall back to legacy writes.
 
+## Current state — 2026-11-07 (PR #28, PR #29 and the PR-D design merged; PR-D implementation not started)
+
+This section supersedes the earlier dated "Current state" sections above, which described PR #28, PR #29 and the PR-D design as open or pending.
+
+### Merged into `feature/phase-1-foundation` (all verified live on GitHub)
+- PR #28 (PR-C durable task-ledger adapter): reviewed head `2c7d798d2a07d5c8ec6d6a4b3e871bd164c2f17a`; merge commit `9d03b9c426b06be8fb1dd4b4a54342def150ff83`. Independent review: APPROVE WITH FOLLOW-UP, no blocking findings (review https://github.com/Fadhel-docom/DevMate/pull/28#pullrequestreview-5813542086). Exact-head CI: Actions run #371 / ID `42380821309`, event push, head SHA `2c7d798...`, conclusion success; job `verify` steps npm ci, dependency-audit report, npm test and npm run build all succeeded (read through the GitHub API). The counts 216 tests / 0 vulnerabilities come from earlier coordinator log inspection; the independent reviewer did not re-count them and did not run the tests locally.
+- PR #29 (unified agent handoff protocol): reviewed head `924241df0f5a12906c720fe6e9494c77c2ab1ef7`; merge commit `f111f4d77b575b5313432b5911ed55f7566051fe`. Second-contributor review: APPROVE WITH FOLLOW-UP, no blocking findings (https://github.com/Fadhel-docom/DevMate/pull/29#pullrequestreview-5813542098). Documentation only; no CI run exists for this docs branch and none is claimed.
+- PR #30 (PR-D forward-only recovery and cutover design): reviewed head `ed2e70dcbfbd28de92b84c678664b16031f063a3`; merged head `b160156a0be610e393ea0a8c5a34de549ca2ad50` (mechanical conflict resolution in the three log files only; `docs/PR-D-RECOVERY-DESIGN.md` byte-identical, blob `212ebdcb290bc298c16aaecfa15346eb6d4342ba`); merge commit `3c60a8529ae99d869c3c98970c2df9ff37895d42`. Independent design review: APPROVE WITH FOLLOW-UP (https://github.com/Fadhel-docom/DevMate/pull/30#pullrequestreview-5813542076). No CI run exists for this docs branch and none is claimed.
+- All three reviews were posted as COMMENT reviews with the verdict in the body, because all contributors act through the owner's GitHub account and GitHub does not allow approving one's own PR.
+
+### What is not done
+- No App/UI integration, no migration, no cutover, no legacy-writer change, no recovery implementation, no browser (restart / quota / two-tab) tests, no provider or execution work. The PR-D design is a design baseline, not authorization for any of these.
+- Branch protection on `feature/phase-1-foundation` is reported by GitHub as not enabled (`protected: false`); the manual review protocol applies. This was not changed.
+
+### Conditions recorded for the PR-D implementation (from the design review; not yet implemented)
+- R1 Re-read and compare the legacy source at every cutover marker phase advance including `committed`; any divergence stops in indeterminate/read-only state with the new legacy bytes preserved (protects against a stale tab running an older bundle). Add a test for a legacy write after intent.
+- R2 Specify the fingerprint algorithm and compare full bytes with the preserved raw copy when proving the source unchanged.
+- R3 Raw-byte preservation must be idempotent (keyed by fingerprint; an exact existing copy counts as success) so a crash before the intent marker cannot block a retry.
+- R4 Define the abort-after-intent procedure precisely; the app never deletes the marker.
+- R5 Define an owner-approved slot-release or export-then-release path for the snapshot-full dead end, without destructive pruning.
+- R6 Keep the marker fixed-size; test marker-write failure at each phase in a real browser.
+
+### Non-blocking follow-ups from the PR #28 / PR #29 reviews
+- Document that a transient `invalid-data` from `readLedger` (profile envelope changed between the locked ledger read and the later profile read) is retryable and not corruption; the PR-D UI must present it as retry / re-inspect.
+- Consider rejecting appended events attached to an unchanged task in a later hardening step.
+- The CAS revision is store-wide, so cross-project conflicts are possible and must be handled by retry.
+- PR #29: record the independent reviewer identity in the task packet; state that document conflicts stop the affected action.
+
+### Next exact action
+Implement PR-D in small reviewed steps, starting with the cutover-intent barrier in `src/storage.ts` (all legacy mutators check `devmate-cutover-v1:workspace` under the shared lock) with tests, against R1 to R6. Do not run any migration or cutover against user data during development or CI. Do not start AI-provider integration.
+
+
+## Current state — 2026-11-07 (PR #32: cutover controller implemented; not merged)
+
+This section supersedes the PR-D "not started" statements above.
+
+### Pull requests
+- PR #32 (`feature/pr-d-cutover-intent-barrier` -> `feature/phase-1-foundation`, Draft) now contains the documentation of PR #31 (merge commit `d1ff7f72e414942bb372692f86203e761ce452fe`; PR #31 head `32715747992d549cd9eaef3067197f7222669d77` is an ancestor and its four documentation files are byte-identical) plus the PR-D implementation. PR #31 is superseded by PR #32.
+- Previously published PR #32 head `d1ff7f7...` failed CI job `verify` (run 42396973824). Reproduced independently: 5 failed / 215 passed of 220 in `src/storage.test.ts`.
+
+### Failure analysis and fix
+- Three tests (`quota`, `unavailable`, `unknown` classification) used a write-only storage object (`{ setItem }`) and one used a read counter that also counted the new barrier read. One test (a storage whose reads all throw `SecurityError`) exposed a real classification defect.
+- Implementation fix: a blocked storage (`SecurityError`) while reading the marker is reported as `unavailable`; other read failures remain `cutover-indeterminate`; the barrier stays fail-closed.
+- Test fixtures (not assertions) changed in four tests: three now provide `getItem: () => null` so the barrier can verify "no marker" and the original `quota`/`unavailable`/`unknown` assertions are unchanged; the `verify` test counts only reads of the workspace key. This is a judgement call: the literal instruction was to fix the implementation only, but a write-only storage cannot be proven marker-free, so it must stay fail-closed. The previous agent's replacement of "succeeds with a storage that only offers setItem" by "fails closed when a storage writer cannot inspect the cutover marker" is retained and flagged for the independent reviewer.
+- Added the missing barrier on `deleteBackup`.
+
+### Implemented
+- `src/cutoverController.ts` (marker schema, phases, fingerprint, preservation, revalidation, forward-only resume, abort eligibility, export, production stage wiring), App cutover states, backup controls disabled while a marker exists. Details and the R1 to R6 table: `docs/PR-D-RECOVERY-DESIGN.md` section 10.
+- Tests: 312 tests in 10 files passed locally on the final tree (82 new in `cutoverController.test.ts`, 10 new in `App.test.tsx`). `tsc --noEmit`, `vite build` and `npm audit` (0 vulnerabilities) also ran locally. Mutation check: removing either source revalidation in the controller makes the R1 tests fail. Exact-head CI evidence for the final SHA is recorded in the PR #32 description/comment, not here, to avoid a self-referential SHA.
+
+### Not done / risks
+- No real-browser two-tab, quota or restart tests (R6 partly open). Local runs used Node v24.22.1 and npm 10.8.2 in a remote sandbox; CI uses Node 20.
+- No cutover trigger UI, durable workspace UI, read-only legacy archive view/export UI or slot-release flow; R4 abort and R5 release are owner-approved actions outside the application (not implemented as code).
+- The fingerprint is non-cryptographic (full-byte comparison is the proof). The marker is bounded (<= 256 characters), not padded.
+- No migration, deletion, cutover, deployment or real user-data operation occurred.
+
+### Next exact action
+Independent review of the exact final PR #32 head by ChatGPT (not merged by the implementer). Merging does not authorize a live cutover.
+
+
+### Independent review follow-up — stale pre-barrier application instances (2026-11-07)
+- Review of PR #32 exact head `68207a4d776b06b7f986fb52b1f4b2c42daf25e8` found that a tab running the pre-barrier bundle can continue invoking old storage mutators; Web Locks do not retrofit marker checks into already-loaded code. Existing R1 tests mutated storage directly and did not execute the old-bundle writer path.
+- A fail-closed guard is being added: `begin()` requires a host-supplied `confirmLegacyWritersQuiesced()` proof and otherwise refuses before writing the intent marker. No production verifier currently exists, so cutover remains unavailable by default. Tests injecting `true` cover controller flow only, not actual browser-wide quiescence.
+- R1 remains partial until a genuine host-level stale-tab/version fence and real-browser two-tab regression are implemented. No live migration/cutover is authorized or run.
+
+
+## PR-D staged review ledger — 2026-11-07
+- Added `docs/PR-D-REVIEW-LEDGER.md` as the append-only stage register for PR #32.
+- Each bounded stage must retain its own exact SHA, evidence, reviewer verdict, fixes and residual risks. A new head invalidates prior exact-head CI/review evidence unless explicitly revalidated.
+- Current live checkpoint when the ledger was created: `269e0a8daf3c504070cf411e7353a1c32af62771`. R1 remains partial; no independent review approves the current head; exact-head CI evidence still requires confirmation.
+- Do not merge or run real cutover until all gates and stage reviews are complete.
+
+
+## Current state — 2026-11-07 (PR #32: S1 evidence recorded; R1 still unresolved)
+
+This section supersedes the earlier dated sections only for R1/S1 status.
+
+- PR #32 head before this change: `8742c3e20b8175b6ded1e82b3db4a994ece31907`; CI run 42407470558 passed on it; no independent review of that head.
+- Added test evidence (no production change): the unmodified base-revision writer **can** write the legacy workspace after `intent` and after `committed`; the marker only allows detection afterwards. A held exclusive lock blocked it only in a fake lock manager and only while the holder lived.
+- **R1: unresolved.** `confirmLegacyWritersQuiesced` is still not provided by the app, so cutover cannot start by default.
+- Local results: 319/319 tests, `tsc --noEmit` clean. CI for the new commit and an independent S1 review are pending. Details: `docs/PR-D-REVIEW-LEDGER.md` (S1 record 1) and `docs/OPERATIONS-ROOM.md`.
+- No real migration, cutover, deletion, deployment or merge was performed.
+
+## Current state — 2026-11-07 (PR #32: S1 review package ready; reviewer pending)
+
+This section supersedes the earlier dated sections only for S1/S2 status.
+
+- Review target for S1: `22f3fccf69cdaa0d1dd075f6015c167caeb9280a` (CI [run 42410871238](https://github.com/Fadhel-docom/DevMate/actions/runs/42410871238) success). Later commits are documentation-only.
+- Real Chromium 131 (two tabs, real Web Locks): the unmodified base-revision writer succeeded 5/5 after `intent` and 5/5 after `committed`. Marker and revalidation detect, they do not prevent. A live lock holder blocked the old writer only while the holder lived (separate mitigation experiment, not a fix).
+- **R1: unresolved.** **S1: Open** — independent review requested ([PR comment](https://github.com/Fadhel-docom/DevMate/pull/32#issuecomment-6712583754)); **no independent reviewer yet; not approved**.
+- **S2: Open / not started.** The browser environment works now, but none of the S2 scenarios (two-tab contention, quota, marker failures, restart per phase) has been run.
+- S3 is not started. No real cutover, migration, deletion, deployment or merge.
+- Details: `docs/reviews/S1-REVIEW-PACKAGE.md`, `docs/PR-D-REVIEW-LEDGER.md` (S1 record 3), `docs/OPERATIONS-ROOM.md`.
+
+
+## 2026-11-09 — Current coordination rule (binding)
+- The Operations Room is the mandatory single source of truth. Every worker reads `docs/OPERATIONS-ROOM.md` and this file before acting; all assignments, findings, repair instructions, decisions, exact SHAs, evidence, tests/CI, blockers, merge/closure results, and next actions are recorded there.
+- The owner is never a relay between ChatGPT and Claude. Workers exchange handoffs through the repository records.
+- Per branch: one comprehensive ChatGPT review → one consolidated Claude repair pass → exact-final-SHA verification → merge and verify PR closure if all gates pass.
+- No repeated review carousel, no partial-fix claims, no parallel task drift while the current branch awaits repair/verification/closure. If the repair does not satisfy acceptance, mark BLOCKED / NOT ACCEPTED with exact evidence; never merge or claim completion.
+- This is an operating rule, not a claim that any existing PR has passed. PR #32 remains open; R1 and R6 are still recorded as unresolved/open.
+- Next exact action: reconcile the existing open PRs sequentially under this protocol, starting with the oldest foundational dependency; do not open another branch/task.
+
+
+## 2026-11-09 — PR #32 review checkpoint / Claude repair pending
+
+- Review target: `60ec4450f36a9981cdc37d7346b3d12e2d4f8d40`; report: `docs/reviews/PR32-CONSOLIDATED-REVIEW-2026-11-09.md`.
+- Review report commit: `7b1554f763e1381eeccad8ccf7a66b563ab38965`; Operations Room update commit: `cf9d346d27eb17b45d63adeb596ae9f58a6c0948`.
+- Status: **BLOCKED / NOT ACCEPTED — REQUEST CHANGES. PR #32 remains open and must not be merged yet.**
+- Claude has one consolidated repair assignment for F1/R1 stale-writer fencing, F2/R6 real-browser failure matrix, F3/S3 recovery/archive UX, and F4/S5 project-isolation/retry evidence. Claude has freedom to refactor safely; impossible safety guarantees must remain blocked, never papered over.
+- Waiting for Claude's direct repository handoff: exact final SHA, changed files, per-finding results, tests, browser evidence, exact-head CI and residual risks.
+- Next: ChatGPT verifies that exact SHA once; merge and verify closure only if all acceptance criteria pass. No parallel branch/task.
+
+- Claude start request: PR #32 comment [#6742842838](https://github.com/Fadhel-docom/DevMate/pull/32#issuecomment-6742842838); linked handoff is in the Operations Room.
+
+
+## 2026-11-09 — Incoming worker handoffs recorded
+
+- Operations Room is the central coordination hub; all workers read it and STATUS first and write all work/evidence/handoffs there. Owner is not a courier.
+- ChatGPT handoff: `docs/handoffs/CHATGPT-NEW-SESSION-2026-11-09.md`.
+- First-time Claude handoff: `docs/handoffs/CLAUDE-NEW-SESSION-2026-11-09.md`.
+- Consolidated review: `docs/reviews/PR32-CONSOLIDATED-REVIEW-2026-11-09.md`.
+- Assignment is restricted to PR #32 / `feature/pr-d-cutover-intent-barrier`: Claude one consolidated repair of F1/R1, F2/R6, F3/S3, F4/S5; ChatGPT one final exact-SHA verification; merge and verify closure only if every gate passes. Otherwise BLOCKED / NOT ACCEPTED.
+- No parallel branch/task or unrelated repository work while this is pending.
+- Handoff documents committed: ChatGPT `078e54200f070f362115b9cf543562fd751ebd87`; Claude `6719ebc4d835bda35d27c51a0dc1e9c98bd2ee71`.
+- Operations Room handoff index commit: `045c6629402bb2bccc412ec3cbf2069ccdc22950`.
+
+- Verified handoff checkpoint: PR #32 is open/not merged at head `0c9890964586dbc9be1931406dacc88150eca83d` (base `feature/phase-1-foundation`). Both handoff docs and the Operations Room index are present. These are documentation-only commits, not technical fixes or CI proof. Operations Room checkpoint commit: `cb8627cd5235a647f56ff3163dbde63c4a39272e`.
+
+
+## PR #32 repair checkpoint — 2026-11-10 — Claude
+
+- Evidence SHA: `cc06f753ca262dae08b6d35c266b748b8fac41d3` (code identical to `e89f6e8` plus a clean sync of base `00a5979`). Later commits are documentation/evidence only.
+- State: **BLOCKED / NOT ACCEPTED for any real cutover.** F1/R1 cannot be fenced client-side; cutover was made unreachable in production instead and divergence is detected, not prevented. F2/R6, F3/S3 and F4/S5 are implemented and evidenced.
+- Verified at the SHA: `tsc` clean; `npm test` 358/358 (was 319); build passes; real Chromium 131 suite 12 cases / 135 checks / 0 failed (`e2e/r6-matrix/results.json`, clean tree); `DevMate CI` run 42764585468 success; `P1 IndexedDB CAS Chromium proof` run 42764592155 success (it had failed on every earlier PR commit because the branch was behind base and lacked the P1 harness; fixed by a clean base sync).
+- Not in CI: the Chromium suite (reproducible from `e2e/r6-matrix/README.md`). Chromium only.
+- Full file list, per-finding table, residual risks and the exact behavioural change are in `docs/OPERATIONS-ROOM.md` (entry "2026-11-10 — Claude repair handoff"). Next action: ChatGPT exact-SHA verification. Claude does not merge.
+
+
+## 2026-11-10 — ChatGPT final verification of PR #32 — **BLOCKED / NOT ACCEPTED; NOT MERGED**
+
+- Reviewed live PR #32 head `ea4c35d61ee3fe61bc7ac34688571bfe6e053d43`, base `feature/phase-1-foundation`; PR was OPEN / NOT MERGED. The implementation/evidence SHA is `cc06f753ca262dae08b6d35c266b748b8fac41d3`. Compare confirms the one commit after that code SHA changes only `docs/OPERATIONS-ROOM.md`, `docs/PR-D-REVIEW-LEDGER.md`, `docs/STATUS.md`, and adds `e2e/r6-matrix/results.json`; no `src/` or workflow code changed.
+- **F1/R1 remains a merge blocker under the explicit Claude assignment:** the real pre-barrier writer still succeeds after `intent` and `committed` (reproduced by the committed Chromium C3 evidence). The production build structurally excludes the mutating controller, so this version cannot start a cutover; it detects divergence and offers exports. This is a safe narrowing, not a fence. The assignment explicitly says if a robust fence is impossible, keep cutover disabled and this PR BLOCKED / NOT ACCEPTED.
+- **Additional F3/UI blocker:** `src/App.tsx` `cutoverNotice()` says “Legacy writes are blocked across tabs and restarts”; `src/RecoveryArchive.tsx` says “All writes are blocked and nothing was changed.” Both overstate the guarantee: C3 proves a pre-barrier tab can still write after intent/commit. The app also inspects cutover state on mount/reload, not continuously on a storage event. These messages are not truthful for the documented stale-tab case.
+- F2 evidence file: Chromium 131.0.6778.33 / Playwright 1.49.1 / Node 20.20.2; `sourceCommit=cc06f753...`, clean tree; 12 cases, 135 checks, 0 failures. This suite is reproducible from `e2e/r6-matrix/README.md` but is not in GitHub Actions. It includes C3 confirming the unresolved stale writer, not a prevention test.
+- F3 archive/export implementation and tests are substantial, but the false status wording above fails the truthful-UI acceptance condition. The durable workspace screen remains absent and the UI correctly says so elsewhere.
+- F4 has the in-memory project isolation/retry/crash matrix plus browser C4-C9 evidence as recorded in the Claude handoff. No evidence supports a live cutover guarantee.
+- DevMate CI run `42764585468` passed on code SHA `cc06f753...` (358 tests, TypeScript/build per job steps). P1 Chromium CAS run `42765356284` passed on the then-current docs/evidence head `ea4c35d...`; it is a separate CAS harness, not the R6 suite. A DevMate CI run on the exact final documentation head is still required after this handoff commit.
+- **Decision:** no merge. Keep PR #32 OPEN and **BLOCKED / NOT ACCEPTED**. No code, branch, workflow, or production data was changed by this review. Next action: preserve the blocked state; only reconsider after the owner changes the explicit R1 disposition/acceptance requirement and the misleading UI claims are corrected and reverified.
+
+
+## 2026-11-10 — Owner mandate: operating rules must enable safe progress
+- The owner directed ChatGPT to identify and document any rule that obstructs necessary, correct project progress, and to ask Claude to propose specific amendments for ChatGPT's independent review.
+- The Operations Room now distinguishes a **PR/code merge gate** from a **capability activation gate**: an unsafe capability (such as real cutover without a stale-writer fence) must remain unreachable, but this does not automatically prohibit merging independently safe, truthful, tested work.
+- Other proposed governance improvements: scoped blockers instead of blanket PR blocks; reuse valid CI evidence across verified docs-only commits; permit evidence-driven review/repair iterations; treat independent review as substantive verification rather than a GitHub permission ritual; allow safe workflow/CI proposals while preserving owner approval for permission, cost, secret and release-boundary changes.
+- Claude has been asked to identify further obstructive rules and propose replacements in the Operations Room for ChatGPT's review. No safety or evidence requirement is waived.
+- Immediate PR #32 follow-up: reassess the safe cutover-disabled implementation separately from live-cutover authorization; correct and verify the inaccurate stale-writer UI claims before any merge decision.
+
+
+## PR #32 follow-up checkpoint — 2026-11-10 (after ChatGPT verdict 98ea8f0) — Claude
+
+- Evidence SHA `d3a15d7f564a715939208fe8273f5e2064524b56`; later commits documentation only.
+- Fixed ChatGPT's listed defects: false "writes are blocked" claims removed; live `storage`/`focus` divergence refresh added (unit tests + Chromium C10); PR description reconciled; browser suite now runs in Actions (`r6-chromium.yml`, proposal).
+- Verified at the SHA: tsc clean; 364/364 tests; build ok; DevMate CI 42767545980, P1 proof 42767553205, R6 matrix 42767553660 (13 cases / 144 checks / 0 failed) all success.
+- Still true: R1 is not a fence (cutover unreachable, divergence detected). **Live cutover prohibited.** Awaiting ChatGPT re-verification under the split gate and review of rule proposals A–C in the Operations Room.
+
+
+## PR #32 security follow-up checkpoint — 2026-11-11 — Claude
+
+- Evidence SHA `d0e32ad1116e3845cd2b6387fbe135e20caa8322`; only `e2e/r6-matrix/**` changed since `d1c1128`; later commits documentation only.
+- Isolated harness audit confirmed GHSA-7mvr-c777-76hp (`playwright <1.55.1`, high, installer without TLS verification). Upgraded to `playwright@1.65.0` with npm (lockfile regenerated by npm); isolated audit now 0 vulnerabilities; stale "not in CI" wording fixed.
+- Verified: local 13 cases / 144 checks / 0 failed on Chromium 158; Actions DevMate CI 42955182910, P1 proof 42955188832, R6 matrix 42955188768 all success on this SHA.
+- Next: ChatGPT exact-SHA re-verification and merge decision under the split gate. Live cutover still prohibited.
+
+
+## Current state — 2026-11-08 (PR #38 merged; P2 harness hardening underway)
+
+### PR #38
+- [PR #38](https://github.com/Fadhel-docom/DevMate/pull/38) was squash-merged into `feature/phase-1-foundation`.
+- Merge commit: `00a59793f0452cd7ee0d8a27ffb0ef3bbac78bc4`.
+- Scope accepted: isolated IndexedDB CAS spike and its standalone Chromium harness only. It is not wired into the application and does not authorize migration or cutover.
+- Independent review: APPROVE WITH FOLLOW-UP; no confirmed CAS/data-integrity blocker. Remaining F3/F4/F5 and harness/runner follow-ups remain adoption prerequisites as applicable.
+
+### R1 and S2-16 remain open
+- R1 remains unresolved: an already-loaded legacy application tab can still call old localStorage mutators; the in-app marker cannot prove that all old bundles have stopped. The real-writer matrix also showed legacy backup deletion can evade byte-change detection.
+- S2-16 remains FAIL in the application localStorage path. PR #38 does not change that path. IndexedDB CAS is a candidate replacement primitive, not an application fix.
+- PRs #32–#37 remain open and stacked on one another / stale bases; do not merge them as a batch or assume they include PR #38. Reconcile into one cumulative branch only after checking each exact diff and parent.
+- No S3, migration, cutover, live data operation, deployment, or provider integration is authorized.
+
+### P2 CAS harness hardening
+- Created branch `feature/p2-cas-harness-hardening` from the current `feature/phase-1-foundation`.
+- Updated `e2e/cas-store-harness/index.html`: assert the worker received GO before the shared start time; alternate a controlled 0 ms / 12 ms release offset so both parent and second-tab winner identities must be exercised; describe this as winner-order coverage, not proof of simultaneous overlap.
+- Updated `docs/reviews/P1-CHROMIUM-REMEDIATION.md` with the corrected proof boundary.
+- Exact branch head and CI status must be read from GitHub after the PR is opened. No local browser/test execution is claimed.
+
+### Next exact action
+Open a Draft PR from `feature/p2-cas-harness-hardening` to `feature/phase-1-foundation`, inspect exact-head DevMate CI and Chromium runs, then independently review the final SHA. Keep R1/S2-16 and all application-adoption gates open.
+
+### PR #39 first Chromium attempt — corrective change made
+- Initial PR #39 head `4c09632eb800a6270fe3bd3ed335c79787b8480c` passed DevMate CI but failed Chromium checks `RACE-REAL` and `RACE-MUTANT`; five other harness checks passed.
+- Job logs showed the worker received GO after the 30 ms start lead. The new assertion correctly rejected this as an unproven barrier; three mutant trials were therefore not accepted.
+- Increased the shared GO lead to 250 ms on the follow-up branch and recorded the failure/correction in the remediation document. The next exact-head Chromium run is the deciding evidence; no pass is claimed yet.
+
+### PR #39 root cause and fix (2026-11-08)
+- Root cause: the second tab opened with `window.open` shares the parent's main thread; the parent's spin loop delayed GO delivery to it (8/8 probes delayed 150 ms; parent timers stalled in 6/6). The 250 ms lead could not help and the previous "race" ran sequentially. Evidence and limits: `docs/reviews/P1-CHROMIUM-REMEDIATION.md`.
+- Fix: race actors run in one Dedicated Worker per tab (`e2e/cas-store-harness/racer.js`); `THREADS-INDEPENDENT` is a required check; the barrier is proven per trial. On `d082c88` Chromium and CI passed (race 100/100, parent wins 45 / second tab 55, mutants 5/5 with barrier proven).
+- Unchanged: no `src/` change; R1 and S2-16 remain open; PR #38's isolated spike is not wired into the application; PR #39 stays Draft pending independent review of the final SHA.
+
+### PR #39 closure follow-ups F1 / F2 / F5 (2026-11-08)
+- Scope: test harness and documentation only. No `src/` change, no change to PR #38, no application storage path, no migration or cutover.
+- F5: new runner self-test `selftest=racer-exception` throws an uncaught error inside the real Dedicated Worker (`racer.js`) and requires the runner to fail through the worker's own error monitor (not a timeout, not the host `Worker` error listener). Wired into the existing runner self-test step of `p1-chromium.yml`. Limits are recorded in `docs/reviews/P1-CHROMIUM-REMEDIATION.md`.
+- F2: `docs/reviews/P1-CHROMIUM-REMEDIATION.md` labels the older main-thread / "250 ms allows BroadcastChannel delivery" explanations and the "10 s result wait" as superseded (history preserved); current waits are 5 s READY and 15 s result.
+- F1: the PR #39 description is rewritten to the final Dedicated Worker design and carries the exact-head CI and Chromium evidence.
+- Unchanged: R1 and S2-16 remain open; the IndexedDB CAS stays an isolated prototype; PR #39 stays Draft pending independent verification.
+
+<!-- Carried over from PR #34 (feature/keyboard-accessibility) when its branch was synchronised with the base on 2026-11-11; dated entries below are historical. -->
 ## Current state — 2026-11-08 (keyboard accessibility PR open; other work unchanged)
 
 - Branch `feature/keyboard-accessibility`, base `feature/phase-1-foundation` at `3c60a8529ae99d869c3c98970c2df9ff37895d42`. One PR, ready for review, not merged.

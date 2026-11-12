@@ -1,0 +1,503 @@
+<!doctype html>
+<html lang="en">
+<head><link rel="icon" href="data:,"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>IndexedDB CAS P1 browser spike</title></head>
+<body>
+<main>
+<h1>IndexedDB CAS P1 — isolated Chromium spike</h1>
+<p>This page uses only devmate-cas-spike-v1. It does not access application data or localStorage.</p>
+<pre id="output">Starting…</pre>
+</main>
+<script type="module">
+import { openCasStore, CAS_DB_NAME } from "/src/casStore/indexedDbCasStore.ts";
+
+const output = document.querySelector("#output");
+const log = (line) => { output.textContent += `\n${line}`; };
+const params = new URLSearchParams(location.search);
+const workerMode = params.get("worker") === "1";
+const selftest = params.get("selftest") ?? "";
+const wid = params.get("wid") ?? "opener";
+const channel = new BroadcastChannel("devmate-cas-p1-harness");
+// Wall clock: identical across tabs (performance.timeOrigin + now() differs per tab and skewed the barrier proof).
+const nowMs = () => Date.now();
+const describe = (e) => `${e?.name ?? "Error"}: ${e?.message ?? e}`;
+
+// The runner polls window.__casHarness; "running" until the page decides.
+window.__casHarness = { status: "running", checks: [], message: "" };
+const setStatus = (status, message) => {
+  if (window.__casHarness.status === "running") window.__casHarness = { ...window.__casHarness, status, message };
+};
+
+// Uncaught exceptions: the parent fails itself; the worker tab forwards them to the parent
+// (except in the worker-exception self-test, where only the runner's CDP attach may see it).
+const forwardWorkerExceptions = workerMode && selftest !== "worker-exception";
+const onPageException = (kind, error) => {
+  const message = `${kind}: ${describe(error)}`;
+  if (workerMode) {
+    output.textContent += `\nWORKER EXCEPTION ${message}`;
+    if (forwardWorkerExceptions) channel.postMessage({ type: "worker-exception", message });
+  } else {
+    log(`PAGE EXCEPTION ${message}`);
+    setStatus("fail", message);
+  }
+};
+window.addEventListener("error", (event) => onPageException("uncaught", event.error ?? event.message));
+window.addEventListener("unhandledrejection", (event) => onPageException("unhandledrejection", event.reason));
+
+// Message waiters (both tabs). Waiters must be registered BEFORE the message they wait for is sent.
+const waiters = new Set();
+channel.addEventListener("message", (event) => {
+  for (const waiter of [...waiters]) {
+    if (waiter.match(event.data)) { waiters.delete(waiter); clearTimeout(waiter.timer); waiter.resolve(event.data); }
+  }
+});
+const waitFor = (match, ms, label) => {
+  const promise = new Promise((resolve, reject) => {
+    const waiter = { match, resolve };
+    waiter.timer = setTimeout(() => { waiters.delete(waiter); reject(new Error(`timeout after ${ms}ms waiting for ${label}`)); }, ms);
+    waiters.add(waiter);
+  });
+  promise.catch(() => {}); // rejection stays observable by the awaiting caller; avoids spurious unhandledrejection
+  return promise;
+};
+
+const openRawDb = () => new Promise((resolve, reject) => {
+  const request = indexedDB.open(CAS_DB_NAME, 1);
+  request.onsuccess = () => { const db = request.result; db.onversionchange = () => db.close(); resolve(db); };
+  request.onerror = () => reject(request.error);
+  request.onblocked = () => reject(new Error("test database open was blocked"));
+});
+const txDone = (tx) => new Promise((resolve, reject) => {
+  tx.oncomplete = () => resolve();
+  tx.onabort = () => reject(tx.error ?? new Error("transaction aborted"));
+});
+const getWorkspace = (db) => new Promise((resolve, reject) => {
+  const tx = db.transaction(["records"], "readonly");
+  const request = tx.objectStore("records").get("workspace");
+  request.onsuccess = () => resolve(request.result);
+  request.onerror = () => reject(request.error);
+});
+
+let store;
+try { store = await openCasStore(); } catch (error) {
+  output.textContent = `OPEN FAILED: ${describe(error)}`;
+  setStatus("fail", `open failed: ${describe(error)}`);
+  throw error;
+}
+const rawDb = await openRawDb();
+
+if (workerMode) {
+  output.textContent = "Second tab ready; its racer runs in a Dedicated Worker (racer.js). Leave this tab open.";
+  channel.addEventListener("message", ({ data }) => {
+    if (!data || (data.to && data.to !== wid)) return;
+    // Tab-level diagnostics only (DIAG-TAB-THREAD-SHARING in the parent). Never part of a race trial.
+    if (data.type === "probe") channel.postMessage({ type: "probe-ack", id: data.id, wid, receivedAt: Date.now() });
+    else if (data.type === "spin-request") {
+      channel.postMessage({ type: "spin-started", id: data.id, wid, at: Date.now() });
+      const until = Date.now() + data.ms; while (Date.now() < until) { /* spin */ }
+      channel.postMessage({ type: "spin-done", id: data.id, wid, at: Date.now() });
+    }
+  });
+  const racerUp = waitFor((m) => m?.type === "racer-up" && m.role === "worker", 10000, "second-tab racer worker up");
+  const racer = new Worker(new URL("racer.js", location.href), { type: "module", name: "worker" });
+  racer.addEventListener("error", (event) => onPageException("racer-worker-error", event.error ?? event.message));
+  await racerUp;
+  channel.postMessage({ type: "ready", wid });
+  if (selftest === "worker-exception") setTimeout(() => { throw new Error("SELFTEST worker uncaught exception"); }, 2000);
+} else {
+  main().catch((error) => { log(`HARNESS ERROR ${describe(error)}`); setStatus("fail", describe(error)); });
+}
+
+async function main() {
+  log(`ENV page userAgent=${navigator.userAgent}`);
+  if (selftest === "page-exception") {
+    setTimeout(() => { throw new Error("SELFTEST page uncaught exception"); }, 300);
+    await new Promise(() => {});
+  }
+  channel.addEventListener("message", ({ data }) => {
+    if (data?.type === "worker-exception") { log(`WORKER EXCEPTION ${data.message}`); setStatus("fail", `worker ${data.message}`); }
+    if (data?.type === "racer-exception") { log(`RACER EXCEPTION (${data.role}) ${data.message}`); setStatus("fail", `racer ${data.role}: ${data.message}`); }
+  });
+  if (selftest === "racer-exception") {
+    // Negative control for the Dedicated Worker error path. Start one real racer worker, make it throw an uncaught error, and
+    // let ONLY racer.js's own error monitor (-> "racer-exception" broadcast -> the handler above) fail the run. The host-side
+    // Worker "error" event is cancelled and ignored here, so neither it nor a CDP console entry can be what fails the run.
+    const racerUp = waitFor((m) => m?.type === "racer-up" && m.role === "parent", 10000, "selftest racer worker up");
+    const racer = new Worker(new URL("racer.js", location.href), { type: "module", name: "parent" });
+    racer.addEventListener("error", (event) => { event.preventDefault(); log(`RACER WORKER ERROR (host observed, deliberately ignored in this self-test) ${event.message}`); });
+    await racerUp;
+    channel.postMessage({ type: "racer-selftest-throw", role: "parent" });
+    await new Promise(() => {}); // no pass path: only the racer's own exception report may end this run
+  }
+  const ready = waitFor((m) => m?.type === "ready", 10000, "worker tab ready");
+  const child = window.open(`${location.pathname}?worker=1&wid=opener${selftest ? `&selftest=${selftest}` : ""}`, "devmate-cas-p1-worker");
+  if (!child) throw new Error("POPUP BLOCKED: Chromium must be launched with --disable-popup-blocking.");
+  await ready;
+  if (selftest === "worker-exception") await new Promise(() => {});
+
+  const passedChecks = []; const failedChecks = [];
+  const check = async (name, fn) => {
+    try {
+      const detail = await fn();
+      log(`CHECK ${name} PASS: ${detail}`);
+      passedChecks.push(name); window.__casHarness.checks = passedChecks.slice();
+    } catch (error) {
+      log(`CHECK ${name} FAIL: ${describe(error)}`);
+      failedChecks.push(name);
+    }
+  };
+
+  const readBackups = () => new Promise((resolve, reject) => {
+    const tx = rawDb.transaction(["backups"], "readonly");
+    const request = tx.objectStore("backups").getAll();
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+  const countBackups = async () => (await readBackups()).length;
+  const resetBackups = () => { const tx = rawDb.transaction(["backups"], "readwrite"); tx.objectStore("backups").clear(); return txDone(tx); };
+  const ensureBaseline = async () => {
+    let base = await store.read();
+    if (!base.ok) throw new Error(`baseline read failed: ${JSON.stringify(base)}`);
+    if (base.version === 0) {
+      const seeded = await store.write({ expectedVersion: 0, raw: "harness-baseline", writer: "harness-seed" });
+      if (!seeded.ok) throw new Error(`baseline seed failed: ${JSON.stringify(seeded)}`);
+      base = await store.read();
+      if (!base.ok) throw new Error("baseline read after seed failed");
+    }
+    return base;
+  };
+
+  // ---- Atomicity: fault injection at records.put() success, after BOTH writes executed inside the transaction.
+  const originalAdd = IDBObjectStore.prototype.add;
+  const originalPut = IDBObjectStore.prototype.put;
+  const injection = { addSucceeded: 0, putSucceeded: 0, aborted: 0 };
+  const installAbortOnPut = () => {
+    Object.assign(injection, { addSucceeded: 0, putSucceeded: 0, aborted: 0 });
+    IDBObjectStore.prototype.add = function (...args) {
+      const request = originalAdd.apply(this, args);
+      if (this.name === "backups") request.addEventListener("success", () => { injection.addSucceeded++; }, { once: true });
+      return request;
+    };
+    IDBObjectStore.prototype.put = function (...args) {
+      const transaction = this.transaction;
+      const request = originalPut.apply(this, args);
+      if (this.name === "records") request.addEventListener("success", () => { injection.putSucceeded++; injection.aborted++; transaction.abort(); }, { once: true });
+      return request;
+    };
+  };
+  const removeInjection = () => { IDBObjectStore.prototype.add = originalAdd; IDBObjectStore.prototype.put = originalPut; };
+
+  // The oracle is shared by the real store and by the deliberately broken mutant.
+  async function atomicityOracle(label, writeFn) {
+    await resetBackups();
+    const baseline = await ensureBaseline();
+    installAbortOnPut();
+    let failedWrite = null; let thrown = null;
+    try { failedWrite = await writeFn({ expectedVersion: baseline.version, raw: `MUST_NOT_COMMIT_${label}`, writer: `atomicity-${label}` }); }
+    catch (error) { thrown = error; }
+    finally { removeInjection(); }
+    const after = await store.read();
+    const backups = await countBackups();
+    const checks = {
+      injectionReached: injection.putSucceeded === 1 && injection.aborted === 1,
+      backupAddExecutedBeforeAbort: injection.addSucceeded === 1,
+      writeFailed: !thrown && failedWrite?.ok === false && !("conflict" in failedWrite),
+      errorIsTxAborted: failedWrite?.error === "tx-aborted",
+      versionUnchanged: after.ok && after.version === baseline.version,
+      rawUnchanged: after.ok && after.raw === baseline.raw,
+      backupCountZero: backups === 0
+    };
+    return { checks, pass: Object.values(checks).every(Boolean), backups, failedWrite, after, baseline, thrown };
+  }
+
+  // NEGATIVE CONTROL (atomicity): backup committed in its own transaction, workspace write in a second one.
+  const splitMutantWrite = async ({ expectedVersion, raw, writer }) => {
+    const current = await getWorkspace(rawDb);
+    const actual = current?.version ?? 0;
+    if (actual !== expectedVersion) return { ok: false, conflict: true, actualVersion: actual };
+    if (current) {
+      const backupTx = rawDb.transaction(["backups"], "readwrite");
+      backupTx.objectStore("backups").add({ raw: current.raw, reason: "pre-write", sourceVersion: current.version, createdAt: Date.now(), writer });
+      await txDone(backupTx);
+    }
+    const workspaceTx = rawDb.transaction(["records"], "readwrite");
+    workspaceTx.objectStore("records").put({ name: "workspace", version: actual + 1, raw, updatedAt: Date.now(), writer });
+    try { await txDone(workspaceTx); } catch { return { ok: false, error: "tx-aborted" }; }
+    return { ok: true, version: actual + 1 };
+  };
+
+  await check("ATOMICITY-REAL", async () => {
+    const r = await atomicityOracle("real", (input) => store.write(input));
+    if (!r.pass) throw new Error(`oracle rejected the real store: ${JSON.stringify(r.checks)} write=${JSON.stringify(r.failedWrite)} backups=${r.backups}`);
+    return `abort injected at records.put() success after backups.add() success; write=${JSON.stringify(r.failedWrite)}; workspaceVersion=${r.after.version} (unchanged); raw unchanged; backups=${r.backups}; checks=${JSON.stringify(r.checks)}`;
+  });
+  await check("ATOMICITY-MUTANT-SPLIT", async () => {
+    const r = await atomicityOracle("split-mutant", splitMutantWrite);
+    await resetBackups();
+    if (r.pass) throw new Error("oracle ACCEPTED the split-transaction mutant: negative control NOT detected");
+    const othersOk = Object.entries(r.checks).filter(([name]) => name !== "backupCountZero").every(([, value]) => value);
+    if (r.checks.backupCountZero || !othersOk) throw new Error(`mutant rejected for the wrong reason: ${JSON.stringify(r.checks)}`);
+    return `oracle rejected the split mutant for the expected reason: its backup stayed committed (backups=${r.backups}) while the aborted workspace write left version ${r.after.version}; checks=${JSON.stringify(r.checks)}`;
+  });
+
+  // ---- Races. Each racer runs inside a Dedicated Worker (racer.js), one hosted by each tab, so that a spin in one
+  // racer cannot block message delivery to the other. Evidence: a spin in one tab's MAIN thread blocked the other tab
+  // (see DIAG-TAB-THREAD-SHARING and docs/reviews/P1-CHROMIUM-REMEDIATION.md); THREADS-INDEPENDENT proves the racers do not.
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+  async function probeTab(n, spinMs) {
+    const rows = [];
+    for (let k = 0; k < n; k++) {
+      const id = `opener-${k}`;
+      const ack = waitFor((m) => m?.type === "probe-ack" && m.id === id, 5000, `probe ack ${id}`);
+      const sentAt = Date.now();
+      channel.postMessage({ type: "probe", id, to: "opener" });
+      while (Date.now() < sentAt + spinMs) { /* parent main-thread spin */ }
+      const spinEndAt = Date.now();
+      const msg = await ack;
+      rows.push({ sentToReceived: msg.receivedAt - sentAt, receivedMinusSpinEnd: msg.receivedAt - spinEndAt });
+      await sleep(30);
+    }
+    const blocked = rows.filter((r) => r.receivedMinusSpinEnd >= -2).length;
+    log(`DIAG-TAB-THREAD-SHARING: parent main-thread spin ${spinMs}ms; the second tab (window.open) received the probe only after the spin ended in ${blocked}/${n} probes; sentToReceivedMs=[${rows.map((r) => r.sentToReceived).join(",")}]`);
+  }
+  async function probeSpinHeartbeat(n, spinMs) {
+    const idle = []; const spun = [];
+    for (let k = 0; k < n; k++) {
+      for (const active of [false, true]) {
+        const id = `opener-hb${active ? "s" : "i"}${k}`;
+        const done = active ? waitFor((m) => m?.type === "spin-done" && m.id === id, 5000, `spin done ${id}`) : null;
+        let last = Date.now(); let maxGap = 0;
+        const timer = setInterval(() => { const now = Date.now(); maxGap = Math.max(maxGap, now - last); last = now; }, 4);
+        if (active) { channel.postMessage({ type: "spin-request", id, to: "opener", ms: spinMs }); await done; } else await sleep(spinMs);
+        await sleep(20);
+        clearInterval(timer); (active ? spun : idle).push(maxGap);
+      }
+    }
+    const stalled = spun.filter((g) => g >= spinMs * 0.8).length;
+    log(`DIAG-TAB-THREAD-SHARING: second-tab main-thread spin ${spinMs}ms; parent main-thread max timer gap=[${spun.join(",")}]ms (idle control=[${idle.join(",")}]ms); parent stalled in ${stalled}/${n}`);
+  }
+  try {
+    await probeTab(8, 150);
+    await probeSpinHeartbeat(6, 150);
+  } catch (error) { log(`DIAG-TAB-THREAD-SHARING probe failed: ${describe(error)}`); }
+
+  const parentRacerUp = waitFor((m) => m?.type === "racer-up" && m.role === "parent", 10000, "parent racer worker up");
+  const parentRacer = new Worker(new URL("racer.js", location.href), { type: "module", name: "parent" });
+  parentRacer.addEventListener("error", (event) => { log(`RACER WORKER ERROR ${event.message}`); setStatus("fail", `racer worker error: ${event.message}`); });
+  await parentRacerUp;
+  const stopRacers = async () => {
+    const stopped = Promise.all(["parent", "worker"].map((role) => waitFor((m) => m?.type === "racer-stopped" && m.role === role, 5000, `${role} racer stopped`)));
+    channel.postMessage({ type: "racer-stop" });
+    try { await stopped; } catch (error) { log(`racer stop: ${describe(error)}`); }
+    parentRacer.terminate();
+  };
+
+  // PRECONDITION for every race below: the two racers' event loops are independent. While one racer spins for 150 ms, the
+  // other must receive a probe DURING that spin. If the racers shared a thread the probe could only be received after the spin.
+  await check("THREADS-INDEPENDENT", async () => {
+    const spinMs = 150; const rows = [];
+    for (let k = 0; k < 10; k++) for (const [spinner, listener] of [["parent", "worker"], ["worker", "parent"]]) {
+      const id = `ti-${k}-${spinner}`;
+      const started = waitFor((m) => m?.type === "racer-spin-started" && m.id === id, 5000, `spin started ${id}`);
+      const done = waitFor((m) => m?.type === "racer-spin-done" && m.id === id, 5000, `spin done ${id}`);
+      const ack = waitFor((m) => m?.type === "racer-probe-ack" && m.id === id, 5000, `probe ack ${id}`);
+      channel.postMessage({ type: "racer-spin", id, role: spinner, ms: spinMs });
+      await started;
+      channel.postMessage({ type: "racer-probe", id, role: listener });
+      const [a, d] = await Promise.all([ack, done]);
+      rows.push({ spinner, marginMs: d.endedAt - a.receivedAt });
+    }
+    const bad = rows.filter((r) => r.marginMs < 20);
+    if (bad.length) throw new Error(`racers are NOT independent: ${bad.length}/${rows.length} probes were received less than 20 ms before the other racer's spin ended; margins=[${rows.map((r) => r.marginMs).join(",")}]`);
+    return `${rows.length}/${rows.length} probes were received by the idle racer while the other racer was spinning ${spinMs} ms (margin before spin end, ms): min=${Math.min(...rows.map((r) => r.marginMs))} max=${Math.max(...rows.map((r) => r.marginMs))}; both directions covered`;
+  });
+
+  // ---- Per-trial READY/GO rendezvous between the two racers (orchestrated by the parent page, which never spins).
+  const delayPlan = (i) => (i % 4 === 0 ? { parent: 0, worker: 12, label: "parent-first" } : i % 4 === 1 ? { parent: 12, worker: 0, label: "worker-first" } : { parent: 0, worker: 0, label: "simultaneous" });
+  async function raceTrial(tag, i, mode) {
+    const trialId = `${tag}-${i}`;
+    await resetBackups();
+    const base = await ensureBaseline();
+    const expectedVersion = base.version;
+    const raws = { parent: `parent-${trialId}`, worker: `worker-${trialId}` };
+    const plan = delayPlan(i);
+    const delays = { parent: plan.parent, worker: plan.worker };
+    const readyP = waitFor((m) => m?.type === "racer-ready" && m.trial === trialId && m.role === "parent", 5000, `parent racer READY (${trialId})`);
+    const readyW = waitFor((m) => m?.type === "racer-ready" && m.trial === trialId && m.role === "worker", 5000, `second-tab racer READY (${trialId})`);
+    const resultP = waitFor((m) => m?.type === "racer-result" && m.trial === trialId && m.role === "parent", 15000, `parent racer result (${trialId})`);
+    const resultW = waitFor((m) => m?.type === "racer-result" && m.trial === trialId && m.role === "worker", 15000, `second-tab racer result (${trialId})`);
+    channel.postMessage({ type: "racer-prepare", trial: trialId, mode, expectedVersion, raws, delays });
+    const [rp, rw] = await Promise.all([readyP, readyW]);
+    const startAt = Date.now() + 250; // GO lead; the barrier is PROVEN per trial by goReceivedAt <= startAt in BOTH racers, not assumed
+    const goSentAt = nowMs();
+    channel.postMessage({ type: "racer-go", trial: trialId, startAt });
+    const [parent, worker] = await Promise.all([resultP, resultW]);
+    const actual = await store.read();
+    const backups = await readBackups();
+    return { trialId, plan: plan.label, expectedVersion, previousRaw: base.raw, raws, parentReadyAt: rp.at, workerReadyAt: rw.at, goSentAt, startAt, parentDelayMs: delays.parent, workerDelayMs: delays.worker, parent, worker, actual, backups };
+  }
+
+  function evaluateRaceTrial(t) {
+    const v = [];
+    const sides = [["parent", t.parent.result], ["worker", t.worker.result]];
+    const oks = sides.filter(([, r]) => r?.ok === true);
+    const conflicts = sides.filter(([, r]) => r?.ok === false && r.conflict === true);
+    const next = t.expectedVersion + 1;
+    if (t.parent.protocolViolation || t.worker.protocolViolation) v.push("protocol-violation");
+    // Barrier: both racers READY before GO was sent; BOTH racers RECEIVED GO no later than the shared start time; neither wrote before its release time.
+    const goReceivedInTime = (s) => Number.isFinite(s.goReceivedAt) && s.goReceivedAt <= t.startAt;
+    const barrierProven = t.parentReadyAt <= t.goSentAt && t.workerReadyAt <= t.goSentAt && t.goSentAt <= t.startAt
+      && goReceivedInTime(t.parent) && goReceivedInTime(t.worker)
+      && t.parent.startedAt >= t.startAt + t.parentDelayMs && t.worker.startedAt >= t.startAt + t.workerDelayMs;
+    if (!barrierProven) v.push("barrier-not-proven");
+    if (oks.length > 1) v.push("double-success");
+    if (oks.length === 0) v.push("no-success");
+    if (oks.length === 1 && conflicts.length !== 1) v.push("loser-not-conflict");
+    if (!t.actual.ok || t.actual.version !== next) v.push(`final-version=${t.actual.ok ? t.actual.version : "read-error"} expected=${next}`);
+    if (oks.length > 1 && t.actual.ok && t.actual.version < t.expectedVersion + oks.length) v.push("lost-update");
+    if (oks.length === 1) {
+      const [winnerName, winnerResult] = oks[0];
+      if (winnerResult.version !== next) v.push("winner-version");
+      if (t.actual.ok && t.actual.raw !== t.raws[winnerName]) v.push("stored-raw-is-not-winner-payload");
+      const loser = sides.find(([name]) => name !== winnerName)[1];
+      if (loser?.conflict === true && loser.actualVersion !== next) v.push("conflict-actualVersion");
+    }
+    if (t.backups.length !== 1) v.push(`backup-count=${t.backups.length}`);
+    else if (t.backups[0].raw !== t.previousRaw || t.backups[0].sourceVersion !== t.expectedVersion) v.push("backup-content");
+    return v;
+  }
+
+  const fmt = (r) => r?.ok === true ? `ok(v${r.version})` : r?.conflict ? `conflict(actual=${r.actualVersion})` : `error(${r?.error})`;
+  const runWins = { parent: 0, worker: 0 };
+  const traceTrial = (t, violations) => {
+    const winner = ["parent", "worker"].filter((n) => (n === "parent" ? t.parent.result : t.worker.result)?.ok === true);
+    const startDelta = t.parent.startedAt - t.worker.startedAt;
+    const overlap = t.parent.startedAt <= t.worker.finishedAt && t.worker.startedAt <= t.parent.finishedAt;
+    const real = t.trialId.startsWith("real");
+    if (real) for (const w of winner) runWins[w]++;
+    log(`  trial ${t.trialId} [${t.plan}]: winner=${winner.join("+") || "none"} realWins(parent/worker)=${real ? `${runWins.parent}/${runWins.worker}` : "n/a (negative control)"} parent=${fmt(t.parent.result)} worker=${fmt(t.worker.result)} base=v${t.expectedVersion} final=v${t.actual.ok ? t.actual.version : "?"} backups=${t.backups.length}`
+      + ` startAt=${t.startAt} goSentAt=${t.goSentAt} goReceivedAt(parent/worker)=${t.parent.goReceivedAt}/${t.worker.goReceivedAt} goReceivedMinusStartAt(parent/worker)=${t.parent.goReceivedAt - t.startAt}/${t.worker.goReceivedAt - t.startAt}`
+      + ` writeStartMinusStartAt(parent/worker)=${t.parent.startedAt - t.startAt}/${t.worker.startedAt - t.startAt} releaseDelaysMs(parent/worker)=${t.parentDelayMs}/${t.workerDelayMs} writeStartDeltaMs(parent-worker)=${startDelta} overlap=${overlap} violations=[${violations.join(",")}]`);
+    return { winner, overlap };
+  };
+
+  await check("RACE-REAL", async () => {
+    const trials = 100; const wins = { parent: 0, worker: 0 }; let overlapped = 0;
+    const byPlan = {};
+    log(`Running ${trials} same-baseline races between two Dedicated-Worker racers, one per tab (READY/GO rendezvous per trial); Web Locks are not used.`);
+    for (let i = 0; i < trials; i++) {
+      const t = await raceTrial("real", i, "real");
+      const violations = evaluateRaceTrial(t);
+      const { winner, overlap } = traceTrial(t, violations);
+      if (violations.length) throw new Error(`trial ${t.trialId} violated: ${violations.join(",")}`);
+      wins[winner[0]]++; if (overlap) overlapped++;
+      byPlan[t.plan] ??= { parent: 0, worker: 0 }; byPlan[t.plan][winner[0]]++;
+    }
+    if (wins.parent === 0 || wins.worker === 0) throw new Error(`both winner identities were not exercised: ${JSON.stringify(wins)}`);
+    return `${trials}/${trials} trials valid; per trial both racers were READY before GO and BOTH received GO before the shared start time; wins parent=${wins.parent} worker=${wins.worker}; wins by release plan=${JSON.stringify(byPlan)} (parent-first/worker-first are controlled release offsets, simultaneous has none); transaction overlap observed in ${overlapped}/${trials} (informational, not asserted)`;
+  });
+  await check("RACE-MUTANT", async () => {
+    const trials = 5; let detected = 0;
+    log(`Running ${trials} negative-control trials with a read-then-write mutant and a read barrier.`);
+    for (let i = 0; i < trials; i++) {
+      const t = await raceTrial("mutant", i, "mutant");
+      const violations = evaluateRaceTrial(t);
+      traceTrial(t, violations);
+      if (violations.includes("double-success") && violations.includes("lost-update") && !violations.includes("barrier-not-proven") && !violations.includes("protocol-violation")) detected++;
+    }
+    if (detected !== trials) throw new Error(`negative control NOT detected in ${trials - detected}/${trials} mutant trials`);
+    return `oracle rejected ${detected}/${trials} mutant trials (double-success and lost-update observed with the barrier proven)`;
+  });
+  await stopRacers();
+
+  // ---- F3: backup limit behaviour (documented: no pruning).
+  await check("BACKUP-LIMIT", async () => {
+    await resetBackups();
+    const base = await ensureBaseline();
+    const outcomes = [];
+    for (let k = 0; k < 21; k++) {
+      const current = await store.read();
+      if (!current.ok) throw new Error("read failed");
+      outcomes.push(await store.write({ expectedVersion: current.version, raw: `limit-${k}`, writer: "limit-test" }));
+    }
+    const okCount = outcomes.slice(0, 20).filter((o) => o.ok).length;
+    const last = outcomes[20]; const after = await store.read(); const n = await countBackups();
+    if (okCount !== 20 || last.ok !== false || last.error !== "backup-limit" || !after.ok || after.version !== base.version + 20 || after.raw !== "limit-19" || n !== 20) {
+      throw new Error(`unexpected: okCount=${okCount} last=${JSON.stringify(last)} version=${after.ok ? after.version : "?"} backups=${n}`);
+    }
+    await resetBackups();
+    return `20 writes succeeded, write #21 returned backup-limit without changing the workspace (v${after.version}); backups=${n}; no automatic pruning (retention policy is unchanged)`;
+  });
+
+  // ---- F4: a failing request must not be masked as a generic transaction abort.
+  await check("ERRCLASS-REQUEST-ERROR", async () => {
+    await resetBackups();
+    const base = await ensureBaseline();
+    const collisionKey = 900000001;
+    const fixtureTx = rawDb.transaction(["backups"], "readwrite");
+    fixtureTx.objectStore("backups").add({ id: collisionKey, raw: "collision-fixture", reason: "pre-write", sourceVersion: 0, createdAt: Date.now(), writer: "f4-fixture" });
+    await txDone(fixtureTx);
+    let injected = 0;
+    IDBObjectStore.prototype.add = function (value, key) {
+      if (this.name === "backups" && value?.writer === "f4-injection") { injected++; return originalAdd.call(this, { ...value, id: collisionKey }); }
+      return originalAdd.call(this, value, key);
+    };
+    let result;
+    try { result = await store.write({ expectedVersion: base.version, raw: "MUST_NOT_COMMIT_F4", writer: "f4-injection" }); }
+    finally { IDBObjectStore.prototype.add = originalAdd; }
+    const after = await store.read(); const n = await countBackups();
+    await resetBackups();
+    const problems = [];
+    if (injected !== 1) problems.push(`injection not reached (${injected})`);
+    if (result?.ok !== false) problems.push("write did not fail");
+    if (result?.error === "tx-aborted") problems.push("request error was masked as tx-aborted");
+    if (result?.error !== "unknown") problems.push(`expected classification unknown (ConstraintError is unmapped), got ${result?.error}`);
+    if (!after.ok || after.version !== base.version || after.raw !== base.raw) problems.push("workspace changed");
+    if (n !== 1) problems.push(`backups=${n} (expected only the fixture)`);
+    if (problems.length) throw new Error(`${problems.join("; ")}; result=${JSON.stringify(result)}`);
+    return `ConstraintError on backups.add() classified as ${result.error}; workspace unchanged (v${after.version}); only the fixture backup remained`;
+  });
+
+  // ---- F5: versionchange closes the store connection; later operations must fail closed (no throw, no write).
+  await check("VERSIONCHANGE-FAIL-CLOSED", async () => {
+    const before = await store.read();
+    if (!before.ok) throw new Error("read failed");
+    const bumped = await new Promise((resolve, reject) => {
+      const request = indexedDB.open(CAS_DB_NAME, 2);
+      const timer = setTimeout(() => reject(new Error("version bump blocked or timed out")), 8000);
+      request.onsuccess = () => { clearTimeout(timer); resolve(request.result); };
+      request.onerror = () => { clearTimeout(timer); reject(request.error); };
+    });
+    bumped.close();
+    let readAfter = null; let writeAfter = null; let thrown = null;
+    try {
+      readAfter = await store.read();
+      writeAfter = await store.write({ expectedVersion: before.version, raw: "MUST_NOT_COMMIT_AFTER_VERSIONCHANGE", writer: "f5" });
+    } catch (error) { thrown = error; }
+    const verifyDb = await new Promise((resolve, reject) => { const r = indexedDB.open(CAS_DB_NAME); r.onsuccess = () => resolve(r.result); r.onerror = () => reject(r.error); });
+    const record = await getWorkspace(verifyDb);
+    verifyDb.close();
+    await new Promise((resolve, reject) => {
+      const del = indexedDB.deleteDatabase(CAS_DB_NAME);
+      const timer = setTimeout(() => reject(new Error("deleteDatabase timed out")), 8000);
+      del.onsuccess = () => { clearTimeout(timer); resolve(); };
+      del.onerror = () => { clearTimeout(timer); reject(del.error); };
+    });
+    const problems = [];
+    if (thrown) problems.push(`operation threw: ${describe(thrown)}`);
+    if (readAfter?.ok !== false) problems.push("read after versionchange did not fail closed");
+    if (writeAfter?.ok !== false) problems.push("write after versionchange did not fail closed");
+    if (record?.version !== before.version || record?.raw !== before.raw) problems.push("workspace changed");
+    if (problems.length) throw new Error(problems.join("; "));
+    return `after a version bump the closed store returned read=${JSON.stringify(readAfter)} write=${JSON.stringify(writeAfter)} (documented: unmapped InvalidStateError => unknown); workspace unchanged; isolated test database deleted`;
+  });
+
+  log("LIMITS: not tested here: simultaneous transaction overlap as proof (informational only), SIGKILL durability, real quota exhaustion, restore, migration, 3+ tabs, other browsers, onblocked on upgrade (unreachable with CAS_DB_VERSION=1), read/write operation timeouts.");
+  log("The isolated test database devmate-cas-spike-v1 is deleted at the end of a passing run.");
+  const ok = failedChecks.length === 0;
+  log(`ALL-CHECKS ${ok ? "PASS" : "FAIL"}: passed=${passedChecks.length} failed=${failedChecks.join(",") || "none"}`);
+  setStatus(ok ? "pass" : "fail", ok ? "all checks passed" : `failed checks: ${failedChecks.join(",")}`);
+}
+</script>
+</body>
+</html>
