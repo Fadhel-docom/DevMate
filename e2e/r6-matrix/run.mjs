@@ -125,7 +125,7 @@ for (const phase of PHASES) {
     const newTab = await harness(ctx); await seed(newTab); await newTab.evaluate((to) => lifecycle(to), target);
     const w = await oldTab.evaluate(async () => legacy.saveProjectsLocked([{ id: "proj-a", name: "EDITED BY OLD TAB", tasks: [] }], undefined, localStorage.getItem("devmate-workspace-v1")));
     ck(c, `LIMITATION (not a fix): the unmodified pre-barrier writer still succeeds after "${target}"`, w.ok === true, { ok: w.ok });
-    const diverged = await newTab.evaluate(() => localStorage.getItem("devmate-workspace-v1"));
+    const diverged = await oldTab.evaluate(() => localStorage.getItem("devmate-workspace-v1"));   // the WRITING tab's own view: a different live tab can read a stale value for a few ms after the write (S2/PR #36 finding)
     const app = await ctx.newPage(); await app.goto(origin + "/"); await app.waitForSelector('[data-testid="recovery-archive"]');
     ck(c, `after old-writer divergence at "${target}": app reports an alert, editing locked`, (await app.locator('[data-testid="cutover-banner"]').getAttribute("role")) === "alert" && !(await app.locator('input[aria-label="New project name"]').isEnabled()));
     ck(c, `after divergence at "${target}": both sources are offered`, (await app.locator('[data-testid="archive-source-preserved"]').count()) === 1 && (await app.locator('[data-testid="archive-source-current"]').count()) === 1);
