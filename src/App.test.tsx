@@ -542,6 +542,15 @@ describe("keyboard accessibility and screen-reader semantics", () => {
     expect(css).toContain(".skip-link{");
     expect(css).toContain(".sr-only{");
   });
+
+  it("the same visible focus ring also covers the recovery panel's read-only textarea and details summary", async () => {
+    const nodeFs = "node:fs";
+    const fs = (await import(/* @vite-ignore */ nodeFs)) as { readFileSync(path: string, encoding: string): string };
+    const cwd = (globalThis as { process?: { cwd(): string } }).process?.cwd() ?? ".";
+    const css = fs.readFileSync(`${cwd}/src/styles.css`, "utf8");
+    expect(css).toMatch(/textarea:focus-visible[^{]*\{[^}]*outline:3px solid #3a2fb0/);
+    expect(css).toMatch(/summary:focus-visible[^{]*\{[^}]*outline:3px solid #3a2fb0/);
+  });
 });
 
 describe("workspace edit safety gate", () => {
