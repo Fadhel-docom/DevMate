@@ -2343,3 +2343,13 @@ Open and validate a Draft PR for the harness hardening. After exact-head CI and 
 - S2-11 had already accepted that an immediate cross-tab marker read can be stale and measured convergence for `intent`, but after `resume()` it immediately asserted that every tab's `inspect()` was already `durable`. One trial returned `recovery` in a reader tab while the writer had committed. This is consistent with the already observed transient stale-read behavior; the test had no post-commit convergence wait, so it could not distinguish transient propagation delay from a persistent failure.
 - Fix: S2-11 now polls the committed marker and each tab's `inspect()` for up to 3 seconds, records commit convergence time, and fails if any tab does not converge. Immediate stale reads remain measured and are not hidden. No production source changed; S2-02/S2-04/S2-16 expectations are unchanged.
 - Exact-head CI must be rerun. If S2-11 still fails after the bounded convergence window, treat it as a separate product finding; do not allow-list it merely to make CI green.
+
+
+---
+
+## 2026-11-11 — PR #36 rebuilt on the current PR #35 head; independent reproduction of the S2-16 root cause (Claude)
+
+- PR #36's branch was based on the old pre-merge history (32 ahead / 12 behind, `mergeable_state` dirty). Only three files were unique to it; they were re-created on top of PR #35 head `3ff2caa23f49b5df8429ca00abf4fa400b9721a6`. Old tip `1447a2577ea2e09f469a0fc0dfdd377745122f71` remains reachable by SHA.
+- Added: section 7 of `docs/reviews/S2-16-ROOT-CAUSE-INVESTIGATION.md` (refreshed line references, independent reproduction), `e2e/s2-browser-persistence/diag-localstorage-visibility.mjs` and three data files. No `src/`, workflow or test-expectation change.
+- Independent run (Chromium 158, 1 vCPU): `diag-s2-16` 0/60 both-acknowledged (the original host: 35/60); hand-off gap 1.1–3.2 ms. Plain `localStorage` cross-tab visibility: never instantaneous; p50 about 0.5–1.1 ms. Consistent with a host-dependent window; S2-04/S2-16 stay open findings (CI-recorded), not resolved by non-reproduction.
+- No safety boundary changes: R1 unresolved, live cutover prohibited. Next in the owner-ordered chain: PR #37 (IndexedDB/CAS design).

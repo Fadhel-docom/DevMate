@@ -1,0 +1,4358 @@
+{
+ "meta": {
+  "holdMs": 0,
+  "variant": "real saveProjectsLocked",
+  "chromium": "158.0.8127.18",
+  "playwright": "1.65.0",
+  "node": "v22.12.0",
+  "os": "Linux 6.1.158+",
+  "at": "2026-11-11T21:52:40.767Z"
+ },
+ "summary": {
+  "trials": 60,
+  "bothOk": 0,
+  "locksSerialisedEveryTrial": true,
+  "bothOk_secondCompareReadSawBaselineAfterFirstWriteFinished": 0,
+  "bothOk_byWhatSecondCompareReadSaw": {
+   "baseline": 0,
+   "other-tab-write": 0,
+   "own-write": 0,
+   "null": 0
+  },
+  "conflict_byWhatSecondCompareReadSaw": {
+   "baseline": 0,
+   "other-tab-write": 60,
+   "own-write": 0,
+   "null": 0
+  },
+  "gapBetweenFirstLockReleaseAndSecondGrantMs": {
+   "min": 1.10009765625,
+   "max": 3.2001953125
+  },
+  "acknowledgedButMissing": 0
+ },
+ "analysis": [
+  {
+   "t": 0,
+   "bothOk": false,
+   "firstTab": "a",
+   "locksSerialised": true,
+   "gapMs": 1.60009765625,
+   "firstSetBeforeSecondGrantMs": 1.7001953125,
+   "secondTabCompareReadSaw": "other-tab-write",
+   "secondOk": false,
+   "secondReason": "conflict",
+   "firstOk": true,
+   "acknowledgedMissing": []
+  },
+  {
+   "t": 1,
+   "bothOk": false,
+   "firstTab": "a",
+   "locksSerialised": true,
+   "gapMs": 1.800048828125,
+   "firstSetBeforeSecondGrantMs": 1.800048828125,
+   "secondTabCompareReadSaw": "other-tab-write",
+   "secondOk": false,
+   "secondReason": "conflict",
+   "firstOk": true,
+   "acknowledgedMissing": []
+  },
+  {
+   "t": 2,
+   "bothOk": false,
+   "firstTab": "a",
+   "locksSerialised": true,
+   "gapMs": 1.60009765625,
+   "firstSetBeforeSecondGrantMs": 1.60009765625,
+   "secondTabCompareReadSaw": "other-tab-write",
+   "secondOk": false,
+   "secondReason": "conflict",
+   "firstOk": true,
+   "acknowledgedMissing": []
+  },
+  {
+   "t": 3,
+   "bothOk": false,
+   "firstTab": "a",
+   "locksSerialised": true,
+   "gapMs": 1.39990234375,
+   "firstSetBeforeSecondGrantMs": 1.39990234375,
+   "secondTabCompareReadSaw": "other-tab-write",
+   "secondOk": false,
+   "secondReason": "conflict",
+   "firstOk": true,
+   "acknowledgedMissing": []
+  },
+  {
+   "t": 4,
+   "bothOk": false,
+   "firstTab": "a",
+   "locksSerialised": true,
+   "gapMs": 1.80029296875,
+   "firstSetBeforeSecondGrantMs": 1.80029296875,
+   "secondTabCompareReadSaw": "other-tab-write",
+   "secondOk": false,
+   "secondReason": "conflict",
+   "firstOk": true,
+   "acknowledgedMissing": []
+  },
+  {
+   "t": 5,
+   "bothOk": false,
+   "firstTab": "a",
+   "locksSerialised": true,
+   "gapMs": 1.699951171875,
+   "firstSetBeforeSecondGrantMs": 1.699951171875,
+   "secondTabCompareReadSaw": "other-tab-write",
+   "secondOk": false,
+   "secondReason": "conflict",
+   "firstOk": true,
+   "acknowledgedMissing": []
+  },
+  {
+   "t": 6,
+   "bothOk": false,
+   "firstTab": "a",
+   "locksSerialised": true,
+   "gapMs": 1.60009765625,
+   "firstSetBeforeSecondGrantMs": 1.60009765625,
+   "secondTabCompareReadSaw": "other-tab-write",
+   "secondOk": false,
+   "secondReason": "conflict",
+   "firstOk": true,
+   "acknowledgedMissing": []
+  },
+  {
+   "t": 7,
+   "bothOk": false,
+   "firstTab": "a",
+   "locksSerialised": true,
+   "gapMs": 1.699951171875,
+   "firstSetBeforeSecondGrantMs": 1.800048828125,
+   "secondTabCompareReadSaw": "other-tab-write",
+   "secondOk": false,
+   "secondReason": "conflict",
+   "firstOk": true,
+   "acknowledgedMissing": []
+  },
+  {
+   "t": 8,
+   "bothOk": false,
+   "firstTab": "a",
+   "locksSerialised": true,
+   "gapMs": 1.199951171875,
+   "firstSetBeforeSecondGrantMs": 1.199951171875,
+   "secondTabCompareReadSaw": "other-tab-write",
+   "secondOk": false,
+   "secondReason": "conflict",
+   "firstOk": true,
+   "acknowledgedMissing": []
+  },
+  {
+   "t": 9,
+   "bothOk": false,
+   "firstTab": "a",
+   "locksSerialised": true,
+   "gapMs": 1.900146484375,
+   "firstSetBeforeSecondGrantMs": 1.900146484375,
+   "secondTabCompareReadSaw": "other-tab-write",
+   "secondOk": false,
+   "secondReason": "conflict",
+   "firstOk": true,
+   "acknowledgedMissing": []
+  },
+  {
+   "t": 10,
+   "bothOk": false,
+   "firstTab": "a",
+   "locksSerialised": true,
+   "gapMs": 1.699951171875,
+   "firstSetBeforeSecondGrantMs": 1.699951171875,
+   "secondTabCompareReadSaw": "other-tab-write",
+   "secondOk": false,
+   "secondReason": "conflict",
+   "firstOk": true,
+   "acknowledgedMissing": []
+  },
+  {
+   "t": 11,
+   "bothOk": false,
+   "firstTab": "a",
+   "locksSerialised": true,
+   "gapMs": 1.900146484375,
+   "firstSetBeforeSecondGrantMs": 1.900146484375,
+   "secondTabCompareReadSaw": "other-tab-write",
+   "secondOk": false,
+   "secondReason": "conflict",
+   "firstOk": true,
+   "acknowledgedMissing": []
+  },
+  {
+   "t": 12,
+   "bothOk": false,
+   "firstTab": "a",
+   "locksSerialised": true,
+   "gapMs": 2.30029296875,
+   "firstSetBeforeSecondGrantMs": 2.30029296875,
+   "secondTabCompareReadSaw": "other-tab-write",
+   "secondOk": false,
+   "secondReason": "conflict",
+   "firstOk": true,
+   "acknowledgedMissing": []
+  },
+  {
+   "t": 13,
+   "bothOk": false,
+   "firstTab": "a",
+   "locksSerialised": true,
+   "gapMs": 1.89990234375,
+   "firstSetBeforeSecondGrantMs": 1.89990234375,
+   "secondTabCompareReadSaw": "other-tab-write",
+   "secondOk": false,
+   "secondReason": "conflict",
+   "firstOk": true,
+   "acknowledgedMissing": []
+  },
+  {
+   "t": 14,
+   "bothOk": false,
+   "firstTab": "a",
+   "locksSerialised": true,
+   "gapMs": 2.19970703125,
+   "firstSetBeforeSecondGrantMs": 2.2998046875,
+   "secondTabCompareReadSaw": "other-tab-write",
+   "secondOk": false,
+   "secondReason": "conflict",
+   "firstOk": true,
+   "acknowledgedMissing": []
+  },
+  {
+   "t": 15,
+   "bothOk": false,
+   "firstTab": "a",
+   "locksSerialised": true,
+   "gapMs": 1.599853515625,
+   "firstSetBeforeSecondGrantMs": 1.699951171875,
+   "secondTabCompareReadSaw": "other-tab-write",
+   "secondOk": false,
+   "secondReason": "conflict",
+   "firstOk": true,
+   "acknowledgedMissing": []
+  },
+  {
+   "t": 16,
+   "bothOk": false,
+   "firstTab": "a",
+   "locksSerialised": true,
+   "gapMs": 1.89990234375,
+   "firstSetBeforeSecondGrantMs": 1.89990234375,
+   "secondTabCompareReadSaw": "other-tab-write",
+   "secondOk": false,
+   "secondReason": "conflict",
+   "firstOk": true,
+   "acknowledgedMissing": []
+  },
+  {
+   "t": 17,
+   "bothOk": false,
+   "firstTab": "a",
+   "locksSerialised": true,
+   "gapMs": 2.400146484375,
+   "firstSetBeforeSecondGrantMs": 2.400146484375,
+   "secondTabCompareReadSaw": "other-tab-write",
+   "secondOk": false,
+   "secondReason": "conflict",
+   "firstOk": true,
+   "acknowledgedMissing": []
+  },
+  {
+   "t": 18,
+   "bothOk": false,
+   "firstTab": "a",
+   "locksSerialised": true,
+   "gapMs": 1.7001953125,
+   "firstSetBeforeSecondGrantMs": 1.7001953125,
+   "secondTabCompareReadSaw": "other-tab-write",
+   "secondOk": false,
+   "secondReason": "conflict",
+   "firstOk": true,
+   "acknowledgedMissing": []
+  },
+  {
+   "t": 19,
+   "bothOk": false,
+   "firstTab": "a",
+   "locksSerialised": true,
+   "gapMs": 2.999755859375,
+   "firstSetBeforeSecondGrantMs": 2.999755859375,
+   "secondTabCompareReadSaw": "other-tab-write",
+   "secondOk": false,
+   "secondReason": "conflict",
+   "firstOk": true,
+   "acknowledgedMissing": []
+  },
+  {
+   "t": 20,
+   "bothOk": false,
+   "firstTab": "a",
+   "locksSerialised": true,
+   "gapMs": 1.7998046875,
+   "firstSetBeforeSecondGrantMs": 1.7998046875,
+   "secondTabCompareReadSaw": "other-tab-write",
+   "secondOk": false,
+   "secondReason": "conflict",
+   "firstOk": true,
+   "acknowledgedMissing": []
+  },
+  {
+   "t": 21,
+   "bothOk": false,
+   "firstTab": "a",
+   "locksSerialised": true,
+   "gapMs": 1.800048828125,
+   "firstSetBeforeSecondGrantMs": 1.89990234375,
+   "secondTabCompareReadSaw": "other-tab-write",
+   "secondOk": false,
+   "secondReason": "conflict",
+   "firstOk": true,
+   "acknowledgedMissing": []
+  },
+  {
+   "t": 22,
+   "bothOk": false,
+   "firstTab": "a",
+   "locksSerialised": true,
+   "gapMs": 1.900390625,
+   "firstSetBeforeSecondGrantMs": 1.900390625,
+   "secondTabCompareReadSaw": "other-tab-write",
+   "secondOk": false,
+   "secondReason": "conflict",
+   "firstOk": true,
+   "acknowledgedMissing": []
+  },
+  {
+   "t": 23,
+   "bothOk": false,
+   "firstTab": "a",
+   "locksSerialised": true,
+   "gapMs": 1.399658203125,
+   "firstSetBeforeSecondGrantMs": 1.399658203125,
+   "secondTabCompareReadSaw": "other-tab-write",
+   "secondOk": false,
+   "secondReason": "conflict",
+   "firstOk": true,
+   "acknowledgedMissing": []
+  },
+  {
+   "t": 24,
+   "bothOk": false,
+   "firstTab": "a",
+   "locksSerialised": true,
+   "gapMs": 2,
+   "firstSetBeforeSecondGrantMs": 2,
+   "secondTabCompareReadSaw": "other-tab-write",
+   "secondOk": false,
+   "secondReason": "conflict",
+   "firstOk": true,
+   "acknowledgedMissing": []
+  },
+  {
+   "t": 25,
+   "bothOk": false,
+   "firstTab": "a",
+   "locksSerialised": true,
+   "gapMs": 1.900146484375,
+   "firstSetBeforeSecondGrantMs": 1.900146484375,
+   "secondTabCompareReadSaw": "other-tab-write",
+   "secondOk": false,
+   "secondReason": "conflict",
+   "firstOk": true,
+   "acknowledgedMissing": []
+  },
+  {
+   "t": 26,
+   "bothOk": false,
+   "firstTab": "a",
+   "locksSerialised": true,
+   "gapMs": 2,
+   "firstSetBeforeSecondGrantMs": 2,
+   "secondTabCompareReadSaw": "other-tab-write",
+   "secondOk": false,
+   "secondReason": "conflict",
+   "firstOk": true,
+   "acknowledgedMissing": []
+  },
+  {
+   "t": 27,
+   "bothOk": false,
+   "firstTab": "a",
+   "locksSerialised": true,
+   "gapMs": 1.699951171875,
+   "firstSetBeforeSecondGrantMs": 1.7998046875,
+   "secondTabCompareReadSaw": "other-tab-write",
+   "secondOk": false,
+   "secondReason": "conflict",
+   "firstOk": true,
+   "acknowledgedMissing": []
+  },
+  {
+   "t": 28,
+   "bothOk": false,
+   "firstTab": "a",
+   "locksSerialised": true,
+   "gapMs": 1.60009765625,
+   "firstSetBeforeSecondGrantMs": 1.699951171875,
+   "secondTabCompareReadSaw": "other-tab-write",
+   "secondOk": false,
+   "secondReason": "conflict",
+   "firstOk": true,
+   "acknowledgedMissing": []
+  },
+  {
+   "t": 29,
+   "bothOk": false,
+   "firstTab": "a",
+   "locksSerialised": true,
+   "gapMs": 1.60009765625,
+   "firstSetBeforeSecondGrantMs": 1.60009765625,
+   "secondTabCompareReadSaw": "other-tab-write",
+   "secondOk": false,
+   "secondReason": "conflict",
+   "firstOk": true,
+   "acknowledgedMissing": []
+  },
+  {
+   "t": 30,
+   "bothOk": false,
+   "firstTab": "a",
+   "locksSerialised": true,
+   "gapMs": 1.900146484375,
+   "firstSetBeforeSecondGrantMs": 1.900146484375,
+   "secondTabCompareReadSaw": "other-tab-write",
+   "secondOk": false,
+   "secondReason": "conflict",
+   "firstOk": true,
+   "acknowledgedMissing": []
+  },
+  {
+   "t": 31,
+   "bothOk": false,
+   "firstTab": "a",
+   "locksSerialised": true,
+   "gapMs": 1.599853515625,
+   "firstSetBeforeSecondGrantMs": 1.599853515625,
+   "secondTabCompareReadSaw": "other-tab-write",
+   "secondOk": false,
+   "secondReason": "conflict",
+   "firstOk": true,
+   "acknowledgedMissing": []
+  },
+  {
+   "t": 32,
+   "bothOk": false,
+   "firstTab": "a",
+   "locksSerialised": true,
+   "gapMs": 1.900146484375,
+   "firstSetBeforeSecondGrantMs": 1.900146484375,
+   "secondTabCompareReadSaw": "other-tab-write",
+   "secondOk": false,
+   "secondReason": "conflict",
+   "firstOk": true,
+   "acknowledgedMissing": []
+  },
+  {
+   "t": 33,
+   "bothOk": false,
+   "firstTab": "a",
+   "locksSerialised": true,
+   "gapMs": 1.7001953125,
+   "firstSetBeforeSecondGrantMs": 1.7001953125,
+   "secondTabCompareReadSaw": "other-tab-write",
+   "secondOk": false,
+   "secondReason": "conflict",
+   "firstOk": true,
+   "acknowledgedMissing": []
+  },
+  {
+   "t": 34,
+   "bothOk": false,
+   "firstTab": "a",
+   "locksSerialised": true,
+   "gapMs": 1.7998046875,
+   "firstSetBeforeSecondGrantMs": 1.7998046875,
+   "secondTabCompareReadSaw": "other-tab-write",
+   "secondOk": false,
+   "secondReason": "conflict",
+   "firstOk": true,
+   "acknowledgedMissing": []
+  },
+  {
+   "t": 35,
+   "bothOk": false,
+   "firstTab": "a",
+   "locksSerialised": true,
+   "gapMs": 1.199951171875,
+   "firstSetBeforeSecondGrantMs": 1.199951171875,
+   "secondTabCompareReadSaw": "other-tab-write",
+   "secondOk": false,
+   "secondReason": "conflict",
+   "firstOk": true,
+   "acknowledgedMissing": []
+  },
+  {
+   "t": 36,
+   "bothOk": false,
+   "firstTab": "a",
+   "locksSerialised": true,
+   "gapMs": 1.10009765625,
+   "firstSetBeforeSecondGrantMs": 1.10009765625,
+   "secondTabCompareReadSaw": "other-tab-write",
+   "secondOk": false,
+   "secondReason": "conflict",
+   "firstOk": true,
+   "acknowledgedMissing": []
+  },
+  {
+   "t": 37,
+   "bothOk": false,
+   "firstTab": "a",
+   "locksSerialised": true,
+   "gapMs": 1.2001953125,
+   "firstSetBeforeSecondGrantMs": 1.2001953125,
+   "secondTabCompareReadSaw": "other-tab-write",
+   "secondOk": false,
+   "secondReason": "conflict",
+   "firstOk": true,
+   "acknowledgedMissing": []
+  },
+  {
+   "t": 38,
+   "bothOk": false,
+   "firstTab": "a",
+   "locksSerialised": true,
+   "gapMs": 2.300048828125,
+   "firstSetBeforeSecondGrantMs": 2.300048828125,
+   "secondTabCompareReadSaw": "other-tab-write",
+   "secondOk": false,
+   "secondReason": "conflict",
+   "firstOk": true,
+   "acknowledgedMissing": []
+  },
+  {
+   "t": 39,
+   "bothOk": false,
+   "firstTab": "a",
+   "locksSerialised": true,
+   "gapMs": 2.60009765625,
+   "firstSetBeforeSecondGrantMs": 2.60009765625,
+   "secondTabCompareReadSaw": "other-tab-write",
+   "secondOk": false,
+   "secondReason": "conflict",
+   "firstOk": true,
+   "acknowledgedMissing": []
+  },
+  {
+   "t": 40,
+   "bothOk": false,
+   "firstTab": "a",
+   "locksSerialised": true,
+   "gapMs": 1.39990234375,
+   "firstSetBeforeSecondGrantMs": 1.39990234375,
+   "secondTabCompareReadSaw": "other-tab-write",
+   "secondOk": false,
+   "secondReason": "conflict",
+   "firstOk": true,
+   "acknowledgedMissing": []
+  },
+  {
+   "t": 41,
+   "bothOk": false,
+   "firstTab": "a",
+   "locksSerialised": true,
+   "gapMs": 1.5,
+   "firstSetBeforeSecondGrantMs": 1.5,
+   "secondTabCompareReadSaw": "other-tab-write",
+   "secondOk": false,
+   "secondReason": "conflict",
+   "firstOk": true,
+   "acknowledgedMissing": []
+  },
+  {
+   "t": 42,
+   "bothOk": false,
+   "firstTab": "a",
+   "locksSerialised": true,
+   "gapMs": 1.500244140625,
+   "firstSetBeforeSecondGrantMs": 1.60009765625,
+   "secondTabCompareReadSaw": "other-tab-write",
+   "secondOk": false,
+   "secondReason": "conflict",
+   "firstOk": true,
+   "acknowledgedMissing": []
+  },
+  {
+   "t": 43,
+   "bothOk": false,
+   "firstTab": "a",
+   "locksSerialised": true,
+   "gapMs": 1.39990234375,
+   "firstSetBeforeSecondGrantMs": 1.5,
+   "secondTabCompareReadSaw": "other-tab-write",
+   "secondOk": false,
+   "secondReason": "conflict",
+   "firstOk": true,
+   "acknowledgedMissing": []
+  },
+  {
+   "t": 44,
+   "bothOk": false,
+   "firstTab": "a",
+   "locksSerialised": true,
+   "gapMs": 2,
+   "firstSetBeforeSecondGrantMs": 2.099853515625,
+   "secondTabCompareReadSaw": "other-tab-write",
+   "secondOk": false,
+   "secondReason": "conflict",
+   "firstOk": true,
+   "acknowledgedMissing": []
+  },
+  {
+   "t": 45,
+   "bothOk": false,
+   "firstTab": "a",
+   "locksSerialised": true,
+   "gapMs": 2.099853515625,
+   "firstSetBeforeSecondGrantMs": 2.099853515625,
+   "secondTabCompareReadSaw": "other-tab-write",
+   "secondOk": false,
+   "secondReason": "conflict",
+   "firstOk": true,
+   "acknowledgedMissing": []
+  },
+  {
+   "t": 46,
+   "bothOk": false,
+   "firstTab": "a",
+   "locksSerialised": true,
+   "gapMs": 1.599853515625,
+   "firstSetBeforeSecondGrantMs": 1.599853515625,
+   "secondTabCompareReadSaw": "other-tab-write",
+   "secondOk": false,
+   "secondReason": "conflict",
+   "firstOk": true,
+   "acknowledgedMissing": []
+  },
+  {
+   "t": 47,
+   "bothOk": false,
+   "firstTab": "a",
+   "locksSerialised": true,
+   "gapMs": 1.7998046875,
+   "firstSetBeforeSecondGrantMs": 1.7998046875,
+   "secondTabCompareReadSaw": "other-tab-write",
+   "secondOk": false,
+   "secondReason": "conflict",
+   "firstOk": true,
+   "acknowledgedMissing": []
+  },
+  {
+   "t": 48,
+   "bothOk": false,
+   "firstTab": "a",
+   "locksSerialised": true,
+   "gapMs": 1.199951171875,
+   "firstSetBeforeSecondGrantMs": 1.300048828125,
+   "secondTabCompareReadSaw": "other-tab-write",
+   "secondOk": false,
+   "secondReason": "conflict",
+   "firstOk": true,
+   "acknowledgedMissing": []
+  },
+  {
+   "t": 49,
+   "bothOk": false,
+   "firstTab": "a",
+   "locksSerialised": true,
+   "gapMs": 1.7001953125,
+   "firstSetBeforeSecondGrantMs": 1.7001953125,
+   "secondTabCompareReadSaw": "other-tab-write",
+   "secondOk": false,
+   "secondReason": "conflict",
+   "firstOk": true,
+   "acknowledgedMissing": []
+  },
+  {
+   "t": 50,
+   "bothOk": false,
+   "firstTab": "a",
+   "locksSerialised": true,
+   "gapMs": 1.39990234375,
+   "firstSetBeforeSecondGrantMs": 1.39990234375,
+   "secondTabCompareReadSaw": "other-tab-write",
+   "secondOk": false,
+   "secondReason": "conflict",
+   "firstOk": true,
+   "acknowledgedMissing": []
+  },
+  {
+   "t": 51,
+   "bothOk": false,
+   "firstTab": "a",
+   "locksSerialised": true,
+   "gapMs": 1.199951171875,
+   "firstSetBeforeSecondGrantMs": 1.199951171875,
+   "secondTabCompareReadSaw": "other-tab-write",
+   "secondOk": false,
+   "secondReason": "conflict",
+   "firstOk": true,
+   "acknowledgedMissing": []
+  },
+  {
+   "t": 52,
+   "bothOk": false,
+   "firstTab": "a",
+   "locksSerialised": true,
+   "gapMs": 3.2001953125,
+   "firstSetBeforeSecondGrantMs": 3.2001953125,
+   "secondTabCompareReadSaw": "other-tab-write",
+   "secondOk": false,
+   "secondReason": "conflict",
+   "firstOk": true,
+   "acknowledgedMissing": []
+  },
+  {
+   "t": 53,
+   "bothOk": false,
+   "firstTab": "a",
+   "locksSerialised": true,
+   "gapMs": 1.7001953125,
+   "firstSetBeforeSecondGrantMs": 1.7001953125,
+   "secondTabCompareReadSaw": "other-tab-write",
+   "secondOk": false,
+   "secondReason": "conflict",
+   "firstOk": true,
+   "acknowledgedMissing": []
+  },
+  {
+   "t": 54,
+   "bothOk": false,
+   "firstTab": "a",
+   "locksSerialised": true,
+   "gapMs": 1.39990234375,
+   "firstSetBeforeSecondGrantMs": 1.39990234375,
+   "secondTabCompareReadSaw": "other-tab-write",
+   "secondOk": false,
+   "secondReason": "conflict",
+   "firstOk": true,
+   "acknowledgedMissing": []
+  },
+  {
+   "t": 55,
+   "bothOk": false,
+   "firstTab": "a",
+   "locksSerialised": true,
+   "gapMs": 1.39990234375,
+   "firstSetBeforeSecondGrantMs": 1.39990234375,
+   "secondTabCompareReadSaw": "other-tab-write",
+   "secondOk": false,
+   "secondReason": "conflict",
+   "firstOk": true,
+   "acknowledgedMissing": []
+  },
+  {
+   "t": 56,
+   "bothOk": false,
+   "firstTab": "a",
+   "locksSerialised": true,
+   "gapMs": 1.499755859375,
+   "firstSetBeforeSecondGrantMs": 1.499755859375,
+   "secondTabCompareReadSaw": "other-tab-write",
+   "secondOk": false,
+   "secondReason": "conflict",
+   "firstOk": true,
+   "acknowledgedMissing": []
+  },
+  {
+   "t": 57,
+   "bothOk": false,
+   "firstTab": "a",
+   "locksSerialised": true,
+   "gapMs": 1.500244140625,
+   "firstSetBeforeSecondGrantMs": 1.60009765625,
+   "secondTabCompareReadSaw": "other-tab-write",
+   "secondOk": false,
+   "secondReason": "conflict",
+   "firstOk": true,
+   "acknowledgedMissing": []
+  },
+  {
+   "t": 58,
+   "bothOk": false,
+   "firstTab": "a",
+   "locksSerialised": true,
+   "gapMs": 1.699951171875,
+   "firstSetBeforeSecondGrantMs": 1.699951171875,
+   "secondTabCompareReadSaw": "other-tab-write",
+   "secondOk": false,
+   "secondReason": "conflict",
+   "firstOk": true,
+   "acknowledgedMissing": []
+  },
+  {
+   "t": 59,
+   "bothOk": false,
+   "firstTab": "a",
+   "locksSerialised": true,
+   "gapMs": 1.500244140625,
+   "firstSetBeforeSecondGrantMs": 1.500244140625,
+   "secondTabCompareReadSaw": "other-tab-write",
+   "secondOk": false,
+   "secondReason": "conflict",
+   "firstOk": true,
+   "acknowledgedMissing": []
+  }
+ ],
+ "rows": [
+  {
+   "t": 0,
+   "ra": {
+    "ok": true,
+    "reason": null,
+    "log": [
+     {
+      "t": 1794433924576.5,
+      "op": "lock-granted"
+     },
+     {
+      "t": 1794433924576.7,
+      "op": "get",
+      "v": "baseline"
+     },
+     {
+      "t": 1794433924576.7,
+      "op": "get",
+      "v": "baseline"
+     },
+     {
+      "t": 1794433924577,
+      "op": "set",
+      "v": "own-write"
+     },
+     {
+      "t": 1794433924577,
+      "op": "get",
+      "v": "own-write"
+     },
+     {
+      "t": 1794433924577.1,
+      "op": "lock-callback-done"
+     }
+    ]
+   },
+   "rb": {
+    "ok": false,
+    "reason": "conflict",
+    "log": [
+     {
+      "t": 1794433924578.7002,
+      "op": "lock-granted"
+     },
+     {
+      "t": 1794433924578.8,
+      "op": "get",
+      "v": "other-tab-write"
+     },
+     {
+      "t": 1794433924578.8,
+      "op": "lock-callback-done"
+     }
+    ]
+   },
+   "final": [
+    "D-a"
+   ]
+  },
+  {
+   "t": 1,
+   "ra": {
+    "ok": true,
+    "reason": null,
+    "log": [
+     {
+      "t": 1794433925197.6,
+      "op": "lock-granted"
+     },
+     {
+      "t": 1794433925197.8,
+      "op": "get",
+      "v": "baseline"
+     },
+     {
+      "t": 1794433925197.8,
+      "op": "get",
+      "v": "baseline"
+     },
+     {
+      "t": 1794433925198,
+      "op": "set",
+      "v": "own-write"
+     },
+     {
+      "t": 1794433925198,
+      "op": "get",
+      "v": "own-write"
+     },
+     {
+      "t": 1794433925198,
+      "op": "lock-callback-done"
+     }
+    ]
+   },
+   "rb": {
+    "ok": false,
+    "reason": "conflict",
+    "log": [
+     {
+      "t": 1794433925199.8,
+      "op": "lock-granted"
+     },
+     {
+      "t": 1794433925199.9001,
+      "op": "get",
+      "v": "other-tab-write"
+     },
+     {
+      "t": 1794433925200,
+      "op": "lock-callback-done"
+     }
+    ]
+   },
+   "final": [
+    "D-a"
+   ]
+  },
+  {
+   "t": 2,
+   "ra": {
+    "ok": true,
+    "reason": null,
+    "log": [
+     {
+      "t": 1794433925804,
+      "op": "lock-granted"
+     },
+     {
+      "t": 1794433925804.1,
+      "op": "get",
+      "v": "baseline"
+     },
+     {
+      "t": 1794433925804.1,
+      "op": "get",
+      "v": "baseline"
+     },
+     {
+      "t": 1794433925804.2,
+      "op": "set",
+      "v": "own-write"
+     },
+     {
+      "t": 1794433925804.2,
+      "op": "get",
+      "v": "own-write"
+     },
+     {
+      "t": 1794433925804.2,
+      "op": "lock-callback-done"
+     }
+    ]
+   },
+   "rb": {
+    "ok": false,
+    "reason": "conflict",
+    "log": [
+     {
+      "t": 1794433925805.8,
+      "op": "lock-granted"
+     },
+     {
+      "t": 1794433925805.9,
+      "op": "get",
+      "v": "other-tab-write"
+     },
+     {
+      "t": 1794433925805.9,
+      "op": "lock-callback-done"
+     }
+    ]
+   },
+   "final": [
+    "D-a"
+   ]
+  },
+  {
+   "t": 3,
+   "ra": {
+    "ok": true,
+    "reason": null,
+    "log": [
+     {
+      "t": 1794433926404.6,
+      "op": "lock-granted"
+     },
+     {
+      "t": 1794433926404.7,
+      "op": "get",
+      "v": "baseline"
+     },
+     {
+      "t": 1794433926404.8,
+      "op": "get",
+      "v": "baseline"
+     },
+     {
+      "t": 1794433926405,
+      "op": "set",
+      "v": "own-write"
+     },
+     {
+      "t": 1794433926405,
+      "op": "get",
+      "v": "own-write"
+     },
+     {
+      "t": 1794433926405,
+      "op": "lock-callback-done"
+     }
+    ]
+   },
+   "rb": {
+    "ok": false,
+    "reason": "conflict",
+    "log": [
+     {
+      "t": 1794433926406.4,
+      "op": "lock-granted"
+     },
+     {
+      "t": 1794433926406.5,
+      "op": "get",
+      "v": "other-tab-write"
+     },
+     {
+      "t": 1794433926406.5999,
+      "op": "lock-callback-done"
+     }
+    ]
+   },
+   "final": [
+    "D-a"
+   ]
+  },
+  {
+   "t": 4,
+   "ra": {
+    "ok": true,
+    "reason": null,
+    "log": [
+     {
+      "t": 1794433927006.8,
+      "op": "lock-granted"
+     },
+     {
+      "t": 1794433927007,
+      "op": "get",
+      "v": "baseline"
+     },
+     {
+      "t": 1794433927007,
+      "op": "get",
+      "v": "baseline"
+     },
+     {
+      "t": 1794433927007.0999,
+      "op": "set",
+      "v": "own-write"
+     },
+     {
+      "t": 1794433927007.0999,
+      "op": "get",
+      "v": "own-write"
+     },
+     {
+      "t": 1794433927007.0999,
+      "op": "lock-callback-done"
+     }
+    ]
+   },
+   "rb": {
+    "ok": false,
+    "reason": "conflict",
+    "log": [
+     {
+      "t": 1794433927008.9001,
+      "op": "lock-granted"
+     },
+     {
+      "t": 1794433927009.2,
+      "op": "get",
+      "v": "other-tab-write"
+     },
+     {
+      "t": 1794433927009.2,
+      "op": "lock-callback-done"
+     }
+    ]
+   },
+   "final": [
+    "D-a"
+   ]
+  },
+  {
+   "t": 5,
+   "ra": {
+    "ok": true,
+    "reason": null,
+    "log": [
+     {
+      "t": 1794433927601.8,
+      "op": "lock-granted"
+     },
+     {
+      "t": 1794433927601.9,
+      "op": "get",
+      "v": "baseline"
+     },
+     {
+      "t": 1794433927602,
+      "op": "get",
+      "v": "baseline"
+     },
+     {
+      "t": 1794433927602.1,
+      "op": "set",
+      "v": "own-write"
+     },
+     {
+      "t": 1794433927602.1,
+      "op": "get",
+      "v": "own-write"
+     },
+     {
+      "t": 1794433927602.1,
+      "op": "lock-callback-done"
+     }
+    ]
+   },
+   "rb": {
+    "ok": false,
+    "reason": "conflict",
+    "log": [
+     {
+      "t": 1794433927603.8,
+      "op": "lock-granted"
+     },
+     {
+      "t": 1794433927603.9001,
+      "op": "get",
+      "v": "other-tab-write"
+     },
+     {
+      "t": 1794433927604,
+      "op": "lock-callback-done"
+     }
+    ]
+   },
+   "final": [
+    "D-a"
+   ]
+  },
+  {
+   "t": 6,
+   "ra": {
+    "ok": true,
+    "reason": null,
+    "log": [
+     {
+      "t": 1794433928213.5,
+      "op": "lock-granted"
+     },
+     {
+      "t": 1794433928213.7,
+      "op": "get",
+      "v": "baseline"
+     },
+     {
+      "t": 1794433928213.8,
+      "op": "get",
+      "v": "baseline"
+     },
+     {
+      "t": 1794433928214,
+      "op": "set",
+      "v": "own-write"
+     },
+     {
+      "t": 1794433928214,
+      "op": "get",
+      "v": "own-write"
+     },
+     {
+      "t": 1794433928214,
+      "op": "lock-callback-done"
+     }
+    ]
+   },
+   "rb": {
+    "ok": false,
+    "reason": "conflict",
+    "log": [
+     {
+      "t": 1794433928215.6,
+      "op": "lock-granted"
+     },
+     {
+      "t": 1794433928215.8,
+      "op": "get",
+      "v": "other-tab-write"
+     },
+     {
+      "t": 1794433928215.9001,
+      "op": "lock-callback-done"
+     }
+    ]
+   },
+   "final": [
+    "D-a"
+   ]
+  },
+  {
+   "t": 7,
+   "ra": {
+    "ok": true,
+    "reason": null,
+    "log": [
+     {
+      "t": 1794433928845.5,
+      "op": "lock-granted"
+     },
+     {
+      "t": 1794433928845.8,
+      "op": "get",
+      "v": "baseline"
+     },
+     {
+      "t": 1794433928845.9001,
+      "op": "get",
+      "v": "baseline"
+     },
+     {
+      "t": 1794433928846,
+      "op": "set",
+      "v": "own-write"
+     },
+     {
+      "t": 1794433928846.1,
+      "op": "get",
+      "v": "own-write"
+     },
+     {
+      "t": 1794433928846.1,
+      "op": "lock-callback-done"
+     }
+    ]
+   },
+   "rb": {
+    "ok": false,
+    "reason": "conflict",
+    "log": [
+     {
+      "t": 1794433928847.8,
+      "op": "lock-granted"
+     },
+     {
+      "t": 1794433928848.1,
+      "op": "get",
+      "v": "other-tab-write"
+     },
+     {
+      "t": 1794433928848.1,
+      "op": "lock-callback-done"
+     }
+    ]
+   },
+   "final": [
+    "D-a"
+   ]
+  },
+  {
+   "t": 8,
+   "ra": {
+    "ok": true,
+    "reason": null,
+    "log": [
+     {
+      "t": 1794433929486.6,
+      "op": "lock-granted"
+     },
+     {
+      "t": 1794433929486.8,
+      "op": "get",
+      "v": "baseline"
+     },
+     {
+      "t": 1794433929486.8,
+      "op": "get",
+      "v": "baseline"
+     },
+     {
+      "t": 1794433929487,
+      "op": "set",
+      "v": "own-write"
+     },
+     {
+      "t": 1794433929487,
+      "op": "get",
+      "v": "own-write"
+     },
+     {
+      "t": 1794433929487,
+      "op": "lock-callback-done"
+     }
+    ]
+   },
+   "rb": {
+    "ok": false,
+    "reason": "conflict",
+    "log": [
+     {
+      "t": 1794433929488.2,
+      "op": "lock-granted"
+     },
+     {
+      "t": 1794433929488.3,
+      "op": "get",
+      "v": "other-tab-write"
+     },
+     {
+      "t": 1794433929488.3,
+      "op": "lock-callback-done"
+     }
+    ]
+   },
+   "final": [
+    "D-a"
+   ]
+  },
+  {
+   "t": 9,
+   "ra": {
+    "ok": true,
+    "reason": null,
+    "log": [
+     {
+      "t": 1794433930085.5,
+      "op": "lock-granted"
+     },
+     {
+      "t": 1794433930085.8,
+      "op": "get",
+      "v": "baseline"
+     },
+     {
+      "t": 1794433930085.8,
+      "op": "get",
+      "v": "baseline"
+     },
+     {
+      "t": 1794433930085.9,
+      "op": "set",
+      "v": "own-write"
+     },
+     {
+      "t": 1794433930085.9,
+      "op": "get",
+      "v": "own-write"
+     },
+     {
+      "t": 1794433930085.9,
+      "op": "lock-callback-done"
+     }
+    ]
+   },
+   "rb": {
+    "ok": false,
+    "reason": "conflict",
+    "log": [
+     {
+      "t": 1794433930087.8,
+      "op": "lock-granted"
+     },
+     {
+      "t": 1794433930087.9001,
+      "op": "get",
+      "v": "other-tab-write"
+     },
+     {
+      "t": 1794433930087.9001,
+      "op": "lock-callback-done"
+     }
+    ]
+   },
+   "final": [
+    "D-a"
+   ]
+  },
+  {
+   "t": 10,
+   "ra": {
+    "ok": true,
+    "reason": null,
+    "log": [
+     {
+      "t": 1794433930686.8,
+      "op": "lock-granted"
+     },
+     {
+      "t": 1794433930687,
+      "op": "get",
+      "v": "baseline"
+     },
+     {
+      "t": 1794433930687.1,
+      "op": "get",
+      "v": "baseline"
+     },
+     {
+      "t": 1794433930687.1,
+      "op": "set",
+      "v": "own-write"
+     },
+     {
+      "t": 1794433930687.1,
+      "op": "get",
+      "v": "own-write"
+     },
+     {
+      "t": 1794433930687.1,
+      "op": "lock-callback-done"
+     }
+    ]
+   },
+   "rb": {
+    "ok": false,
+    "reason": "conflict",
+    "log": [
+     {
+      "t": 1794433930688.8,
+      "op": "lock-granted"
+     },
+     {
+      "t": 1794433930688.9,
+      "op": "get",
+      "v": "other-tab-write"
+     },
+     {
+      "t": 1794433930689,
+      "op": "lock-callback-done"
+     }
+    ]
+   },
+   "final": [
+    "D-a"
+   ]
+  },
+  {
+   "t": 11,
+   "ra": {
+    "ok": true,
+    "reason": null,
+    "log": [
+     {
+      "t": 1794433931326.8,
+      "op": "lock-granted"
+     },
+     {
+      "t": 1794433931326.9001,
+      "op": "get",
+      "v": "baseline"
+     },
+     {
+      "t": 1794433931327,
+      "op": "get",
+      "v": "baseline"
+     },
+     {
+      "t": 1794433931327.2,
+      "op": "set",
+      "v": "own-write"
+     },
+     {
+      "t": 1794433931327.2,
+      "op": "get",
+      "v": "own-write"
+     },
+     {
+      "t": 1794433931327.2,
+      "op": "lock-callback-done"
+     }
+    ]
+   },
+   "rb": {
+    "ok": false,
+    "reason": "conflict",
+    "log": [
+     {
+      "t": 1794433931329.1,
+      "op": "lock-granted"
+     },
+     {
+      "t": 1794433931329.3,
+      "op": "get",
+      "v": "other-tab-write"
+     },
+     {
+      "t": 1794433931329.4001,
+      "op": "lock-callback-done"
+     }
+    ]
+   },
+   "final": [
+    "D-a"
+   ]
+  },
+  {
+   "t": 12,
+   "ra": {
+    "ok": true,
+    "reason": null,
+    "log": [
+     {
+      "t": 1794433931945.5999,
+      "op": "lock-granted"
+     },
+     {
+      "t": 1794433931945.8,
+      "op": "get",
+      "v": "baseline"
+     },
+     {
+      "t": 1794433931945.8,
+      "op": "get",
+      "v": "baseline"
+     },
+     {
+      "t": 1794433931946.0999,
+      "op": "set",
+      "v": "own-write"
+     },
+     {
+      "t": 1794433931946.0999,
+      "op": "get",
+      "v": "own-write"
+     },
+     {
+      "t": 1794433931946.0999,
+      "op": "lock-callback-done"
+     }
+    ]
+   },
+   "rb": {
+    "ok": false,
+    "reason": "conflict",
+    "log": [
+     {
+      "t": 1794433931948.4001,
+      "op": "lock-granted"
+     },
+     {
+      "t": 1794433931948.7,
+      "op": "get",
+      "v": "other-tab-write"
+     },
+     {
+      "t": 1794433931948.7,
+      "op": "lock-callback-done"
+     }
+    ]
+   },
+   "final": [
+    "D-a"
+   ]
+  },
+  {
+   "t": 13,
+   "ra": {
+    "ok": true,
+    "reason": null,
+    "log": [
+     {
+      "t": 1794433932551.5999,
+      "op": "lock-granted"
+     },
+     {
+      "t": 1794433932551.7998,
+      "op": "get",
+      "v": "baseline"
+     },
+     {
+      "t": 1794433932551.9,
+      "op": "get",
+      "v": "baseline"
+     },
+     {
+      "t": 1794433932552,
+      "op": "set",
+      "v": "own-write"
+     },
+     {
+      "t": 1794433932552,
+      "op": "get",
+      "v": "own-write"
+     },
+     {
+      "t": 1794433932552,
+      "op": "lock-callback-done"
+     }
+    ]
+   },
+   "rb": {
+    "ok": false,
+    "reason": "conflict",
+    "log": [
+     {
+      "t": 1794433932553.9,
+      "op": "lock-granted"
+     },
+     {
+      "t": 1794433932554,
+      "op": "get",
+      "v": "other-tab-write"
+     },
+     {
+      "t": 1794433932554,
+      "op": "lock-callback-done"
+     }
+    ]
+   },
+   "final": [
+    "D-a"
+   ]
+  },
+  {
+   "t": 14,
+   "ra": {
+    "ok": true,
+    "reason": null,
+    "log": [
+     {
+      "t": 1794433933166.9001,
+      "op": "lock-granted"
+     },
+     {
+      "t": 1794433933167.1,
+      "op": "get",
+      "v": "baseline"
+     },
+     {
+      "t": 1794433933167.2,
+      "op": "get",
+      "v": "baseline"
+     },
+     {
+      "t": 1794433933167.3,
+      "op": "set",
+      "v": "own-write"
+     },
+     {
+      "t": 1794433933167.4001,
+      "op": "get",
+      "v": "own-write"
+     },
+     {
+      "t": 1794433933167.4001,
+      "op": "lock-callback-done"
+     }
+    ]
+   },
+   "rb": {
+    "ok": false,
+    "reason": "conflict",
+    "log": [
+     {
+      "t": 1794433933169.5999,
+      "op": "lock-granted"
+     },
+     {
+      "t": 1794433933169.7,
+      "op": "get",
+      "v": "other-tab-write"
+     },
+     {
+      "t": 1794433933169.7998,
+      "op": "lock-callback-done"
+     }
+    ]
+   },
+   "final": [
+    "D-a"
+   ]
+  },
+  {
+   "t": 15,
+   "ra": {
+    "ok": true,
+    "reason": null,
+    "log": [
+     {
+      "t": 1794433933775.2002,
+      "op": "lock-granted"
+     },
+     {
+      "t": 1794433933775.3,
+      "op": "get",
+      "v": "baseline"
+     },
+     {
+      "t": 1794433933775.4001,
+      "op": "get",
+      "v": "baseline"
+     },
+     {
+      "t": 1794433933775.5,
+      "op": "set",
+      "v": "own-write"
+     },
+     {
+      "t": 1794433933775.6,
+      "op": "get",
+      "v": "own-write"
+     },
+     {
+      "t": 1794433933775.6,
+      "op": "lock-callback-done"
+     }
+    ]
+   },
+   "rb": {
+    "ok": false,
+    "reason": "conflict",
+    "log": [
+     {
+      "t": 1794433933777.2,
+      "op": "lock-granted"
+     },
+     {
+      "t": 1794433933777.2998,
+      "op": "get",
+      "v": "other-tab-write"
+     },
+     {
+      "t": 1794433933777.2998,
+      "op": "lock-callback-done"
+     }
+    ]
+   },
+   "final": [
+    "D-a"
+   ]
+  },
+  {
+   "t": 16,
+   "ra": {
+    "ok": true,
+    "reason": null,
+    "log": [
+     {
+      "t": 1794433934386.4001,
+      "op": "lock-granted"
+     },
+     {
+      "t": 1794433934386.6,
+      "op": "get",
+      "v": "baseline"
+     },
+     {
+      "t": 1794433934386.6,
+      "op": "get",
+      "v": "baseline"
+     },
+     {
+      "t": 1794433934386.8,
+      "op": "set",
+      "v": "own-write"
+     },
+     {
+      "t": 1794433934386.8,
+      "op": "get",
+      "v": "own-write"
+     },
+     {
+      "t": 1794433934386.8,
+      "op": "lock-callback-done"
+     }
+    ]
+   },
+   "rb": {
+    "ok": false,
+    "reason": "conflict",
+    "log": [
+     {
+      "t": 1794433934388.7,
+      "op": "lock-granted"
+     },
+     {
+      "t": 1794433934388.7998,
+      "op": "get",
+      "v": "other-tab-write"
+     },
+     {
+      "t": 1794433934388.7998,
+      "op": "lock-callback-done"
+     }
+    ]
+   },
+   "final": [
+    "D-a"
+   ]
+  },
+  {
+   "t": 17,
+   "ra": {
+    "ok": true,
+    "reason": null,
+    "log": [
+     {
+      "t": 1794433934981.1,
+      "op": "lock-granted"
+     },
+     {
+      "t": 1794433934981.3,
+      "op": "get",
+      "v": "baseline"
+     },
+     {
+      "t": 1794433934981.3,
+      "op": "get",
+      "v": "baseline"
+     },
+     {
+      "t": 1794433934981.4,
+      "op": "set",
+      "v": "own-write"
+     },
+     {
+      "t": 1794433934981.4,
+      "op": "get",
+      "v": "own-write"
+     },
+     {
+      "t": 1794433934981.4,
+      "op": "lock-callback-done"
+     }
+    ]
+   },
+   "rb": {
+    "ok": false,
+    "reason": "conflict",
+    "log": [
+     {
+      "t": 1794433934983.8,
+      "op": "lock-granted"
+     },
+     {
+      "t": 1794433934984,
+      "op": "get",
+      "v": "other-tab-write"
+     },
+     {
+      "t": 1794433934984,
+      "op": "lock-callback-done"
+     }
+    ]
+   },
+   "final": [
+    "D-a"
+   ]
+  },
+  {
+   "t": 18,
+   "ra": {
+    "ok": true,
+    "reason": null,
+    "log": [
+     {
+      "t": 1794433935595.5999,
+      "op": "lock-granted"
+     },
+     {
+      "t": 1794433935595.8,
+      "op": "get",
+      "v": "baseline"
+     },
+     {
+      "t": 1794433935595.8,
+      "op": "get",
+      "v": "baseline"
+     },
+     {
+      "t": 1794433935596,
+      "op": "set",
+      "v": "own-write"
+     },
+     {
+      "t": 1794433935596,
+      "op": "get",
+      "v": "own-write"
+     },
+     {
+      "t": 1794433935596,
+      "op": "lock-callback-done"
+     }
+    ]
+   },
+   "rb": {
+    "ok": false,
+    "reason": "conflict",
+    "log": [
+     {
+      "t": 1794433935597.7002,
+      "op": "lock-granted"
+     },
+     {
+      "t": 1794433935597.7002,
+      "op": "get",
+      "v": "other-tab-write"
+     },
+     {
+      "t": 1794433935597.8,
+      "op": "lock-callback-done"
+     }
+    ]
+   },
+   "final": [
+    "D-a"
+   ]
+  },
+  {
+   "t": 19,
+   "ra": {
+    "ok": true,
+    "reason": null,
+    "log": [
+     {
+      "t": 1794433936208.3,
+      "op": "lock-granted"
+     },
+     {
+      "t": 1794433936208.4001,
+      "op": "get",
+      "v": "baseline"
+     },
+     {
+      "t": 1794433936208.5,
+      "op": "get",
+      "v": "baseline"
+     },
+     {
+      "t": 1794433936208.7002,
+      "op": "set",
+      "v": "own-write"
+     },
+     {
+      "t": 1794433936208.7002,
+      "op": "get",
+      "v": "own-write"
+     },
+     {
+      "t": 1794433936208.7002,
+      "op": "lock-callback-done"
+     }
+    ]
+   },
+   "rb": {
+    "ok": false,
+    "reason": "conflict",
+    "log": [
+     {
+      "t": 1794433936211.7,
+      "op": "lock-granted"
+     },
+     {
+      "t": 1794433936211.8,
+      "op": "get",
+      "v": "other-tab-write"
+     },
+     {
+      "t": 1794433936211.8,
+      "op": "lock-callback-done"
+     }
+    ]
+   },
+   "final": [
+    "D-a"
+   ]
+  },
+  {
+   "t": 20,
+   "ra": {
+    "ok": true,
+    "reason": null,
+    "log": [
+     {
+      "t": 1794433936803.0999,
+      "op": "lock-granted"
+     },
+     {
+      "t": 1794433936803.2,
+      "op": "get",
+      "v": "baseline"
+     },
+     {
+      "t": 1794433936803.2998,
+      "op": "get",
+      "v": "baseline"
+     },
+     {
+      "t": 1794433936803.5,
+      "op": "set",
+      "v": "own-write"
+     },
+     {
+      "t": 1794433936803.5,
+      "op": "get",
+      "v": "own-write"
+     },
+     {
+      "t": 1794433936803.5,
+      "op": "lock-callback-done"
+     }
+    ]
+   },
+   "rb": {
+    "ok": false,
+    "reason": "conflict",
+    "log": [
+     {
+      "t": 1794433936805.2998,
+      "op": "lock-granted"
+     },
+     {
+      "t": 1794433936805.5,
+      "op": "get",
+      "v": "other-tab-write"
+     },
+     {
+      "t": 1794433936805.5999,
+      "op": "lock-callback-done"
+     }
+    ]
+   },
+   "final": [
+    "D-a"
+   ]
+  },
+  {
+   "t": 21,
+   "ra": {
+    "ok": true,
+    "reason": null,
+    "log": [
+     {
+      "t": 1794433937406.1,
+      "op": "lock-granted"
+     },
+     {
+      "t": 1794433937406.2,
+      "op": "get",
+      "v": "baseline"
+     },
+     {
+      "t": 1794433937406.2,
+      "op": "get",
+      "v": "baseline"
+     },
+     {
+      "t": 1794433937406.4001,
+      "op": "set",
+      "v": "own-write"
+     },
+     {
+      "t": 1794433937406.4001,
+      "op": "get",
+      "v": "own-write"
+     },
+     {
+      "t": 1794433937406.5,
+      "op": "lock-callback-done"
+     }
+    ]
+   },
+   "rb": {
+    "ok": false,
+    "reason": "conflict",
+    "log": [
+     {
+      "t": 1794433937408.3,
+      "op": "lock-granted"
+     },
+     {
+      "t": 1794433937408.6,
+      "op": "get",
+      "v": "other-tab-write"
+     },
+     {
+      "t": 1794433937408.6,
+      "op": "lock-callback-done"
+     }
+    ]
+   },
+   "final": [
+    "D-a"
+   ]
+  },
+  {
+   "t": 22,
+   "ra": {
+    "ok": true,
+    "reason": null,
+    "log": [
+     {
+      "t": 1794433938002.2998,
+      "op": "lock-granted"
+     },
+     {
+      "t": 1794433938002.5,
+      "op": "get",
+      "v": "baseline"
+     },
+     {
+      "t": 1794433938002.5,
+      "op": "get",
+      "v": "baseline"
+     },
+     {
+      "t": 1794433938002.7998,
+      "op": "set",
+      "v": "own-write"
+     },
+     {
+      "t": 1794433938002.7998,
+      "op": "get",
+      "v": "own-write"
+     },
+     {
+      "t": 1794433938002.7998,
+      "op": "lock-callback-done"
+     }
+    ]
+   },
+   "rb": {
+    "ok": false,
+    "reason": "conflict",
+    "log": [
+     {
+      "t": 1794433938004.7002,
+      "op": "lock-granted"
+     },
+     {
+      "t": 1794433938004.9001,
+      "op": "get",
+      "v": "other-tab-write"
+     },
+     {
+      "t": 1794433938004.9001,
+      "op": "lock-callback-done"
+     }
+    ]
+   },
+   "final": [
+    "D-a"
+   ]
+  },
+  {
+   "t": 23,
+   "ra": {
+    "ok": true,
+    "reason": null,
+    "log": [
+     {
+      "t": 1794433938595.1,
+      "op": "lock-granted"
+     },
+     {
+      "t": 1794433938595.3,
+      "op": "get",
+      "v": "baseline"
+     },
+     {
+      "t": 1794433938595.3,
+      "op": "get",
+      "v": "baseline"
+     },
+     {
+      "t": 1794433938595.4001,
+      "op": "set",
+      "v": "own-write"
+     },
+     {
+      "t": 1794433938595.4001,
+      "op": "get",
+      "v": "own-write"
+     },
+     {
+      "t": 1794433938595.4001,
+      "op": "lock-callback-done"
+     }
+    ]
+   },
+   "rb": {
+    "ok": false,
+    "reason": "conflict",
+    "log": [
+     {
+      "t": 1794433938596.7998,
+      "op": "lock-granted"
+     },
+     {
+      "t": 1794433938597,
+      "op": "get",
+      "v": "other-tab-write"
+     },
+     {
+      "t": 1794433938597,
+      "op": "lock-callback-done"
+     }
+    ]
+   },
+   "final": [
+    "D-a"
+   ]
+  },
+  {
+   "t": 24,
+   "ra": {
+    "ok": true,
+    "reason": null,
+    "log": [
+     {
+      "t": 1794433939192.4,
+      "op": "lock-granted"
+     },
+     {
+      "t": 1794433939192.6,
+      "op": "get",
+      "v": "baseline"
+     },
+     {
+      "t": 1794433939192.6,
+      "op": "get",
+      "v": "baseline"
+     },
+     {
+      "t": 1794433939192.8,
+      "op": "set",
+      "v": "own-write"
+     },
+     {
+      "t": 1794433939192.8,
+      "op": "get",
+      "v": "own-write"
+     },
+     {
+      "t": 1794433939192.8,
+      "op": "lock-callback-done"
+     }
+    ]
+   },
+   "rb": {
+    "ok": false,
+    "reason": "conflict",
+    "log": [
+     {
+      "t": 1794433939194.8,
+      "op": "lock-granted"
+     },
+     {
+      "t": 1794433939195,
+      "op": "get",
+      "v": "other-tab-write"
+     },
+     {
+      "t": 1794433939195,
+      "op": "lock-callback-done"
+     }
+    ]
+   },
+   "final": [
+    "D-a"
+   ]
+  },
+  {
+   "t": 25,
+   "ra": {
+    "ok": true,
+    "reason": null,
+    "log": [
+     {
+      "t": 1794433939784.2,
+      "op": "lock-granted"
+     },
+     {
+      "t": 1794433939784.4,
+      "op": "get",
+      "v": "baseline"
+     },
+     {
+      "t": 1794433939784.4,
+      "op": "get",
+      "v": "baseline"
+     },
+     {
+      "t": 1794433939784.5999,
+      "op": "set",
+      "v": "own-write"
+     },
+     {
+      "t": 1794433939784.5999,
+      "op": "get",
+      "v": "own-write"
+     },
+     {
+      "t": 1794433939784.5999,
+      "op": "lock-callback-done"
+     }
+    ]
+   },
+   "rb": {
+    "ok": false,
+    "reason": "conflict",
+    "log": [
+     {
+      "t": 1794433939786.5,
+      "op": "lock-granted"
+     },
+     {
+      "t": 1794433939786.6,
+      "op": "get",
+      "v": "other-tab-write"
+     },
+     {
+      "t": 1794433939786.6,
+      "op": "lock-callback-done"
+     }
+    ]
+   },
+   "final": [
+    "D-a"
+   ]
+  },
+  {
+   "t": 26,
+   "ra": {
+    "ok": true,
+    "reason": null,
+    "log": [
+     {
+      "t": 1794433940392.6,
+      "op": "lock-granted"
+     },
+     {
+      "t": 1794433940392.9001,
+      "op": "get",
+      "v": "baseline"
+     },
+     {
+      "t": 1794433940392.9001,
+      "op": "get",
+      "v": "baseline"
+     },
+     {
+      "t": 1794433940393.1,
+      "op": "set",
+      "v": "own-write"
+     },
+     {
+      "t": 1794433940393.1,
+      "op": "get",
+      "v": "own-write"
+     },
+     {
+      "t": 1794433940393.1,
+      "op": "lock-callback-done"
+     }
+    ]
+   },
+   "rb": {
+    "ok": false,
+    "reason": "conflict",
+    "log": [
+     {
+      "t": 1794433940395.1,
+      "op": "lock-granted"
+     },
+     {
+      "t": 1794433940395.3,
+      "op": "get",
+      "v": "other-tab-write"
+     },
+     {
+      "t": 1794433940395.3,
+      "op": "lock-callback-done"
+     }
+    ]
+   },
+   "final": [
+    "D-a"
+   ]
+  },
+  {
+   "t": 27,
+   "ra": {
+    "ok": true,
+    "reason": null,
+    "log": [
+     {
+      "t": 1794433941011.9001,
+      "op": "lock-granted"
+     },
+     {
+      "t": 1794433941012,
+      "op": "get",
+      "v": "baseline"
+     },
+     {
+      "t": 1794433941012.1,
+      "op": "get",
+      "v": "baseline"
+     },
+     {
+      "t": 1794433941012.1,
+      "op": "set",
+      "v": "own-write"
+     },
+     {
+      "t": 1794433941012.1,
+      "op": "get",
+      "v": "own-write"
+     },
+     {
+      "t": 1794433941012.2,
+      "op": "lock-callback-done"
+     }
+    ]
+   },
+   "rb": {
+    "ok": false,
+    "reason": "conflict",
+    "log": [
+     {
+      "t": 1794433941013.9,
+      "op": "lock-granted"
+     },
+     {
+      "t": 1794433941014.0999,
+      "op": "get",
+      "v": "other-tab-write"
+     },
+     {
+      "t": 1794433941014.0999,
+      "op": "lock-callback-done"
+     }
+    ]
+   },
+   "final": [
+    "D-a"
+   ]
+  },
+  {
+   "t": 28,
+   "ra": {
+    "ok": true,
+    "reason": null,
+    "log": [
+     {
+      "t": 1794433941630.7,
+      "op": "lock-granted"
+     },
+     {
+      "t": 1794433941631,
+      "op": "get",
+      "v": "baseline"
+     },
+     {
+      "t": 1794433941631,
+      "op": "get",
+      "v": "baseline"
+     },
+     {
+      "t": 1794433941631.1,
+      "op": "set",
+      "v": "own-write"
+     },
+     {
+      "t": 1794433941631.1,
+      "op": "get",
+      "v": "own-write"
+     },
+     {
+      "t": 1794433941631.2,
+      "op": "lock-callback-done"
+     }
+    ]
+   },
+   "rb": {
+    "ok": false,
+    "reason": "conflict",
+    "log": [
+     {
+      "t": 1794433941632.8,
+      "op": "lock-granted"
+     },
+     {
+      "t": 1794433941633,
+      "op": "get",
+      "v": "other-tab-write"
+     },
+     {
+      "t": 1794433941633,
+      "op": "lock-callback-done"
+     }
+    ]
+   },
+   "final": [
+    "D-a"
+   ]
+  },
+  {
+   "t": 29,
+   "ra": {
+    "ok": true,
+    "reason": null,
+    "log": [
+     {
+      "t": 1794433942236.1,
+      "op": "lock-granted"
+     },
+     {
+      "t": 1794433942236.3,
+      "op": "get",
+      "v": "baseline"
+     },
+     {
+      "t": 1794433942236.3,
+      "op": "get",
+      "v": "baseline"
+     },
+     {
+      "t": 1794433942236.5,
+      "op": "set",
+      "v": "own-write"
+     },
+     {
+      "t": 1794433942236.5,
+      "op": "get",
+      "v": "own-write"
+     },
+     {
+      "t": 1794433942236.5,
+      "op": "lock-callback-done"
+     }
+    ]
+   },
+   "rb": {
+    "ok": false,
+    "reason": "conflict",
+    "log": [
+     {
+      "t": 1794433942238.1,
+      "op": "lock-granted"
+     },
+     {
+      "t": 1794433942238.2,
+      "op": "get",
+      "v": "other-tab-write"
+     },
+     {
+      "t": 1794433942238.2,
+      "op": "lock-callback-done"
+     }
+    ]
+   },
+   "final": [
+    "D-a"
+   ]
+  },
+  {
+   "t": 30,
+   "ra": {
+    "ok": true,
+    "reason": null,
+    "log": [
+     {
+      "t": 1794433942841.1,
+      "op": "lock-granted"
+     },
+     {
+      "t": 1794433942841.4,
+      "op": "get",
+      "v": "baseline"
+     },
+     {
+      "t": 1794433942841.4,
+      "op": "get",
+      "v": "baseline"
+     },
+     {
+      "t": 1794433942841.7,
+      "op": "set",
+      "v": "own-write"
+     },
+     {
+      "t": 1794433942841.7,
+      "op": "get",
+      "v": "own-write"
+     },
+     {
+      "t": 1794433942841.7,
+      "op": "lock-callback-done"
+     }
+    ]
+   },
+   "rb": {
+    "ok": false,
+    "reason": "conflict",
+    "log": [
+     {
+      "t": 1794433942843.6,
+      "op": "lock-granted"
+     },
+     {
+      "t": 1794433942843.7002,
+      "op": "get",
+      "v": "other-tab-write"
+     },
+     {
+      "t": 1794433942843.7002,
+      "op": "lock-callback-done"
+     }
+    ]
+   },
+   "final": [
+    "D-a"
+   ]
+  },
+  {
+   "t": 31,
+   "ra": {
+    "ok": true,
+    "reason": null,
+    "log": [
+     {
+      "t": 1794433943455.5,
+      "op": "lock-granted"
+     },
+     {
+      "t": 1794433943455.7002,
+      "op": "get",
+      "v": "baseline"
+     },
+     {
+      "t": 1794433943455.7002,
+      "op": "get",
+      "v": "baseline"
+     },
+     {
+      "t": 1794433943455.8,
+      "op": "set",
+      "v": "own-write"
+     },
+     {
+      "t": 1794433943455.8,
+      "op": "get",
+      "v": "own-write"
+     },
+     {
+      "t": 1794433943455.8,
+      "op": "lock-callback-done"
+     }
+    ]
+   },
+   "rb": {
+    "ok": false,
+    "reason": "conflict",
+    "log": [
+     {
+      "t": 1794433943457.4,
+      "op": "lock-granted"
+     },
+     {
+      "t": 1794433943457.5999,
+      "op": "get",
+      "v": "other-tab-write"
+     },
+     {
+      "t": 1794433943457.5999,
+      "op": "lock-callback-done"
+     }
+    ]
+   },
+   "final": [
+    "D-a"
+   ]
+  },
+  {
+   "t": 32,
+   "ra": {
+    "ok": true,
+    "reason": null,
+    "log": [
+     {
+      "t": 1794433944083.6,
+      "op": "lock-granted"
+     },
+     {
+      "t": 1794433944083.9001,
+      "op": "get",
+      "v": "baseline"
+     },
+     {
+      "t": 1794433944083.9001,
+      "op": "get",
+      "v": "baseline"
+     },
+     {
+      "t": 1794433944084,
+      "op": "set",
+      "v": "own-write"
+     },
+     {
+      "t": 1794433944084,
+      "op": "get",
+      "v": "own-write"
+     },
+     {
+      "t": 1794433944084,
+      "op": "lock-callback-done"
+     }
+    ]
+   },
+   "rb": {
+    "ok": false,
+    "reason": "conflict",
+    "log": [
+     {
+      "t": 1794433944085.9001,
+      "op": "lock-granted"
+     },
+     {
+      "t": 1794433944086,
+      "op": "get",
+      "v": "other-tab-write"
+     },
+     {
+      "t": 1794433944086.1,
+      "op": "lock-callback-done"
+     }
+    ]
+   },
+   "final": [
+    "D-a"
+   ]
+  },
+  {
+   "t": 33,
+   "ra": {
+    "ok": true,
+    "reason": null,
+    "log": [
+     {
+      "t": 1794433944689.2998,
+      "op": "lock-granted"
+     },
+     {
+      "t": 1794433944689.4,
+      "op": "get",
+      "v": "baseline"
+     },
+     {
+      "t": 1794433944689.5,
+      "op": "get",
+      "v": "baseline"
+     },
+     {
+      "t": 1794433944689.5999,
+      "op": "set",
+      "v": "own-write"
+     },
+     {
+      "t": 1794433944689.5999,
+      "op": "get",
+      "v": "own-write"
+     },
+     {
+      "t": 1794433944689.5999,
+      "op": "lock-callback-done"
+     }
+    ]
+   },
+   "rb": {
+    "ok": false,
+    "reason": "conflict",
+    "log": [
+     {
+      "t": 1794433944691.3,
+      "op": "lock-granted"
+     },
+     {
+      "t": 1794433944691.5,
+      "op": "get",
+      "v": "other-tab-write"
+     },
+     {
+      "t": 1794433944691.5,
+      "op": "lock-callback-done"
+     }
+    ]
+   },
+   "final": [
+    "D-a"
+   ]
+  },
+  {
+   "t": 34,
+   "ra": {
+    "ok": true,
+    "reason": null,
+    "log": [
+     {
+      "t": 1794433945296.5,
+      "op": "lock-granted"
+     },
+     {
+      "t": 1794433945296.7002,
+      "op": "get",
+      "v": "baseline"
+     },
+     {
+      "t": 1794433945296.8,
+      "op": "get",
+      "v": "baseline"
+     },
+     {
+      "t": 1794433945296.9001,
+      "op": "set",
+      "v": "own-write"
+     },
+     {
+      "t": 1794433945296.9001,
+      "op": "get",
+      "v": "own-write"
+     },
+     {
+      "t": 1794433945296.9001,
+      "op": "lock-callback-done"
+     }
+    ]
+   },
+   "rb": {
+    "ok": false,
+    "reason": "conflict",
+    "log": [
+     {
+      "t": 1794433945298.7,
+      "op": "lock-granted"
+     },
+     {
+      "t": 1794433945298.7998,
+      "op": "get",
+      "v": "other-tab-write"
+     },
+     {
+      "t": 1794433945298.7998,
+      "op": "lock-callback-done"
+     }
+    ]
+   },
+   "final": [
+    "D-a"
+   ]
+  },
+  {
+   "t": 35,
+   "ra": {
+    "ok": true,
+    "reason": null,
+    "log": [
+     {
+      "t": 1794433945902.5999,
+      "op": "lock-granted"
+     },
+     {
+      "t": 1794433945902.5999,
+      "op": "get",
+      "v": "baseline"
+     },
+     {
+      "t": 1794433945902.7,
+      "op": "get",
+      "v": "baseline"
+     },
+     {
+      "t": 1794433945902.9,
+      "op": "set",
+      "v": "own-write"
+     },
+     {
+      "t": 1794433945902.9,
+      "op": "get",
+      "v": "own-write"
+     },
+     {
+      "t": 1794433945902.9,
+      "op": "lock-callback-done"
+     }
+    ]
+   },
+   "rb": {
+    "ok": false,
+    "reason": "conflict",
+    "log": [
+     {
+      "t": 1794433945904.0999,
+      "op": "lock-granted"
+     },
+     {
+      "t": 1794433945904.3,
+      "op": "get",
+      "v": "other-tab-write"
+     },
+     {
+      "t": 1794433945904.4,
+      "op": "lock-callback-done"
+     }
+    ]
+   },
+   "final": [
+    "D-a"
+   ]
+  },
+  {
+   "t": 36,
+   "ra": {
+    "ok": true,
+    "reason": null,
+    "log": [
+     {
+      "t": 1794433946501.6,
+      "op": "lock-granted"
+     },
+     {
+      "t": 1794433946501.8,
+      "op": "get",
+      "v": "baseline"
+     },
+     {
+      "t": 1794433946501.8,
+      "op": "get",
+      "v": "baseline"
+     },
+     {
+      "t": 1794433946502,
+      "op": "set",
+      "v": "own-write"
+     },
+     {
+      "t": 1794433946502,
+      "op": "get",
+      "v": "own-write"
+     },
+     {
+      "t": 1794433946502,
+      "op": "lock-callback-done"
+     }
+    ]
+   },
+   "rb": {
+    "ok": false,
+    "reason": "conflict",
+    "log": [
+     {
+      "t": 1794433946503.1,
+      "op": "lock-granted"
+     },
+     {
+      "t": 1794433946503.2,
+      "op": "get",
+      "v": "other-tab-write"
+     },
+     {
+      "t": 1794433946503.2,
+      "op": "lock-callback-done"
+     }
+    ]
+   },
+   "final": [
+    "D-a"
+   ]
+  },
+  {
+   "t": 37,
+   "ra": {
+    "ok": true,
+    "reason": null,
+    "log": [
+     {
+      "t": 1794433947097.1,
+      "op": "lock-granted"
+     },
+     {
+      "t": 1794433947097.3,
+      "op": "get",
+      "v": "baseline"
+     },
+     {
+      "t": 1794433947097.3,
+      "op": "get",
+      "v": "baseline"
+     },
+     {
+      "t": 1794433947097.5,
+      "op": "set",
+      "v": "own-write"
+     },
+     {
+      "t": 1794433947097.5,
+      "op": "get",
+      "v": "own-write"
+     },
+     {
+      "t": 1794433947097.5,
+      "op": "lock-callback-done"
+     }
+    ]
+   },
+   "rb": {
+    "ok": false,
+    "reason": "conflict",
+    "log": [
+     {
+      "t": 1794433947098.7002,
+      "op": "lock-granted"
+     },
+     {
+      "t": 1794433947098.9001,
+      "op": "get",
+      "v": "other-tab-write"
+     },
+     {
+      "t": 1794433947098.9001,
+      "op": "lock-callback-done"
+     }
+    ]
+   },
+   "final": [
+    "D-a"
+   ]
+  },
+  {
+   "t": 38,
+   "ra": {
+    "ok": true,
+    "reason": null,
+    "log": [
+     {
+      "t": 1794433947702.7,
+      "op": "lock-granted"
+     },
+     {
+      "t": 1794433947702.8,
+      "op": "get",
+      "v": "baseline"
+     },
+     {
+      "t": 1794433947702.9,
+      "op": "get",
+      "v": "baseline"
+     },
+     {
+      "t": 1794433947703,
+      "op": "set",
+      "v": "own-write"
+     },
+     {
+      "t": 1794433947703,
+      "op": "get",
+      "v": "own-write"
+     },
+     {
+      "t": 1794433947703,
+      "op": "lock-callback-done"
+     }
+    ]
+   },
+   "rb": {
+    "ok": false,
+    "reason": "conflict",
+    "log": [
+     {
+      "t": 1794433947705.3,
+      "op": "lock-granted"
+     },
+     {
+      "t": 1794433947705.4001,
+      "op": "get",
+      "v": "other-tab-write"
+     },
+     {
+      "t": 1794433947705.4001,
+      "op": "lock-callback-done"
+     }
+    ]
+   },
+   "final": [
+    "D-a"
+   ]
+  },
+  {
+   "t": 39,
+   "ra": {
+    "ok": true,
+    "reason": null,
+    "log": [
+     {
+      "t": 1794433948312.2,
+      "op": "lock-granted"
+     },
+     {
+      "t": 1794433948312.2998,
+      "op": "get",
+      "v": "baseline"
+     },
+     {
+      "t": 1794433948312.2998,
+      "op": "get",
+      "v": "baseline"
+     },
+     {
+      "t": 1794433948312.5,
+      "op": "set",
+      "v": "own-write"
+     },
+     {
+      "t": 1794433948312.5,
+      "op": "get",
+      "v": "own-write"
+     },
+     {
+      "t": 1794433948312.5,
+      "op": "lock-callback-done"
+     }
+    ]
+   },
+   "rb": {
+    "ok": false,
+    "reason": "conflict",
+    "log": [
+     {
+      "t": 1794433948315.1,
+      "op": "lock-granted"
+     },
+     {
+      "t": 1794433948315.3,
+      "op": "get",
+      "v": "other-tab-write"
+     },
+     {
+      "t": 1794433948315.3,
+      "op": "lock-callback-done"
+     }
+    ]
+   },
+   "final": [
+    "D-a"
+   ]
+  },
+  {
+   "t": 40,
+   "ra": {
+    "ok": true,
+    "reason": null,
+    "log": [
+     {
+      "t": 1794433948911.3,
+      "op": "lock-granted"
+     },
+     {
+      "t": 1794433948911.5,
+      "op": "get",
+      "v": "baseline"
+     },
+     {
+      "t": 1794433948911.5,
+      "op": "get",
+      "v": "baseline"
+     },
+     {
+      "t": 1794433948911.6,
+      "op": "set",
+      "v": "own-write"
+     },
+     {
+      "t": 1794433948911.6,
+      "op": "get",
+      "v": "own-write"
+     },
+     {
+      "t": 1794433948911.6,
+      "op": "lock-callback-done"
+     }
+    ]
+   },
+   "rb": {
+    "ok": false,
+    "reason": "conflict",
+    "log": [
+     {
+      "t": 1794433948913,
+      "op": "lock-granted"
+     },
+     {
+      "t": 1794433948913.1,
+      "op": "get",
+      "v": "other-tab-write"
+     },
+     {
+      "t": 1794433948913.2,
+      "op": "lock-callback-done"
+     }
+    ]
+   },
+   "final": [
+    "D-a"
+   ]
+  },
+  {
+   "t": 41,
+   "ra": {
+    "ok": true,
+    "reason": null,
+    "log": [
+     {
+      "t": 1794433949526.5999,
+      "op": "lock-granted"
+     },
+     {
+      "t": 1794433949526.7,
+      "op": "get",
+      "v": "baseline"
+     },
+     {
+      "t": 1794433949526.7998,
+      "op": "get",
+      "v": "baseline"
+     },
+     {
+      "t": 1794433949527,
+      "op": "set",
+      "v": "own-write"
+     },
+     {
+      "t": 1794433949527,
+      "op": "get",
+      "v": "own-write"
+     },
+     {
+      "t": 1794433949527,
+      "op": "lock-callback-done"
+     }
+    ]
+   },
+   "rb": {
+    "ok": false,
+    "reason": "conflict",
+    "log": [
+     {
+      "t": 1794433949528.5,
+      "op": "lock-granted"
+     },
+     {
+      "t": 1794433949528.6,
+      "op": "get",
+      "v": "other-tab-write"
+     },
+     {
+      "t": 1794433949528.7002,
+      "op": "lock-callback-done"
+     }
+    ]
+   },
+   "final": [
+    "D-a"
+   ]
+  },
+  {
+   "t": 42,
+   "ra": {
+    "ok": true,
+    "reason": null,
+    "log": [
+     {
+      "t": 1794433950151.9,
+      "op": "lock-granted"
+     },
+     {
+      "t": 1794433950152,
+      "op": "get",
+      "v": "baseline"
+     },
+     {
+      "t": 1794433950152,
+      "op": "get",
+      "v": "baseline"
+     },
+     {
+      "t": 1794433950152.2,
+      "op": "set",
+      "v": "own-write"
+     },
+     {
+      "t": 1794433950152.2998,
+      "op": "get",
+      "v": "own-write"
+     },
+     {
+      "t": 1794433950152.2998,
+      "op": "lock-callback-done"
+     }
+    ]
+   },
+   "rb": {
+    "ok": false,
+    "reason": "conflict",
+    "log": [
+     {
+      "t": 1794433950153.8,
+      "op": "lock-granted"
+     },
+     {
+      "t": 1794433950153.9,
+      "op": "get",
+      "v": "other-tab-write"
+     },
+     {
+      "t": 1794433950153.9,
+      "op": "lock-callback-done"
+     }
+    ]
+   },
+   "final": [
+    "D-a"
+   ]
+  },
+  {
+   "t": 43,
+   "ra": {
+    "ok": true,
+    "reason": null,
+    "log": [
+     {
+      "t": 1794433950750.4,
+      "op": "lock-granted"
+     },
+     {
+      "t": 1794433950750.5,
+      "op": "get",
+      "v": "baseline"
+     },
+     {
+      "t": 1794433950750.7,
+      "op": "get",
+      "v": "baseline"
+     },
+     {
+      "t": 1794433950750.7,
+      "op": "set",
+      "v": "own-write"
+     },
+     {
+      "t": 1794433950750.8,
+      "op": "get",
+      "v": "own-write"
+     },
+     {
+      "t": 1794433950750.8,
+      "op": "lock-callback-done"
+     }
+    ]
+   },
+   "rb": {
+    "ok": false,
+    "reason": "conflict",
+    "log": [
+     {
+      "t": 1794433950752.2,
+      "op": "lock-granted"
+     },
+     {
+      "t": 1794433950752.4001,
+      "op": "get",
+      "v": "other-tab-write"
+     },
+     {
+      "t": 1794433950752.4001,
+      "op": "lock-callback-done"
+     }
+    ]
+   },
+   "final": [
+    "D-a"
+   ]
+  },
+  {
+   "t": 44,
+   "ra": {
+    "ok": true,
+    "reason": null,
+    "log": [
+     {
+      "t": 1794433951357.6,
+      "op": "lock-granted"
+     },
+     {
+      "t": 1794433951357.8,
+      "op": "get",
+      "v": "baseline"
+     },
+     {
+      "t": 1794433951357.9001,
+      "op": "get",
+      "v": "baseline"
+     },
+     {
+      "t": 1794433951357.9001,
+      "op": "set",
+      "v": "own-write"
+     },
+     {
+      "t": 1794433951357.9001,
+      "op": "get",
+      "v": "own-write"
+     },
+     {
+      "t": 1794433951358,
+      "op": "lock-callback-done"
+     }
+    ]
+   },
+   "rb": {
+    "ok": false,
+    "reason": "conflict",
+    "log": [
+     {
+      "t": 1794433951360,
+      "op": "lock-granted"
+     },
+     {
+      "t": 1794433951360.2,
+      "op": "get",
+      "v": "other-tab-write"
+     },
+     {
+      "t": 1794433951360.3,
+      "op": "lock-callback-done"
+     }
+    ]
+   },
+   "final": [
+    "D-a"
+   ]
+  },
+  {
+   "t": 45,
+   "ra": {
+    "ok": true,
+    "reason": null,
+    "log": [
+     {
+      "t": 1794433952007,
+      "op": "lock-granted"
+     },
+     {
+      "t": 1794433952007.2,
+      "op": "get",
+      "v": "baseline"
+     },
+     {
+      "t": 1794433952007.2,
+      "op": "get",
+      "v": "baseline"
+     },
+     {
+      "t": 1794433952007.5,
+      "op": "set",
+      "v": "own-write"
+     },
+     {
+      "t": 1794433952007.5,
+      "op": "get",
+      "v": "own-write"
+     },
+     {
+      "t": 1794433952007.5,
+      "op": "lock-callback-done"
+     }
+    ]
+   },
+   "rb": {
+    "ok": false,
+    "reason": "conflict",
+    "log": [
+     {
+      "t": 1794433952009.5999,
+      "op": "lock-granted"
+     },
+     {
+      "t": 1794433952009.7,
+      "op": "get",
+      "v": "other-tab-write"
+     },
+     {
+      "t": 1794433952009.7998,
+      "op": "lock-callback-done"
+     }
+    ]
+   },
+   "final": [
+    "D-a"
+   ]
+  },
+  {
+   "t": 46,
+   "ra": {
+    "ok": true,
+    "reason": null,
+    "log": [
+     {
+      "t": 1794433952645,
+      "op": "lock-granted"
+     },
+     {
+      "t": 1794433952645.2,
+      "op": "get",
+      "v": "baseline"
+     },
+     {
+      "t": 1794433952645.3,
+      "op": "get",
+      "v": "baseline"
+     },
+     {
+      "t": 1794433952645.5,
+      "op": "set",
+      "v": "own-write"
+     },
+     {
+      "t": 1794433952645.5,
+      "op": "get",
+      "v": "own-write"
+     },
+     {
+      "t": 1794433952645.5,
+      "op": "lock-callback-done"
+     }
+    ]
+   },
+   "rb": {
+    "ok": false,
+    "reason": "conflict",
+    "log": [
+     {
+      "t": 1794433952647.0999,
+      "op": "lock-granted"
+     },
+     {
+      "t": 1794433952647.4,
+      "op": "get",
+      "v": "other-tab-write"
+     },
+     {
+      "t": 1794433952647.4,
+      "op": "lock-callback-done"
+     }
+    ]
+   },
+   "final": [
+    "D-a"
+   ]
+  },
+  {
+   "t": 47,
+   "ra": {
+    "ok": true,
+    "reason": null,
+    "log": [
+     {
+      "t": 1794433953247.8,
+      "op": "lock-granted"
+     },
+     {
+      "t": 1794433953248,
+      "op": "get",
+      "v": "baseline"
+     },
+     {
+      "t": 1794433953248,
+      "op": "get",
+      "v": "baseline"
+     },
+     {
+      "t": 1794433953248.2002,
+      "op": "set",
+      "v": "own-write"
+     },
+     {
+      "t": 1794433953248.2002,
+      "op": "get",
+      "v": "own-write"
+     },
+     {
+      "t": 1794433953248.2002,
+      "op": "lock-callback-done"
+     }
+    ]
+   },
+   "rb": {
+    "ok": false,
+    "reason": "conflict",
+    "log": [
+     {
+      "t": 1794433953250,
+      "op": "lock-granted"
+     },
+     {
+      "t": 1794433953250.0999,
+      "op": "get",
+      "v": "other-tab-write"
+     },
+     {
+      "t": 1794433953250.0999,
+      "op": "lock-callback-done"
+     }
+    ]
+   },
+   "final": [
+    "D-a"
+   ]
+  },
+  {
+   "t": 48,
+   "ra": {
+    "ok": true,
+    "reason": null,
+    "log": [
+     {
+      "t": 1794433953842.4,
+      "op": "lock-granted"
+     },
+     {
+      "t": 1794433953842.6,
+      "op": "get",
+      "v": "baseline"
+     },
+     {
+      "t": 1794433953842.7,
+      "op": "get",
+      "v": "baseline"
+     },
+     {
+      "t": 1794433953842.7,
+      "op": "set",
+      "v": "own-write"
+     },
+     {
+      "t": 1794433953842.7,
+      "op": "get",
+      "v": "own-write"
+     },
+     {
+      "t": 1794433953842.8,
+      "op": "lock-callback-done"
+     }
+    ]
+   },
+   "rb": {
+    "ok": false,
+    "reason": "conflict",
+    "log": [
+     {
+      "t": 1794433953844,
+      "op": "lock-granted"
+     },
+     {
+      "t": 1794433953844.0999,
+      "op": "get",
+      "v": "other-tab-write"
+     },
+     {
+      "t": 1794433953844.0999,
+      "op": "lock-callback-done"
+     }
+    ]
+   },
+   "final": [
+    "D-a"
+   ]
+  },
+  {
+   "t": 49,
+   "ra": {
+    "ok": true,
+    "reason": null,
+    "log": [
+     {
+      "t": 1794433954438.9,
+      "op": "lock-granted"
+     },
+     {
+      "t": 1794433954439,
+      "op": "get",
+      "v": "baseline"
+     },
+     {
+      "t": 1794433954439,
+      "op": "get",
+      "v": "baseline"
+     },
+     {
+      "t": 1794433954439.2,
+      "op": "set",
+      "v": "own-write"
+     },
+     {
+      "t": 1794433954439.2,
+      "op": "get",
+      "v": "own-write"
+     },
+     {
+      "t": 1794433954439.2,
+      "op": "lock-callback-done"
+     }
+    ]
+   },
+   "rb": {
+    "ok": false,
+    "reason": "conflict",
+    "log": [
+     {
+      "t": 1794433954440.9001,
+      "op": "lock-granted"
+     },
+     {
+      "t": 1794433954441,
+      "op": "get",
+      "v": "other-tab-write"
+     },
+     {
+      "t": 1794433954441.1,
+      "op": "lock-callback-done"
+     }
+    ]
+   },
+   "final": [
+    "D-a"
+   ]
+  },
+  {
+   "t": 50,
+   "ra": {
+    "ok": true,
+    "reason": null,
+    "log": [
+     {
+      "t": 1794433955036.9001,
+      "op": "lock-granted"
+     },
+     {
+      "t": 1794433955037,
+      "op": "get",
+      "v": "baseline"
+     },
+     {
+      "t": 1794433955037,
+      "op": "get",
+      "v": "baseline"
+     },
+     {
+      "t": 1794433955037.2,
+      "op": "set",
+      "v": "own-write"
+     },
+     {
+      "t": 1794433955037.2,
+      "op": "get",
+      "v": "own-write"
+     },
+     {
+      "t": 1794433955037.2,
+      "op": "lock-callback-done"
+     }
+    ]
+   },
+   "rb": {
+    "ok": false,
+    "reason": "conflict",
+    "log": [
+     {
+      "t": 1794433955038.5999,
+      "op": "lock-granted"
+     },
+     {
+      "t": 1794433955038.7,
+      "op": "get",
+      "v": "other-tab-write"
+     },
+     {
+      "t": 1794433955038.7998,
+      "op": "lock-callback-done"
+     }
+    ]
+   },
+   "final": [
+    "D-a"
+   ]
+  },
+  {
+   "t": 51,
+   "ra": {
+    "ok": true,
+    "reason": null,
+    "log": [
+     {
+      "t": 1794433955624.5999,
+      "op": "lock-granted"
+     },
+     {
+      "t": 1794433955624.7998,
+      "op": "get",
+      "v": "baseline"
+     },
+     {
+      "t": 1794433955624.7998,
+      "op": "get",
+      "v": "baseline"
+     },
+     {
+      "t": 1794433955624.9,
+      "op": "set",
+      "v": "own-write"
+     },
+     {
+      "t": 1794433955624.9,
+      "op": "get",
+      "v": "own-write"
+     },
+     {
+      "t": 1794433955624.9,
+      "op": "lock-callback-done"
+     }
+    ]
+   },
+   "rb": {
+    "ok": false,
+    "reason": "conflict",
+    "log": [
+     {
+      "t": 1794433955626.0999,
+      "op": "lock-granted"
+     },
+     {
+      "t": 1794433955626.2998,
+      "op": "get",
+      "v": "other-tab-write"
+     },
+     {
+      "t": 1794433955626.2998,
+      "op": "lock-callback-done"
+     }
+    ]
+   },
+   "final": [
+    "D-a"
+   ]
+  },
+  {
+   "t": 52,
+   "ra": {
+    "ok": true,
+    "reason": null,
+    "log": [
+     {
+      "t": 1794433956221.9,
+      "op": "lock-granted"
+     },
+     {
+      "t": 1794433956222.0999,
+      "op": "get",
+      "v": "baseline"
+     },
+     {
+      "t": 1794433956222.2,
+      "op": "get",
+      "v": "baseline"
+     },
+     {
+      "t": 1794433956222.4,
+      "op": "set",
+      "v": "own-write"
+     },
+     {
+      "t": 1794433956222.4,
+      "op": "get",
+      "v": "own-write"
+     },
+     {
+      "t": 1794433956222.4,
+      "op": "lock-callback-done"
+     }
+    ]
+   },
+   "rb": {
+    "ok": false,
+    "reason": "conflict",
+    "log": [
+     {
+      "t": 1794433956225.6,
+      "op": "lock-granted"
+     },
+     {
+      "t": 1794433956225.7002,
+      "op": "get",
+      "v": "other-tab-write"
+     },
+     {
+      "t": 1794433956225.7002,
+      "op": "lock-callback-done"
+     }
+    ]
+   },
+   "final": [
+    "D-a"
+   ]
+  },
+  {
+   "t": 53,
+   "ra": {
+    "ok": true,
+    "reason": null,
+    "log": [
+     {
+      "t": 1794433956836.2,
+      "op": "lock-granted"
+     },
+     {
+      "t": 1794433956836.5,
+      "op": "get",
+      "v": "baseline"
+     },
+     {
+      "t": 1794433956836.5999,
+      "op": "get",
+      "v": "baseline"
+     },
+     {
+      "t": 1794433956836.7998,
+      "op": "set",
+      "v": "own-write"
+     },
+     {
+      "t": 1794433956836.7998,
+      "op": "get",
+      "v": "own-write"
+     },
+     {
+      "t": 1794433956836.7998,
+      "op": "lock-callback-done"
+     }
+    ]
+   },
+   "rb": {
+    "ok": false,
+    "reason": "conflict",
+    "log": [
+     {
+      "t": 1794433956838.5,
+      "op": "lock-granted"
+     },
+     {
+      "t": 1794433956838.6,
+      "op": "get",
+      "v": "other-tab-write"
+     },
+     {
+      "t": 1794433956838.6,
+      "op": "lock-callback-done"
+     }
+    ]
+   },
+   "final": [
+    "D-a"
+   ]
+  },
+  {
+   "t": 54,
+   "ra": {
+    "ok": true,
+    "reason": null,
+    "log": [
+     {
+      "t": 1794433957443.7,
+      "op": "lock-granted"
+     },
+     {
+      "t": 1794433957443.8,
+      "op": "get",
+      "v": "baseline"
+     },
+     {
+      "t": 1794433957443.8,
+      "op": "get",
+      "v": "baseline"
+     },
+     {
+      "t": 1794433957444,
+      "op": "set",
+      "v": "own-write"
+     },
+     {
+      "t": 1794433957444,
+      "op": "get",
+      "v": "own-write"
+     },
+     {
+      "t": 1794433957444,
+      "op": "lock-callback-done"
+     }
+    ]
+   },
+   "rb": {
+    "ok": false,
+    "reason": "conflict",
+    "log": [
+     {
+      "t": 1794433957445.4,
+      "op": "lock-granted"
+     },
+     {
+      "t": 1794433957445.5,
+      "op": "get",
+      "v": "other-tab-write"
+     },
+     {
+      "t": 1794433957445.5999,
+      "op": "lock-callback-done"
+     }
+    ]
+   },
+   "final": [
+    "D-a"
+   ]
+  },
+  {
+   "t": 55,
+   "ra": {
+    "ok": true,
+    "reason": null,
+    "log": [
+     {
+      "t": 1794433958055.8,
+      "op": "lock-granted"
+     },
+     {
+      "t": 1794433958055.9001,
+      "op": "get",
+      "v": "baseline"
+     },
+     {
+      "t": 1794433958055.9001,
+      "op": "get",
+      "v": "baseline"
+     },
+     {
+      "t": 1794433958056.1,
+      "op": "set",
+      "v": "own-write"
+     },
+     {
+      "t": 1794433958056.1,
+      "op": "get",
+      "v": "own-write"
+     },
+     {
+      "t": 1794433958056.1,
+      "op": "lock-callback-done"
+     }
+    ]
+   },
+   "rb": {
+    "ok": false,
+    "reason": "conflict",
+    "log": [
+     {
+      "t": 1794433958057.5,
+      "op": "lock-granted"
+     },
+     {
+      "t": 1794433958057.7002,
+      "op": "get",
+      "v": "other-tab-write"
+     },
+     {
+      "t": 1794433958057.7002,
+      "op": "lock-callback-done"
+     }
+    ]
+   },
+   "final": [
+    "D-a"
+   ]
+  },
+  {
+   "t": 56,
+   "ra": {
+    "ok": true,
+    "reason": null,
+    "log": [
+     {
+      "t": 1794433958674.4001,
+      "op": "lock-granted"
+     },
+     {
+      "t": 1794433958674.6,
+      "op": "get",
+      "v": "baseline"
+     },
+     {
+      "t": 1794433958674.6,
+      "op": "get",
+      "v": "baseline"
+     },
+     {
+      "t": 1794433958674.7002,
+      "op": "set",
+      "v": "own-write"
+     },
+     {
+      "t": 1794433958674.7002,
+      "op": "get",
+      "v": "own-write"
+     },
+     {
+      "t": 1794433958674.7002,
+      "op": "lock-callback-done"
+     }
+    ]
+   },
+   "rb": {
+    "ok": false,
+    "reason": "conflict",
+    "log": [
+     {
+      "t": 1794433958676.2,
+      "op": "lock-granted"
+     },
+     {
+      "t": 1794433958676.3,
+      "op": "get",
+      "v": "other-tab-write"
+     },
+     {
+      "t": 1794433958676.3,
+      "op": "lock-callback-done"
+     }
+    ]
+   },
+   "final": [
+    "D-a"
+   ]
+  },
+  {
+   "t": 57,
+   "ra": {
+    "ok": true,
+    "reason": null,
+    "log": [
+     {
+      "t": 1794433959264.5,
+      "op": "lock-granted"
+     },
+     {
+      "t": 1794433959264.5999,
+      "op": "get",
+      "v": "baseline"
+     },
+     {
+      "t": 1794433959264.7,
+      "op": "get",
+      "v": "baseline"
+     },
+     {
+      "t": 1794433959264.8,
+      "op": "set",
+      "v": "own-write"
+     },
+     {
+      "t": 1794433959264.9,
+      "op": "get",
+      "v": "own-write"
+     },
+     {
+      "t": 1794433959264.9,
+      "op": "lock-callback-done"
+     }
+    ]
+   },
+   "rb": {
+    "ok": false,
+    "reason": "conflict",
+    "log": [
+     {
+      "t": 1794433959266.4001,
+      "op": "lock-granted"
+     },
+     {
+      "t": 1794433959266.5,
+      "op": "get",
+      "v": "other-tab-write"
+     },
+     {
+      "t": 1794433959266.5,
+      "op": "lock-callback-done"
+     }
+    ]
+   },
+   "final": [
+    "D-a"
+   ]
+  },
+  {
+   "t": 58,
+   "ra": {
+    "ok": true,
+    "reason": null,
+    "log": [
+     {
+      "t": 1794433959857.7,
+      "op": "lock-granted"
+     },
+     {
+      "t": 1794433959857.8,
+      "op": "get",
+      "v": "baseline"
+     },
+     {
+      "t": 1794433959857.9001,
+      "op": "get",
+      "v": "baseline"
+     },
+     {
+      "t": 1794433959858,
+      "op": "set",
+      "v": "own-write"
+     },
+     {
+      "t": 1794433959858,
+      "op": "get",
+      "v": "own-write"
+     },
+     {
+      "t": 1794433959858,
+      "op": "lock-callback-done"
+     }
+    ]
+   },
+   "rb": {
+    "ok": false,
+    "reason": "conflict",
+    "log": [
+     {
+      "t": 1794433959859.7,
+      "op": "lock-granted"
+     },
+     {
+      "t": 1794433959859.7998,
+      "op": "get",
+      "v": "other-tab-write"
+     },
+     {
+      "t": 1794433959859.7998,
+      "op": "lock-callback-done"
+     }
+    ]
+   },
+   "final": [
+    "D-a"
+   ]
+  },
+  {
+   "t": 59,
+   "ra": {
+    "ok": true,
+    "reason": null,
+    "log": [
+     {
+      "t": 1794433960451.3,
+      "op": "lock-granted"
+     },
+     {
+      "t": 1794433960451.5,
+      "op": "get",
+      "v": "baseline"
+     },
+     {
+      "t": 1794433960451.5,
+      "op": "get",
+      "v": "baseline"
+     },
+     {
+      "t": 1794433960451.7,
+      "op": "set",
+      "v": "own-write"
+     },
+     {
+      "t": 1794433960451.7,
+      "op": "get",
+      "v": "own-write"
+     },
+     {
+      "t": 1794433960451.7,
+      "op": "lock-callback-done"
+     }
+    ]
+   },
+   "rb": {
+    "ok": false,
+    "reason": "conflict",
+    "log": [
+     {
+      "t": 1794433960453.2002,
+      "op": "lock-granted"
+     },
+     {
+      "t": 1794433960453.3,
+      "op": "get",
+      "v": "other-tab-write"
+     },
+     {
+      "t": 1794433960453.4001,
+      "op": "lock-callback-done"
+     }
+    ]
+   },
+   "final": [
+    "D-a"
+   ]
+  }
+ ]
+}
