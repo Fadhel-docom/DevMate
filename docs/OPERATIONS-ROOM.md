@@ -2229,3 +2229,34 @@ Not touched: the tracked `e2e/r6-matrix/results.json` snapshot (still dated by i
 
 ### Merge action and post-merge verification
 The owner has directed ChatGPT to continue initiative; the repository's revised governance assigns final exact-SHA verification and merge to ChatGPT. Merge PR #32 using the current exact head as an expected-SHA lease, then verify GitHub reports merged and record the merge SHA. Immediately verify the base branch contains the merged commit and that the capability-activation prohibition remains documented. Do not trigger deployment or real cutover.
+
+
+---
+
+## 2026-11-12 — ChatGPT: owner-authorized DevMate CI freeze (execution blocked by connector permissions)
+
+### Owner decision and purpose
+- The owner explicitly authorized a **complete temporary freeze** of DevMate automation, and delegated responsibility for deciding when and where to restart it (GitHub Actions or a replacement environment).
+- Reason: DevMate is unfinished and currently consumes GitHub Actions runner capacity needed by the owner's higher-priority projects. Until a practical low/no-runner-cost execution environment is selected, DevMate must not compete for those resources.
+- Freeze scope requested: **all workflows and all automatic GitHub Actions activity in Fadhel-docom/DevMate**, not only the three workflows previously inspected (ci.yml, p1-chromium.yml, r6-chromium.yml).
+
+### Execution status — NOT YET FROZEN
+- Authorization received: 2026-11-12 (conversation date; exact wall-clock time was not exposed by the connected GitHub tools).
+- ChatGPT inspected the available GitHub connector actions. They support reading repository files and workflow runs, but expose no repository Actions-settings write operation, no workflow-disable operation, and no in-progress workflow cancellation operation. The repository fetch operation is read-only.
+- Therefore **no workflow has been confirmed disabled, no running job has been confirmed cancelled, and no repository setting has been changed**. Do not describe the repository as frozen until GitHub confirms the change.
+- No workflow files, source code, branches, PRs, artifacts, or other projects were modified or deleted as a workaround. This avoids an incomplete freeze that could leave uninspected workflows running or silently damage the project.
+
+### Required freeze procedure
+1. Use GitHub repository Settings → Actions → General to disable Actions for this repository (the broadest reversible freeze), or use an authorized GitHub administration connection/API with equivalent scope.
+2. Cancel any currently running or queued DevMate workflow runs; disabling future runs alone may not stop runs already in progress.
+3. Verify the repository Actions setting is disabled and inspect the run list to confirm no queued/in-progress DevMate jobs remain.
+4. Record the actual completion timestamp, operator, setting state, and cancelled run IDs here. Until then the freeze remains **AUTHORIZED / BLOCKED — NOT EXECUTED**.
+
+### Preservation and restart ownership
+- Preserve all workflow YAML, source code, branches, PRs, test evidence, and history unchanged.
+- ChatGPT is the delegated coordinator responsible for the eventual restart decision and execution plan. No automatic reactivation date is set.
+- Before restart, ChatGPT must first select a practical environment that does not consume the runner capacity reserved for higher-priority projects, assess current free-tier limits and required permissions, then verify a minimal safe pilot. Prefer moving execution to an appropriate alternative (for example, a suitable external CI environment) over simply re-enabling the same runner-heavy matrix.
+- Re-enable GitHub Actions only when the owner's resource-priority concern is resolved and the restart plan is verified. Any new cost or expanded permission still requires owner approval.
+
+### Next exact action
+The owner (or an authorized GitHub administrator connection) must disable Actions for this repository and cancel active/queued runs. Once that is done, ChatGPT will verify the disabled state and update this room with the exact timestamp and run IDs. ChatGPT must not claim completion before that verification.
