@@ -363,7 +363,7 @@ describe("keyboard accessibility and screen-reader semantics", () => {
     });
   }
 
-  it("uses real landmarks with one main region, and the skip link is the first tab stop and targets it", async () => {
+  it("uses real landmarks with one main region; the skip link is the first focusable element in DOM order and targets it (DOM order only: it does not simulate Tab; real keyboard behaviour is checked in Chromium by e2e/r6-matrix C11)", async () => {
     await mountApp();
     expect(host.querySelectorAll("main")).toHaveLength(1);
     const main = host.querySelector("main")!;
@@ -506,6 +506,9 @@ describe("keyboard accessibility and screen-reader semantics", () => {
     await act(async () => { retry.click(); await tick(); await tick(); });
     expect(host.contains(retry)).toBe(false);
     expect(document.activeElement).toBe(host.querySelector("main"));
+    expect(host.querySelector("main")?.getAttribute("data-focus-moved")).toBe("true");   // the stylesheet shows a visible indicator for this attribute
+    await act(async () => { (host.querySelector("main") as HTMLElement).blur(); await tick(); });
+    expect(host.querySelector("main")?.hasAttribute("data-focus-moved")).toBe(false);
     expect(host.textContent).toContain("Beta");
   });
 
@@ -550,6 +553,15 @@ describe("keyboard accessibility and screen-reader semantics", () => {
     const css = fs.readFileSync(`${cwd}/src/styles.css`, "utf8");
     expect(css).toMatch(/textarea:focus-visible[^{]*\{[^}]*outline:3px solid #3a2fb0/);
     expect(css).toMatch(/summary:focus-visible[^{]*\{[^}]*outline:3px solid #3a2fb0/);
+  });
+
+  it("the programmatic focus target (<main>) has a visible indicator when focus is moved to it by the app, and none for ordinary focus", async () => {
+    const nodeFs = "node:fs";
+    const fs = (await import(/* @vite-ignore */ nodeFs)) as { readFileSync(path: string, encoding: string): string };
+    const cwd = (globalThis as { process?: { cwd(): string } }).process?.cwd() ?? ".";
+    const css = fs.readFileSync(`${cwd}/src/styles.css`, "utf8");
+    expect(css).toMatch(/main\[data-focus-moved\]:focus\{outline:3px solid #3a2fb0/);
+    expect(css.indexOf("main[data-focus-moved]:focus")).toBeGreaterThan(css.indexOf('main[tabindex="-1"]:focus-visible{outline:none}'));   // later rule wins at equal specificity
   });
 });
 

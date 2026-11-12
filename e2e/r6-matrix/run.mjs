@@ -324,6 +324,43 @@ for (const phase of PHASES) {
   }
 }
 
+// ---------------------------------------------------------------- C11
+{
+  const c = Case("C11", "Real keyboard and focus behaviour of the accessibility changes (PR #34): skip link, Enter to main, reload-fallback focus indicator (keyboard and mouse)");
+  const ctx = await ctxWith({ viewport: { width: 1000, height: 800 } });
+  const h = await harness(ctx); await seed(h); await h.close();
+  const app = await ctx.newPage(); await app.goto(origin + "/");
+  await app.waitForFunction(() => document.querySelector("main")?.getAttribute("aria-busy") === "false");
+  const info = () => app.evaluate(() => { const e = document.activeElement, cs = getComputedStyle(e); return { tag: e.tagName, id: e.id, cls: String(e.className), outlineStyle: cs.outlineStyle, outlineWidth: parseFloat(cs.outlineWidth), top: e.getBoundingClientRect().top }; });
+  await app.keyboard.press("Tab");
+  const first = await info();
+  ck(c, "the first real Tab press focuses the skip link", first.tag === "A" && /skip-link/.test(first.cls), first);
+  ck(c, "the focused skip link is on screen and has a visible focus indicator", first.top >= 0 && first.outlineStyle !== "none" && first.outlineWidth >= 2, first);
+  await app.keyboard.press("Enter");
+  const afterSkip = await info();
+  ck(c, "Enter on the skip link moves focus to <main>", afterSkip.id === "main-content", afterSkip);
+  await app.keyboard.press("Tab");
+  ck(c, "the next Tab lands on a control inside <main> (header links skipped)", await app.evaluate(() => document.querySelector("main").contains(document.activeElement) && document.activeElement !== document.querySelector("main")));
+  const other = await harness(ctx);
+  for (const mode of ["keyboard", "mouse"]) {
+    await other.evaluate((m) => localStorage.setItem("devmate-workspace-v1", JSON.stringify([{ id: "x-" + m, name: "Written by another tab (" + m + ")", tasks: [] }])), mode);
+    await sleep(150);                                           // let the write become visible to the app tab (cross-tab visibility is not instantaneous)
+    await app.locator('input[aria-label="New project name"]').focus(); await app.keyboard.type("Conflicting " + mode); await app.keyboard.press("Enter");
+    const reload = app.getByRole("button", { name: /Reload saved workspace/ });
+    let shown = true; try { await reload.waitFor({ timeout: 6000 }); } catch { shown = false; }
+    ck(c, `${mode}: a save conflict shows the Reload button`, shown);
+    if (!shown) continue;
+    if (mode === "keyboard") { await reload.focus(); await app.keyboard.press("Enter"); } else await reload.click();
+    let moved = true; try { await app.waitForFunction(() => document.activeElement && document.activeElement.id === "main-content", null, { timeout: 6000 }); } catch { moved = false; }
+    const fb = await info();
+    ck(c, `${mode}: after the reload the button is gone and focus is on <main>, not <body>`, moved && fb.id === "main-content", fb);
+    ck(c, `${mode}: <main> shows a visible focus indicator (solid, at least 2 px)`, fb.outlineStyle === "solid" && fb.outlineWidth >= 2, fb);
+    await app.locator('input[aria-label="New project name"]').focus();
+    ck(c, `${mode}: the indicator is removed once focus leaves <main>`, (await app.evaluate(() => !document.querySelector("main").hasAttribute("data-focus-moved"))));
+  }
+  await ctx.close();
+}
+
 await browser.close(); server.close();
 results.summary = { cases: results.cases.length, checks: results.cases.reduce((n, c) => n + c.checks.length, 0), failedChecks: failures, passed: failures === 0 };
 writeFileSync(here + "results.json", JSON.stringify(results, null, 2) + "\n");

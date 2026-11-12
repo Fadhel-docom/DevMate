@@ -112,7 +112,13 @@ export default function App() {
 
   useEffect(() => {
     // The reload button unmounts while the workspace reloads, which would drop keyboard focus onto <body>.
-    if (reloadTick > 0) (reloadRef.current ?? mainRef.current)?.focus();
+    if (reloadTick > 0) {
+      const target = reloadRef.current ?? mainRef.current;
+      // <main> is a programmatic focus target, not an interactive control. Mark it so the stylesheet shows a visible
+      // indicator even when the browser would not treat this focus as :focus-visible (for example after a mouse click).
+      if (target === mainRef.current) target?.setAttribute("data-focus-moved", "true");
+      target?.focus();
+    }
   }, [reloadTick]);
 
   useEffect(() => {
@@ -273,7 +279,7 @@ export default function App() {
         <a className="brand" href="/" aria-label="DevMate home"><span className="brand-mark" aria-hidden="true">D</span><span>DevMate</span></a>
         <span className="top-note">Your coding workspace</span>
       </header>
-      <main id="main-content" ref={mainRef} tabIndex={-1} aria-busy={!loaded}>
+      <main id="main-content" ref={mainRef} tabIndex={-1} aria-busy={!loaded} onBlur={(event) => { if (event.target === event.currentTarget) event.currentTarget.removeAttribute("data-focus-moved"); }}>
       <div className="sr-only" aria-live="polite" aria-atomic="true" data-testid="sr-announcer"><span key={announcement.id}>{announcement.text}</span></div>
       {!loaded && <p role="status" style={noticeStyle}>Loading your workspace safely…</p>}
       {startupNotice && <p role="status" style={noticeStyle}>{startupNotice}</p>}
